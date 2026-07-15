@@ -1,196 +1,375 @@
-# ADN del Diseño - Ultrawave (Synthwave Finance Tracker)
-Estética retrofuturista, vaporwave y retrowave aplicada a la aplicación de gestión de gastos **"Vibe to Live"**.
+# Ultrawave — ADN de diseño
 
----
+> Fuente de verdad visual de **Vibe to Live**, la experiencia de control de gastos del proyecto Stitch **Synthwave Finance Tracker**. Contexto contrastado con el tema del proyecto, el design system `Ultrawave` v3 y la pantalla aprobada `Vibe to Live - Dashboard with Background Grid and Palms`.
 
-## 1. Concepto y Estética General
-La identidad visual de **Vibe to Live** es una fusión equilibrada de tres corrientes principales:
-* **Synthwave Core**: Base retrofuturista inspirada en los años 80, cuadrículas tridimensionales y luces de neón.
-* **Vaporwave**: Elementos nostálgicos y surrealistas, incluyendo pixel-art, glitches cromáticos, esculturas clásicas y tonalidades pastel/neón.
-* **Retrowave**: Tonalidades púrpura profundo y una atmósfera arcade cinemática que evoca la cultura pop ochentera.
+## 1. Norte visual
 
----
+Ultrawave convierte la gestión financiera en una consola nocturna, cinematográfica y gamificada. El lenguaje combina:
 
-## 2. Paleta de Colores (Color Tokens)
+- **Synthwave** como estructura: negro espacial, magenta y cian de alta energía, rejillas y luz de neón.
+- **Retrowave** como atmósfera: horizonte outrun, sol segmentado, palmeras en silueta y sensación arcade de los ochenta.
+- **Vaporwave** como textura: glitches cromáticos, scanlines CRT, ruido digital, píxel art y estatuas clásicas tratadas en duotono.
+- **Fintech** como disciplina: datos densos, números inequívocos, jerarquía estable y estados comprensibles sin depender del glow.
 
-### 2.1 Colores Principales del Tema
-| Token | Valor Hex | Uso Principal |
-| :--- | :--- | :--- |
-| **Primary (Neon Magenta)** | `#FF007F` | Botones de acción principal, acentos clave de atención y estados activos. |
-| **Secondary (Electric Cyan)** | `#00FFFF` | Acentos secundarios, estados hover, enlaces interactivos y elementos activos secundarios. |
-| **Accent Purple (Electric Purple)** | `#8B00FF` | Picos en gráficos de barra, sombras neón de insignias y elementos decorativos secundarios. |
-| **Accent Sunset (Yellow Sunset)** | `#FFD43F` | Mensajes de advertencia/alerta y medidores de XP de gamificación. |
-| **Background Deep** | `#0B0C10` | Color de fondo principal y global de la aplicación. |
-| **Background Alt (Space Black)** | `#0C0914` | Fondo de paneles laterales, barras de navegación y tarjetas profundas. |
-| **Text Base (White Glow)** | `#F4F4F9` | Texto de lectura principal con un sutil resplandor claro. |
-| **Text Muted (Purple Cyber)** | `#757B96` | Subtextos, etiquetas inactivas y estados deshabilitados. |
+La interfaz debe sentirse como un sistema operativo financiero encontrado en una recreativa del futuro: expresiva en el ambiente, estricta en la información.
 
-### 2.2 Tokens Adicionales (Material Design / Detallados)
+### Principios
+
+1. **Los datos mandan.** El espectáculo visual enmarca la información; nunca la oculta.
+2. **La luz crea profundidad.** La elevación se expresa con brillo, transparencia y capas tonales, no con sombras físicas pesadas.
+3. **Dos neones por escena.** Magenta y cian son la firma principal. Violeta o amarillo aparecen como apoyo puntual, no como un tercer foco dominante.
+4. **Geometría afilada.** Rejilla precisa, bordes visibles y radios contenidos. Evitar el aspecto blando de una app SaaS genérica.
+5. **Movimiento con intención.** Pulsos, glitch y shader comunican vida del sistema; no decoran cada elemento.
+
+## 2. Jerarquía de color
+
+El sistema tiene dos niveles complementarios. La pantalla aprobada prevalece cuando exista conflicto:
+
+- **Colores de firma:** magenta y cian saturados para marca, acciones, cifras clave y visualización de datos.
+- **Colores semánticos y tonales:** rosa, violeta y malva del design system v3 para superficies, estados secundarios y profundidad.
+
+### 2.1 Colores de firma
+
+| Token | Valor | Uso |
+| --- | --- | --- |
+| `--neon-magenta` | `#FF007F` | Acción de riesgo, gasto, alertas visuales, series alternas y glitch izquierdo. |
+| `--neon-cyan` | `#00FFFF` | Acción principal, balance positivo, estado activo, foco y glitch derecho. |
+| `--electric-purple` | `#8B00FF` | Halo ambiental, insignias y profundidad de navegación. |
+| `--sunset-yellow` | `#FFD43F` | Sol outrun, hitos, advertencias y progreso excepcional. |
+| `--bg-deep` | `#0B0C10` | Fondo global estable. |
+| `--bg-alt` | `#0C0914` | Sidebar y regiones profundas. |
+| `--input-black` | `#050508` | Entradas, terminales y superficies de máxima profundidad. |
+| `--text-glow` | `#F4F4F9` | Texto principal de alto contraste. |
+| `--text-muted` | `#757B96` | Metadatos, ayudas y estados inactivos. |
+
+### 2.2 Paleta tonal del design system v3
+
 ```css
 :root {
-  --background: #1f0e13;
-  --on-background: #fbdae1;
-  
-  --surface: #1f0e13;
-  --surface-dim: #1f0e13;
-  --surface-bright: #493338;
-  --surface-container-lowest: #19090e;
-  --surface-container-low: #28161b;
-  --surface-container: #2d1a1f;
-  --surface-container-high: #382529;
-  --surface-container-highest: #442f34;
-  --on-surface: #fbdae1;
-  --on-surface-variant: #e5bcc5;
-  --inverse-surface: #fbdae1;
-  --inverse-on-surface: #3f2b30;
-  
-  --primary: #ffb1c4;
-  --on-primary: #65002e;
-  --primary-container: #ff4a8d;
-  --on-primary-container: #590028;
-  --inverse-primary: #ba005b;
-  
-  --secondary: #ffffff;
-  --on-secondary: #003737;
-  --secondary-container: #00fbfb;
-  --on-secondary-container: #007070;
-  
-  --tertiary: #63e063;
-  --on-tertiary: #003908;
-  --tertiary-container: #21a732;
-  --on-tertiary-container: #003206;
-  
-  --error: #ffb4ab;
-  --on-error: #690005;
-  --error-container: #93000a;
-  --on-error-container: #ffdad6;
-  
-  --outline: #ac878f;
-  --outline-variant: #5c3f46;
-  
-  /* Colores de acento extendidos */
-  --accent-purple: #8B00FF;
-  --accent-sunset: #FFD43F;
-  --bg-deep: #0B0C10;
-  --bg-alt: #0C0914;
-  --text-glow: #F4F4F9;
-  --text-muted: #757B96;
+  color-scheme: dark;
+
+  --background: #220216;
+  --on-background: #ffdceb;
+
+  --surface-lowest: #000000;
+  --surface-low: #2a041c;
+  --surface: #220216;
+  --surface-container: #330824;
+  --surface-high: #3b0d2b;
+  --surface-highest: #451232;
+  --surface-bright: #4e1739;
+
+  --on-surface: #ffdceb;
+  --on-surface-variant: #d39bb7;
+  --outline: #986780;
+  --outline-variant: #663a52;
+
+  --primary: #ff89ab;
+  --primary-container: #ff709d;
+  --primary-dim: #ff6b9b;
+
+  --secondary: #f785c6;
+  --secondary-container: #7e205c;
+  --secondary-dim: #e778b8;
+
+  --tertiary: #a69dff;
+  --tertiary-container: #988dfa;
+  --tertiary-fixed: #afa6ff;
+  --tertiary-dim: #9b90fd;
+
+  --error: #ff6e84;
+  --error-container: #a70138;
 }
 ```
 
-> [!NOTE]
-> Regla de contraste: Se garantiza la luminosidad mínima WCAG AA para textos legibles (`#F4F4F9`) sobre cualquiera de los fondos oscuros del tema.
+### 2.3 Reglas de aplicación
 
----
+- Fondo de página: `--bg-deep`. Los tonos vino del design system se usan en transparencias y capas, no como sustituto opaco del negro espacial.
+- Acción primaria y estado `focus`: cian. Acción destructiva o gasto: magenta.
+- Violeta: XP, gamificación, tercera serie de datos y estados secundarios.
+- Amarillo: máximo un foco por vista; reservarlo para horizonte, aviso o logro.
+- No colorear grandes párrafos con neón. El texto de lectura usa `--text-glow` o `--on-surface`.
+- El glow refuerza un color sólido; nunca es el único indicador de estado.
 
-## 3. Tipografía y Jerarquía
+## 3. Tipografía
 
-* **Display & Headings (Títulos)**: `'Neon Tubes'`, `'Orbitron'`, `'Impact'`, sans-serif. Estilo neón vintage y futurista.
-* **Body (Cuerpo de Texto)**: `'Arimo'`, `'MS Sans Serif'`, sans-serif. El uso de MS Sans Serif proporciona un toque nostálgico pixel-retro en interfaces de datos.
-* **Monospace UI (Código/Tablas/Gastos)**: `'Courier Prime'`, `'Courier New'`, monospace. Ideal para campos de entrada y tablas numéricas.
+La pantalla combina una base legible con una capa display de terminal arcade.
 
-### Escala Tipográfica de Referencia:
-* **Headline XL (H1 principal)**: `Space Grotesk`, `64px`, Grosor `700` (Bold), `line-height: 1.1`, `letter-spacing: -0.02em`
-* **Headline LG**: `Space Grotesk`, `40px`, Grosor `700` (Bold), `line-height: 1.2` (En móviles: `32px`)
-* **Headline MD**: `Space Grotesk`, `24px`, Grosor `600` (Semi-Bold), `line-height: 1.3`
-* **Body LG**: `Arimo`, `18px`, Grosor `400` (Regular), `line-height: 1.6`
-* **Body MD**: `Arimo`, `16px`, Grosor `400` (Regular), `line-height: 1.6`
-* **Body SM**: `Arimo`, `14px`, Grosor `400` (Regular), `line-height: 1.4`
-* **Label MD**: `Courier Prime`, `14px`, Grosor `400`, `line-height: 1.2`, `letter-spacing: 0.05em`
-* **Label SM**: `Courier Prime`, `12px`, Grosor `400`, `line-height: 1.2`, `letter-spacing: 0.05em`
+| Rol | Familia | Tratamiento |
+| --- | --- | --- |
+| Display y titulares de marca | `Orbitron`, `Space Grotesk`, sans-serif | Mayúsculas, geometría amplia, glow o glitch solo en títulos principales. |
+| Titulares estructurales | `Space Grotesk`, sans-serif | Peso 600–700, sin efectos agresivos. |
+| Cuerpo | `Arimo`, sans-serif | Lectura limpia, antialiasing activo. |
+| Etiquetas y datos compactos | `Courier Prime`, monospace | Sensación de terminal; tracking positivo y cifras alineadas. |
 
----
+`Orbitron` es la voz expresiva observada en el dashboard. `Space Grotesk` conserva la jerarquía del sistema y funciona como fallback de mayor legibilidad.
 
-## 4. Retícula, Espaciados y Decoración de Fondo
+### Escala
 
-* **Sistema de Espaciado Base**: Escalado múltiple de 8px (potencias de 2 para los contenedores grandes).
-  * `xs`: `4px`
-  * `sm`: `8px`
-  * `md`: `16px`
-  * `lg`: `24px`
-  * `xl`: `32px`
-  * `xxl`: `64px` (y `128px` para márgenes de sección superiores)
-* **Perspective Grid (Cuadrícula en Perspectiva)**: Fondo SVG con efecto de cuadrícula infinita en perspectiva con una opacidad del `4%` aplicado en las áreas de Hero y paneles superiores del Dashboard.
+| Token | Tamaño | Peso | Interlínea | Tracking |
+| --- | ---: | ---: | ---: | ---: |
+| `headline-xl` | `64px` | `700` | `1.1` | `-0.02em` |
+| `headline-lg` | `40px` | `700` | `1.2` | normal |
+| `headline-lg-mobile` | `32px` | `700` | `1.2` | normal |
+| `headline-md` | `24px` | `600` | `1.3` | normal |
+| `body-lg` | `18px` | `400` | `1.6` | normal |
+| `body-md` | `16px` | `400` | `1.6` | normal |
+| `body-sm` | `14px` | `400` | `1.4` | normal |
+| `label-md` | `14px` | `400` | `1.2` | `0.05em` |
+| `label-sm` | `12px` | `400` | `1.2` | `0.05em` |
 
----
+### Jerarquía textual
 
-## 5. Estilos de Superficie y Efectos Visuales (Shaders y CSS)
+- H1 de bienvenida: `headline-xl`, Orbitron, mayúsculas, cian y glitch magenta/cian.
+- Valores financieros principales: `headline-lg`, un solo color de firma, cifras tabulares cuando estén disponibles.
+- Títulos de tarjeta: `label-md`, mayúsculas, tono secundario; icono de 18–20 px.
+- Metadatos: `label-sm` o `body-sm`, sin glow.
+- No aplicar glitch a texto menor de `24px` ni a cantidades que el usuario deba leer con precisión.
 
-### 5.1 Resplandor de Neón (Neon Glow)
-Efecto de sombra de caja que transiciona suavemente de cian a magenta en `0.25s`.
+## 4. Espaciado, rejilla y composición
+
+### 4.1 Escala
+
+La unidad base es `8px`, con pasos de `2px` y `4px` para bordes y ajustes ópticos.
+
 ```css
-.neon-glow {
-  box-shadow: 0 0 15px currentColor;
-  transition: box-shadow 0.25s ease;
-}
-.neon-glow:hover {
-  box-shadow: 0 0 25px currentColor,
-              0 0 45px currentColor;
+:root {
+  --space-2xs: 2px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 64px;
+  --grid-gutter: 16px;
+  --grid-margin: 24px;
 }
 ```
 
-### 5.2 CRT Scanlines (Efecto de Monitor Antiguo)
-Pseudo-elemento transparente con patrón de líneas horizontales simulando pantallas analógicas.
+No introducir valores intermedios salvo corrección óptica documentada.
+
+### 4.2 Dashboard desktop
+
+- Sidebar fija: `256px`, altura completa, padding vertical `16px`, horizontal `8px`.
+- Área principal: margen izquierdo `256px`, padding exterior `24px`; `32px` en viewport amplio.
+- Ritmo vertical principal: `24px`.
+- Rejilla de contenido: 3 columnas fluidas y gutter de `16px`.
+- KPIs: mínimo `160px` de alto, padding `24px`.
+- Zona analítica: dos columnas para el gráfico principal y una para actividad; mínimo `300px`.
+- Gráfico mensual: ocupa las tres columnas; mínimo `240px`.
+- Cabecera: título a la izquierda, progreso/XP a la derecha; separación mínima `16px`.
+
+### 4.3 Responsive
+
+- Por debajo de `md`, ocultar la sidebar fija y eliminar el margen izquierdo.
+- Colapsar la rejilla a una columna. Las zonas de datos cambian orden, pero no jerarquía.
+- El H1 pasa de `64px` a `32px`.
+- Gráficos circulares y leyendas se apilan verticalmente.
+- Mantener targets táctiles mínimos de `44 × 44px`.
+- Reducir efectos ambientales antes que reducir legibilidad o espacio de datos.
+
+## 5. Capas ambientales y shaders
+
+El fondo se construye como una escena. Este orden debe conservarse:
+
+| Capa | `z-index` | Contenido |
+| --- | ---: | --- |
+| Base | `-3` | Canvas WebGL de nebulosa animada. |
+| Horizonte | `-2` | Sol outrun segmentado y desenfocado. |
+| Siluetas | `-1` | Rejilla en perspectiva, palmeras o estatua; una familia decorativa dominante. |
+| Aplicación | `10` | Dashboard y tarjetas. |
+| Navegación | `40` | Sidebar fija con blur. |
+| Textura CRT | `50` | Scanlines globales, sin eventos de puntero. |
+
+### 5.1 Shader de nebulosa
+
+El canvas usa WebGL con tres capas de ruido simplex 2D en movimiento lento:
+
+- Base púrpura profunda aproximada: `rgb(34, 2, 22)`.
+- Púrpura iluminado aproximado: `rgb(78, 23, 57)`.
+- Aporte magenta: intensidad máxima `0.20`.
+- Aporte cian: intensidad máxima `0.10`.
+- Velocidad temporal: `u_time × 0.2`.
+- Scanline interna: `sin(uv.y × 800) × 0.04`.
+- Viñeta: `1 - smoothstep(0.5, 1.5, length(p))`.
+
+El shader debe ser atmosférico. Si el ruido reduce el contraste de una tarjeta, bajar su intensidad; no hacer la tarjeta más opaca por defecto.
+
+### 5.2 Sol outrun
+
+- Gradiente vertical `#FFD43F → #FF007F`.
+- Ancho `60vw`, alto `30vw`, máximos `800 × 400px`.
+- Semicírculo superior; bandas horizontales recortadas desde el 60% de su altura.
+- Glow exterior de `50px` magenta y `100px` amarillo.
+- Ubicado en el horizonte inferior, con blur ambiental. No debe competir con números ni botones.
+
+### 5.3 Rejilla, palmeras y estatua
+
+- **Perspective grid:** SVG o CSS a `4%` de opacidad, convergente hacia el horizonte. Úsala en hero o dashboard, no en ambos si comparten viewport.
+- **Palmeras:** siluetas periféricas, sin detalle interior y fuera de la zona de lectura.
+- **Estatua vaporwave:** PNG/3D clásico en duotono violeta–rosa o cian–magenta, `80%` de opacidad máxima, detrás del H1.
+- Mostrar solo una de las dos familias figurativas —palmeras o estatua— por escena.
+
+### 5.4 CRT scanlines
+
+Patrón horizontal de `4px`: mitad transparente, mitad negro al `20%`, con opacidad global de referencia `0.30`. Debe ser imperceptible sobre texto pequeño. En pantallas de baja densidad o con contraste degradado, reducir la opacidad a `0.05–0.12`.
+
+## 6. Superficies y profundidad
+
+### Tarjeta synth
+
 ```css
-.crt-container::before {
-  content: " ";
-  display: block;
+.synth-card {
+  position: relative;
+  overflow: hidden;
+  background: rgb(11 12 16 / 20%);
+  border: 1px solid rgb(255 255 255 / 10%);
+  backdrop-filter: blur(10px);
+}
+
+.synth-card::before {
+  content: "";
   position: absolute;
-  top: 0; left: 0; bottom: 0; right: 0;
-  background: repeating-linear-gradient(
-    rgba(18, 16, 16, 0) 50%,
-    rgba(0, 0, 0, 0.25) 50%
-  );
-  background-size: 100% 4px;
-  z-index: 99;
+  inset: 0;
+  padding: 2px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, #ff007f, #00ffff);
   pointer-events: none;
-  opacity: 0.05;
+  /* Aplicar máscara para conservar solo el borde. */
 }
 ```
 
-### 5.3 Glitch en Títulos (H1 Glitch Effect)
-Efecto de deformación y desplazamiento mediante animaciones intermitentes en la propiedad `clip-path` y desfases horizontales en capas duplicadas de texto.
+- Radios de referencia: `8–12px` en tarjetas de dashboard. Los controles de marca pueden ser rectos.
+- La translucidez es baja y el blur crea separación del shader.
+- El borde degradado define el contenedor; no añadir otra sombra pesada.
+- Hover opcional: `translateY(-4px)` y glow tenue. En dashboards densos, reservarlo para tarjetas clicables.
 
-### 5.4 Statue Hero Backdrop (Fondo de Escultura Clásica)
-Imagen PNG en 3D de una escultura clásica (estilo clásico griego/romano Vaporwave) con un filtro duotono (cian/magenta) aplicado al `80%` de opacidad, posicionada en la sección de inicio detrás del título principal.
+### Jerarquía de elevación
 
-### 5.5 Reactividad al Audio (Audio-Reactive Scale)
-Simulación de vibración al ritmo de la música mediante JavaScript agregando dinámicamente la clase `.beat`, la cual aplica una ligera deformación en el eje Y:
+1. Fondo opaco/profundo.
+2. Superficie translúcida con blur.
+3. Borde tonal o degradado.
+4. Glow tenue en reposo.
+5. Glow intenso únicamente en foco, hover o actividad.
+
+## 7. Componentes
+
+### 7.1 Botones
+
+- Borde `2px solid currentColor`, fondo transparente y altura mínima `44px`.
+- Texto de etiqueta en Courier Prime u Orbitron, mayúsculas.
+- **Primario (`btn-neon`):** cian; glow exterior e interior de `10px / 50%`.
+- **Destructivo (`btn-danger`):** magenta; misma estructura, nunca solo un cambio de glow.
+- Hover: relleno al `20%` y glow de `20px / 80%`.
+- Active: escala máxima `0.95–0.98`; evitar rebotes.
+- Focus visible independiente del hover: `2px` discontinuo violeta con offset suficiente.
+
+### 7.2 Navegación
+
+- Sidebar negro translúcido, blur medio y borde derecho tonal.
+- Elemento activo: texto cian, borde izquierdo `4px`, relleno cian muy tenue.
+- Inactivos: `on-surface-variant`; hover con superficie elevada y glow corto.
+- Perfil: avatar circular con borde cian; nombre display y nivel en monoespaciada.
+
+### 7.3 Inputs
+
+- Fondo `#050508`.
+- Borde `1px solid --outline` o `--text-muted`.
+- Texto y cifras en Courier Prime.
+- Focus: borde cian/violeta, outline visible y glow controlado.
+- Error: color sólido y mensaje textual; no usar parpadeo.
+
+### 7.4 Visualización financiera
+
+- Mantener cifras y unidades visibles sin hover.
+- Series principales: cian, magenta y violeta, en ese orden.
+- Añadir leyenda, etiqueta o patrón; el color por sí solo no basta.
+- Donut: trazo de `16px`, glow de `5px`; cifra total centrada.
+- Barras: relleno al `20%`, borde al `30%`; hover al `40%` y tooltip textual.
+- Positivo/activo: cian. Gasto/riesgo: magenta. Categoría auxiliar: violeta.
+
+### 7.5 Gamificación
+
+- Barra XP: `8px` de alto, pista tonal oscura y progreso `--tertiary-fixed`.
+- Pulso: glow `5px → 15px → 5px` durante `2s`.
+- Insignias: SVG o píxel art, halo individual y silueta reconocible sin glow.
+- Gamificación acompaña objetivos financieros; nunca convierte una pérdida en feedback celebratorio.
+
+## 8. Movimiento y estados
+
+| Uso | Duración | Curva |
+| --- | ---: | --- |
+| Hover/focus estándar | `250–300ms` | `ease` o `cubic-bezier(0.25, 0.46, 0.45, 0.94)` |
+| Pulso XP/neón | `2s` | `ease-in-out`, infinito solo mientras esté activo |
+| Glitch display | `2.5–3s` por capa | `linear alternate-reverse` |
+| Efecto ambiental amplio | `600ms+` | suave, sin cambios bruscos de luminancia |
+
+- El glitch duplica el H1: capa magenta a `+2px`, capa cian a `-2px`, con recortes asíncronos.
+- La simulación audio-reactiva puede aplicar `scaleY(1.05)` a decoración, nunca a texto o cifras.
+- No animar más de un elemento ambiental dominante por pantalla.
+
 ```css
-.beat {
-  transform: scaleY(1.05);
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .glitch-text::before,
+  .glitch-text::after,
+  .scanlines,
+  #shader-canvas {
+    animation: none !important;
+  }
 }
 ```
 
+## 9. Accesibilidad
+
+- Contraste mínimo `4.5:1` en texto normal y `3:1` en texto grande y componentes.
+- Verificar contraste sobre el frame más luminoso del shader, no solo sobre el color base.
+- Foco de teclado persistente: `outline: 2px dashed #a69dff`; no eliminarlo al activar glows.
+- Estados con icono + texto + color cuando sean importantes.
+- Scanlines, glitch y pulso deben apagarse con `prefers-reduced-motion`.
+- Evitar flashes rápidos y grandes cambios de luminancia.
+- Cifras monetarias con separación y signo consistentes; usar alineación tabular en tablas.
+- El fondo decorativo lleva `pointer-events: none` y queda oculto de tecnologías asistivas.
+
+## 10. Do / Don't
+
+### Do
+
+- Usar el negro espacial como lienzo dominante.
+- Reservar cian y magenta para acciones, cifras y series que merecen atención.
+- Mantener la rejilla de 8 px y el gutter de 16 px.
+- Crear profundidad con transparencia, blur y halos medidos.
+- Probar cada vista sin shader: la jerarquía debe seguir funcionando.
+
+### Don't
+
+- No mostrar más de dos neones dominantes simultáneamente.
+- No aplicar glow a todos los bordes, iconos y textos.
+- No superponer sol, estatua y palmeras como focos equivalentes.
+- No usar glitch en párrafos, etiquetas pequeñas ni valores financieros.
+- No suavizar toda la interfaz con radios grandes o sombras SaaS convencionales.
+- No esconder datos esenciales detrás de hover, animación o color.
+
+## 11. Checklist de implementación
+
+- [ ] Fondo global `#0B0C10` y superficies suficientemente transparentes.
+- [ ] Orden de capas ambiental respetado.
+- [ ] Máximo dos colores neón dominantes por viewport.
+- [ ] Sidebar de `256px`, margen principal y rejilla de 3 columnas en desktop.
+- [ ] Escala de espaciado usada sin valores arbitrarios.
+- [ ] Tipografía display reservada para marca y titulares.
+- [ ] Gráficos comprensibles sin depender solo del color.
+- [ ] Focus visible y contraste verificado sobre shader.
+- [ ] `prefers-reduced-motion` implementado.
+- [ ] Decoración sin eventos de puntero ni semántica accesible.
+- [ ] Responsive conserva orden de lectura y targets de `44px`.
+
 ---
 
-## 6. Guías para Componentes del UI
-
-### 6.1 Botones
-* **Estructura Base**: Bordes sólidos de `2px solid currentColor`, fondo transparente.
-* **Variante Cian (.btn-neon)**: Usa el color de texto e interactividad `Secondary` (Cian Eléctrico) con resplandor cian.
-* **Variante Magenta (.btn-danger)**: Usa el color de texto `Primary` (Neon Magenta) con resplandor magenta.
-* **Comportamiento en Hover**: Relleno de fondo con el color de borde correspondiente y transición de sombra dual.
-
-### 6.2 Tarjetas (Cards)
-* **Fondo**: Translúcido `rgba(12, 9, 20, 0.8)` con efecto de difuminado por debajo (`backdrop-filter: blur(10px)`).
-* **Borde**: Línea delgada con gradiente diagonal de `Accent Purple` a `Secondary (Cian)`.
-* **Animación en Hover**: Elevación vertical (`translateY(-4px)`) acompañada de un aumento sutil de brillo en la sombra exterior.
-
-### 6.3 Campos de Entrada (Inputs)
-* **Fondo**: Totalmente oscuro (`#050508`).
-* **Borde**: Borde fino en `Text Muted`. Al ganar el foco (`:focus`), cambia el color del borde a `Secondary` y se activa el efecto `neon-glow` cian.
-
-### 6.4 Widgets de Gamificación (XP)
-* **Barra de XP**: Altura de `8px`. Fondo en `Accent Purple` con baja opacidad; el progreso acumulado se representa con el color brillante `Yellow Sunset` de forma animada.
-* **Insignias**: Diseñadas mediante SVG estilo retro-píxel 8-bits con sombra e iluminación del color `Accent Purple`.
-
----
-
-## 7. Accesibilidad y Buenas Prácticas
-
-> [!IMPORTANT]
-> * **Legibilidad**: Mantener siempre un contraste mínimo de 4.5:1 en todos los textos explicativos y numéricos. El color de texto `text-glow` (#F4F4F9) debe contrastar sobre los fondos oscuros.
-> * **Límite de Neón**: Evitar el uso excesivo de colores brillantes. No mostrar más de 2 colores neón vibrantes en la pantalla a la vez para no fatigar la vista del usuario.
-> * **Reducción de Movimiento**: Respetar la propiedad `@media (prefers-reduced-motion: reduce)` desactivando animaciones de glitch agresivas y efectos de parpadeo rápidos.
-> * **Navegación por Teclado**: Los elementos enfocados mediante teclado deben mostrar un borde claro y visible (`outline: 2px dashed var(--accent-purple)`).
+**Criterio de desempate:** ante diferencias entre tokens generados y la pantalla aprobada, conservar la estructura semántica del design system v3, pero mantener `#FF007F` y `#00FFFF` como colores de firma visibles. La experiencia renderizada es la referencia final.
