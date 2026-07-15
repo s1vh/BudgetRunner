@@ -1,0 +1,428 @@
+{
+  "id": 20,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "{\"name\":\"projects/11087553457034753859\",\"title\":\"Synthwave Finance Tracker\",\"visibility\":\"PRIVATE\",\"createTime\":\"2026-07-15T04:22:17.564275Z\",\"updateTime\":\"2026-07-15T17:43:36.021145Z\",\"projectType\":\"TEXT_TO_UI_PRO\",\"thumbnailScreenshot\":{\"name\":\"projects/11087553457034753859/files/037460f2579c470b9ed54c22e138baac\",\"downloadUrl\":\"https://lh3.googleusercontent.com/aida/AP1WRLt_dNlDOmEYAsdh8226eKWeYLd_MI2Jd10kCqUjnNqYZw9f8DuhGEVf-3C_c32V1in0PyS_vM7f-c2XNdDH-JoznvG_5JQGwRdbPNt8dt_JH9aYc1eHC2iQK-oAE1kqovlVLHgcrju-eCuVMyZLW-mQxpmjfAmzA0HCXEjQBdizD2FQSfyErKPtLT_v7MlqVNM7PLkRK_iM6Ip-uA4-5FKz4Qjs7RXuveL8_zHFCDIGB5D5c139lwVBuys\"},\"origin\":\"STITCH\",\"deviceType\":\"DESKTOP\",\"designTheme\":{\"colorMode\":\"DARK\",\"font\":\"SPACE_GROTESK\",\"customColor\":\"#ff007f\",\"headlineFont\":\"SPACE_GROTESK\",\"bodyFont\":\"ARIMO\",\"labelFont\":\"COURIER_PRIME\",\"namedColors\":{\"accent-purple\":\"#8B00FF\",\"accent-sunset\":\"#FFD43F\",\"background\":\"#1f0e13\",\"bg-alt\":\"#0C0914\",\"bg-deep\":\"#0B0C10\",\"error\":\"#ffb4ab\",\"error_container\":\"#93000a\",\"inverse_on_surface\":\"#3f2b30\",\"inverse_primary\":\"#ba005b\",\"inverse_surface\":\"#fbdae1\",\"on_background\":\"#fbdae1\",\"on_error\":\"#690005\",\"on_error_container\":\"#ffdad6\",\"on_primary\":\"#65002e\",\"on_primary_container\":\"#590028\",\"on_primary_fixed\":\"#3f001a\",\"on_primary_fixed_variant\":\"#8f0044\",\"on_secondary\":\"#003737\",\"on_secondary_container\":\"#007070\",\"on_secondary_fixed\":\"#002020\",\"on_secondary_fixed_variant\":\"#004f4f\",\"on_surface\":\"#fbdae1\",\"on_surface_variant\":\"#e5bcc5\",\"on_tertiary\":\"#003908\",\"on_tertiary_container\":\"#003206\",\"on_tertiary_fixed\":\"#002203\",\"on_tertiary_fixed_variant\":\"#00530f\",\"outline\":\"#ac878f\",\"outline_variant\":\"#5c3f46\",\"primary\":\"#ffb1c4\",\"primary_container\":\"#ff4a8d\",\"primary_fixed\":\"#ffd9e1\",\"primary_fixed_dim\":\"#ffb1c4\",\"secondary\":\"#ffffff\",\"secondary_container\":\"#00fbfb\",\"secondary_fixed\":\"#00fbfb\",\"secondary_fixed_dim\":\"#00dddd\",\"surface\":\"#1f0e13\",\"surface_bright\":\"#493338\",\"surface_container\":\"#2d1a1f\",\"surface_container_high\":\"#382529\",\"surface_container_highest\":\"#442f34\",\"surface_container_low\":\"#28161b\",\"surface_container_lowest\":\"#19090e\",\"surface_dim\":\"#1f0e13\",\"surface_tint\":\"#ffb1c4\",\"surface_variant\":\"#442f34\",\"tertiary\":\"#63e063\",\"tertiary_container\":\"#21a732\",\"tertiary_fixed\":\"#7ffd7c\",\"tertiary_fixed_dim\":\"#63e063\",\"text-glow\":\"#F4F4F9\",\"text-muted\":\"#757B96\"},\"designMd\":\"---\\nname: Ultrawave\\ncolors:\\n  surface: '#1f0e13'\\n  surface-dim: '#1f0e13'\\n  surface-bright: '#493338'\\n  surface-container-lowest: '#19090e'\\n  surface-container-low: '#28161b'\\n  surface-container: '#2d1a1f'\\n  surface-container-high: '#382529'\\n  surface-container-highest: '#442f34'\\n  on-surface: '#fbdae1'\\n  on-surface-variant: '#e5bcc5'\\n  inverse-surface: '#fbdae1'\\n  inverse-on-surface: '#3f2b30'\\n  outline: '#ac878f'\\n  outline-variant: '#5c3f46'\\n  surface-tint: '#ffb1c4'\\n  primary: '#ffb1c4'\\n  on-primary: '#65002e'\\n  primary-container: '#ff4a8d'\\n  on-primary-container: '#590028'\\n  inverse-primary: '#ba005b'\\n  secondary: '#ffffff'\\n  on-secondary: '#003737'\\n  secondary-container: '#00fbfb'\\n  on-secondary-container: '#007070'\\n  tertiary: '#63e063'\\n  on-tertiary: '#003908'\\n  tertiary-container: '#21a732'\\n  on-tertiary-container: '#003206'\\n  error: '#ffb4ab'\\n  on-error: '#690005'\\n  error-container: '#93000a'\\n  on-error-container: '#ffdad6'\\n  primary-fixed: '#ffd9e1'\\n  primary-fixed-dim: '#ffb1c4'\\n  on-primary-fixed: '#3f001a'\\n  on-primary-fixed-variant: '#8f0044'\\n  secondary-fixed: '#00fbfb'\\n  secondary-fixed-dim: '#00dddd'\\n  on-secondary-fixed: '#002020'\\n  on-secondary-fixed-variant: '#004f4f'\\n  tertiary-fixed: '#7ffd7c'\\n  tertiary-fixed-dim: '#63e063'\\n  on-tertiary-fixed: '#002203'\\n  on-tertiary-fixed-variant: '#00530f'\\n  background: '#1f0e13'\\n  on-background: '#fbdae1'\\n  surface-variant: '#442f34'\\n  accent-purple: '#8B00FF'\\n  accent-sunset: '#FFD43F'\\n  bg-deep: '#0B0C10'\\n  bg-alt: '#0C0914'\\n  text-glow: '#F4F4F9'\\n  text-muted: '#757B96'\\ntypography:\\n  headline-xl:\\n    fontFamily: spaceGrotesk\\n    fontSize: 64px\\n    fontWeight: '700'\\n    lineHeight: '1.1'\\n    letterSpacing: -0.02em\\n  headline-lg:\\n    fontFamily: spaceGrotesk\\n    fontSize: 40px\\n    fontWeight: '700'\\n    lineHeight: '1.2'\\n  headline-lg-mobile:\\n    fontFamily: spaceGrotesk\\n    fontSize: 32px\\n    fontWeight: '700'\\n    lineHeight: '1.2'\\n  headline-md:\\n    fontFamily: spaceGrotesk\\n    fontSize: 24px\\n    fontWeight: '600'\\n    lineHeight: '1.3'\\n  body-lg:\\n    fontFamily: arimo\\n    fontSize: 18px\\n    fontWeight: '400'\\n    lineHeight: '1.6'\\n  body-md:\\n    fontFamily: arimo\\n    fontSize: 16px\\n    fontWeight: '400'\\n    lineHeight: '1.6'\\n  body-sm:\\n    fontFamily: arimo\\n    fontSize: 14px\\n    fontWeight: '400'\\n    lineHeight: '1.4'\\n  label-md:\\n    fontFamily: courierPrime\\n    fontSize: 14px\\n    fontWeight: '400'\\n    lineHeight: '1.2'\\n    letterSpacing: 0.05em\\n  label-sm:\\n    fontFamily: courierPrime\\n    fontSize: 12px\\n    fontWeight: '400'\\n    lineHeight: '1.2'\\n    letterSpacing: 0.05em\\nspacing:\\n  xs: 4px\\n  sm: 8px\\n  md: 16px\\n  lg: 24px\\n  xl: 32px\\n  xxl: 64px\\n  grid-gutter: 16px\\n  grid-margin: 24px\\n---\\n\\nUltrawave Design System\\nAesthetic mix: Synthwave core reforzado con matices Vaporwave (pixel‑art, glitch, estatuas clásicas) y Retrowave (electric purple, atmósfera arcade cinemática). Dirigido a la web app de gestión de gastos personales “Vibe to Live”.\\n1. Visual Tokens\\n1.1 Paleta de Colores\\nTokenHexUso principalPrimary (Magenta‑Neón)#FF007FBotones de acción, acentos claveSecondary (Cian Eléctrico)#00FFFFEstados hover / interactivosAccent‑Purple (Electric Purple)#8B00FFDestacados en gráficos, badge‑XPAccent‑Sunset (Yellow Sunset)#FFD43FAlertas, barras de progresoBackground Deep#0B0C10Fondo global darkBackground Alt (Space Black)#0C0914Paneles profundos / sidebarText‑Base (White Glow)#F4F4F9Texto primarioText‑Muted (Purple‑Cyber)#757B96Texto secundario / deshabilitado\\nRegla de contraste: Luminosidad mínima WCAG AA para textos (#F4F4F9 sobre cualquiera de los fondos).\\n1.2 Tipografía\\nTipoFuenteNotasBody'MS Sans Serif', sans-serifToque pixel‑retro legibleDisplay / Headings'Neon Tubes', 'Orbitron', 'Impact', sans-serifEstilo neón vintageMonospace UI'Courier New', monospaceInputs, tablas de gastosFont‑smoothingantialiased excepto en vapor blocks (usar none para efecto píxel)\\n1.3 Spacing & Grid\\nSistema base 8 px. Potencias de 2 para bloques grandes (xs 4 px → xxl 128 px). Incluye perspective grid SVG de fondo (opacity 4 %) en secciones hero y dashboard.\\n2. Surface Styles & Effects\\n\\n\\nGlow: box-shadow: 0 0 15px currentColor en estados hover/active.\\n\\nHover Neon‑Glow: transicionar sombra cian→magenta en 0.25s.\\n\\nGlitch: keyframes de desplazamiento x/clip‑path en textos H1.\\n\\nCRT Scanlines: pseudo‑elemento ::before con gradiente repeating‑linear y opacity 0.05.\\n\\nAudio‑Reactive (Sim.): añadir clase .beat toggle JS → escala‑y al ritmo (transform: scaleY(1.05)).\\n\\nStatue Hero: PNG 3D de escultura clásica con filtro duotone cian/magenta al 80 % opacity detrás del título.\\n3. Component Guidelines\\n3.1 Buttons\\n\\n\\nBase: borde 2px solid currentColor, fondo transparente.\\n\\nVariantes:\\n\\n\\n.btn-neon ➜ color Secondary, glow cian.\\n\\n.btn-danger ➜ color Primary, glow magenta.\\n\\nHover: Rellenar con color y aplicar glow dual (Primary+Secondary).\\n3.2 Cards\\n\\n\\nFondo: rgba(12, 9, 20, 0.8) con blur backdrop-filter: blur(10px).\\n\\nBorde: gradiente diagonal Accent‑Purple → Secondary.\\n\\nHover: elevación translateY(-4px) + glow suave.\\n3.3 Inputs\\n\\n\\nFondo: #050508.\\n\\nBorde: 1px solid Text‑Muted; en focus cambia a Secondary y glow.\\n3.4 Gamification Widgets\\n\\n\\nXP Bar: height: 8px, fondo Accent‑Purple desactivado; progreso Sunset Yellow animado.\\n\\nBadges: SVG retro‑pixel con glow individual, sombra Accent‑Purple.\\n4. Motion & Transitions\\n\\n\\nDuración estándar: 0.3s cubic-bezier(0.25,0.46,0.45,0.94).\\n\\nEasing más largo (0.6s) para efectos glitch.\\n\\nDesactivar prefers-reduced-motion: proveer versión estática sin glitch/neon‑pulse.\\n5. Accessibility Notes\\n\\n\\nContraste mínimo 4.5:1 para texto clave.\\n\\nTodos los efectos glow deben respetar accesibilidad (glow no sustituye color sólido).\\n\\nNavegación teclado: foco visible (outline: 2px dashed Accent‑Purple).\\n6. Do & Don’t\\n\\n\\nDO mantener máximo 2 colores neón simultáneos visibles.\\n\\nDO usar glow en interacciones importantes y feedback gamificado.\\n\\nDON’T saturar el fondo con más de un elemento decorativo animado por pantalla.\\n\\nDON’T aplicar glitch a textos menores de 24 px (legibilidad).\\n7. Implementation Snippet (Tailwind Ex.)\\n/* Neon-glow reusable class */\\n.neon-glow {\\n  box-shadow: 0 0 15px var(--tw-ring-color);\\n  transition: box-shadow 0.25s ease;\\n}\\n.neon-glow:hover {\\n  box-shadow: 0 0 25px var(--tw-ring-color),\\n              0 0 45px var(--tw-ring-color);\\n}\",\"colorVariant\":\"FIDELITY\",\"overridePrimaryColor\":\"#ff007f\",\"overrideSecondaryColor\":\"#00ffff\",\"spacingScale\":2,\"typography\":{\"body-lg\":{\"fontFamily\":\"arimo\",\"fontSize\":\"18px\",\"fontWeight\":\"400\",\"lineHeight\":\"1.6\"},\"body-md\":{\"fontFamily\":\"arimo\",\"fontSize\":\"16px\",\"fontWeight\":\"400\",\"lineHeight\":\"1.6\"},\"body-sm\":{\"fontFamily\":\"arimo\",\"fontSize\":\"14px\",\"fontWeight\":\"400\",\"lineHeight\":\"1.4\"},\"headline-lg\":{\"fontFamily\":\"spaceGrotesk\",\"fontSize\":\"40px\",\"fontWeight\":\"700\",\"lineHeight\":\"1.2\"},\"headline-lg-mobile\":{\"fontFamily\":\"spaceGrotesk\",\"fontSize\":\"32px\",\"fontWeight\":\"700\",\"lineHeight\":\"1.2\"},\"headline-md\":{\"fontFamily\":\"spaceGrotesk\",\"fontSize\":\"24px\",\"fontWeight\":\"600\",\"lineHeight\":\"1.3\"},\"headline-xl\":{\"fontFamily\":\"spaceGrotesk\",\"fontSize\":\"64px\",\"fontWeight\":\"700\",\"lineHeight\":\"1.1\",\"letterSpacing\":\"-0.02em\"},\"label-md\":{\"fontFamily\":\"courierPrime\",\"fontSize\":\"14px\",\"fontWeight\":\"400\",\"lineHeight\":\"1.2\",\"letterSpacing\":\"0.05em\"},\"label-sm\":{\"fontFamily\":\"courierPrime\",\"fontSize\":\"12px\",\"fontWeight\":\"400\",\"lineHeight\":\"1.2\",\"letterSpacing\":\"0.05em\"}},\"spacing\":{\"grid-gutter\":\"16px\",\"grid-margin\":\"24px\",\"lg\":\"24px\",\"md\":\"16px\",\"sm\":\"8px\",\"xl\":\"32px\",\"xs\":\"4px\",\"xxl\":\"64px\"},\"headlineFontFamily\":\"Space Grotesk\",\"bodyFontFamily\":\"Arimo\",\"labelFontFamily\":\"Courier Prime\"},\"screenInstances\":[{\"id\":\"01ba8faa9bee4252890114b1d098f966\",\"sourceScreen\":\"projects/11087553457034753859/screens/01ba8faa9bee4252890114b1d098f966\",\"x\":6955,\"width\":1280,\"height\":1024,\"hidden\":true},{\"id\":\"01cd19dcb08d405da5087a161a204511\",\"sourceScreen\":\"projects/11087553457034753859/screens/01cd19dcb08d405da5087a161a204511\",\"x\":8299,\"width\":1280,\"height\":1024,\"hidden\":true},{\"id\":\"0c59707d2a4e4f47bd45d3da55a563c9\",\"sourceScreen\":\"projects/11087553457034753859/screens/0c59707d2a4e4f47bd45d3da55a563c9\",\"x\":13218,\"y\":1458,\"width\":1280,\"height\":1024,\"hidden\":true},{\"id\":\"0dce4a03e6de44f3b1dd5c5dfd09a54c\",\"sourceScreen\":\"projects/11087553457034753859/screens/0dce4a03e6de44f3b1dd5c5dfd09a54c\",\"x\":6981,\"y\":1451,\"width\":1280,\"height\":1024,\"hidden\":true},{\"id\":\"23343507f288448f807a05011ff8a57f\",\"sourceScreen\":\"projects/11087553457034753859/screens/23343507f288448f807a05011ff8a57f\",\"x\":3212,\"width\":512,\"height\":410,\"hidden\":true},{\"id\":\"24ee8a5b-3db0-41fe-8d21-687d7001ba1e\",\"sourceScreen\":\"projects/11087553457034753859/screens/11733537406343716325\",\"width\":780,\"height\":1768,\"type\":\"SCREEN_INSTANCE\"},{\"id\":\"38579234b01744c286d0a543f2197345\",\"sourceScreen\":\"projects/11087553457034753859/screens/38579234b01744c286d0a543f2197345\",\"x\":8779,\"y\":1451,\"width\":1280,\"height\":1024,\"hidden\":true},{\"id\":\"38579234b01744c286d0a543f2197345-1784092700705\",\"sourceScreen\":\"projects/11087553457034753859/screens/11325834955541918705\",\"x\":1898,\"y\":8,\"width\":1280,\"height\":1024,\"label\":\"Vibe to Live - Dashboard\",\"isFavourite\":true},{\"id\":\"38579234b01744c286d0a543f2197345-1784092700705-1784099307760\",\"sourceScreen\":\"projects/11087553457034753859/screens/7649936892066014243\",\"x\":3266,\"width\":1280,\"height\":1024,\"label\":\"Vibe to Live - Dashboard\",\"hidden\":true,\"isFavourite\":true},{\"id\":\"4025bf42505f4c9ab67613aa137494e9\",\"sourceScreen\":\"projects/11087553457034753859/screens/4025bf42505f4c9ab67613aa137494e9\",\"x\":8325,\"y\":1451,\"width\":390,\"height\":390,\"hidden\":true},{\"id\":\"44489303fb5d4348b90ab699fefef8b7\",\"sourceScreen\":\"projects/11087553457034753859/screens/44489303fb5d4348b90ab699fefef8b7\",\"x\":15019,\"width\":1280,\"height\":1024,\"hidden\":true},{\"id\":\"49df6287edf041e4a223b92cd872ed91\",\"sourceScreen\":\"projects/11087553457034753859/screens/49df6287edf041e4a223b92cd872ed91\",\"x\":6187,\"y\":1087,\"width\":512,\"height\":286,\"hidden\":true},{\"id\":\"57c1cc204f0044e39ed029920f46f9af\",\"sourceScreen\":\"projects/11087553457034753859/screens/d5d4e6934149487a8405639d5392241b\",\"x\":3813,\"width\":390,\"height\":975,\"hidden\":true},{\"id\":\"8720895621e840a691a43d288542a23d\",\"sourceScreen\":\"projects/11087553457034753859/screens/8720895621e840a691a43d288542a23d\",\"x\":10987,\"width\":1280,\"height\":1024,\"hidden\":true},{\"id\":\"872b33431fe949f6b56289183a274afa\",\"sourceScreen\":\"projects/11087553457034753859/screens/872b33431fe949f6b56289183a274afa\",\"x\":9643,\"width\":1280,\"height\":1024,\"hidden\":true},{\"id\":\"9329494ca2414b6db7593c1a54d89f99\",\"sourceScreen\":\"projects/11087553457034753859/screens/9329494ca2414b6db7593c1a54d89f99\",\"x\":12642,\"y\":1458,\"width\":512,\"height\":763,\"hidden\":true},{\"id\":\"9b9ceda85d234e3e9afa5c92ac891b17\",\"sourceScreen\":\"projects/11087553457034753859/screens/9b9ceda85d234e3e9afa5c92ac891b17\",\"x\":5611,\"width\":1280,\"height\":1024,\"hidden\":true},{\"id\":\"a4678ef988f04a6482c4dc4aa024ad1b\",\"sourceScreen\":\"projects/11087553457034753859/screens/a4678ef988f04a6482c4dc4aa024ad1b\",\"x\":13675,\"width\":1280,\"height\":1024,\"hidden\":true},{\"id\":\"a9858d94f8e04347a563b18690e3c8e9\",\"sourceScreen\":\"projects/11087553457034753859/screens/a9858d94f8e04347a563b18690e3c8e9\",\"x\":16817,\"width\":390,\"height\":924,\"hidden\":true},{\"id\":\"ac8ee6076b0e4f91911f0cd81f1579fe\",\"sourceScreen\":\"projects/11087553457034753859/screens/ac8ee6076b0e4f91911f0cd81f1579fe\",\"y\":2367,\"width\":1280,\"height\":1024,\"hidden\":true},{\"id\":\"assets_f3984b45cd3048c2b4a4ace5751d12da\",\"x\":844,\"width\":960,\"height\":540,\"sourceAsset\":\"assets/f3984b45cd3048c2b4a4ace5751d12da\",\"type\":\"DESIGN_SYSTEM_INSTANCE\"},{\"id\":\"b25f2aea196d411fb978ed6afd7f3049\",\"sourceScreen\":\"projects/11087553457034753859/screens/b25f2aea196d411fb978ed6afd7f3049\",\"x\":16363,\"width\":390,\"height\":884,\"hidden\":true,\"isFavourite\":true},{\"id\":\"b6845b5feec84634995d4276fda9f3b6\",\"sourceScreen\":\"projects/11087553457034753859/screens/b6845b5feec84634995d4276fda9f3b6\",\"x\":14562,\"y\":1458,\"width\":1280,\"height\":1024,\"hidden\":true},{\"id\":\"c09867b8d3e342ef81314fd3e71d4db2\",\"sourceScreen\":\"projects/11087553457034753859/screens/c09867b8d3e342ef81314fd3e71d4db2\",\"x\":4267,\"width\":1280,\"height\":1024,\"hidden\":true,\"isFavourite\":true},{\"id\":\"c09867b8d3e342ef81314fd3e71d4db2-1784091864274\",\"sourceScreen\":\"projects/11087553457034753859/screens/13722419590372381631\",\"x\":4267,\"y\":1087,\"width\":1280,\"height\":1024,\"hidden\":true,\"isFavourite\":true},{\"id\":\"c5ca748e6a0b4382ac4b9fd414724feb\",\"sourceScreen\":\"projects/11087553457034753859/screens/c5ca748e6a0b4382ac4b9fd414724feb\",\"x\":12066,\"y\":1458,\"width\":512,\"height\":286,\"hidden\":true},{\"id\":\"d6000da8f8964521ab2a124093dc5e4b\",\"sourceScreen\":\"projects/11087553457034753859/screens/d6000da8f8964521ab2a124093dc5e4b\",\"x\":11490,\"y\":1458,\"width\":512,\"height\":286,\"hidden\":true},{\"id\":\"dfee97ad0c764eaa995f025c12d503c8\",\"sourceScreen\":\"projects/11087553457034753859/screens/dfee97ad0c764eaa995f025c12d503c8\",\"x\":12331,\"width\":1280,\"height\":1077,\"hidden\":true},{\"id\":\"e88c43700b5a4ba28b7ce20856c53cbb\",\"sourceScreen\":\"projects/11087553457034753859/screens/e88c43700b5a4ba28b7ce20856c53cbb\",\"x\":5611,\"y\":1087,\"width\":512,\"height\":286,\"hidden\":true},{\"id\":\"fe17fdbf3ef049158bbf3cb9877f2a7a\",\"sourceScreen\":\"projects/11087553457034753859/screens/56637c5714104f88a53e14fbb73ab7b7\",\"x\":1868,\"width\":1280,\"height\":1024,\"hidden\":true}],\"metadata\":{\"userRole\":\"OWNER\"}}",
+        "type": "text"
+      }
+    ],
+    "structuredContent": {
+      "createTime": "2026-07-15T04:22:17.564275Z",
+      "designTheme": {
+        "bodyFont": "ARIMO",
+        "bodyFontFamily": "Arimo",
+        "colorMode": "DARK",
+        "colorVariant": "FIDELITY",
+        "customColor": "#ff007f",
+        "designMd": "---\nname: Ultrawave\ncolors:\n  surface: '#1f0e13'\n  surface-dim: '#1f0e13'\n  surface-bright: '#493338'\n  surface-container-lowest: '#19090e'\n  surface-container-low: '#28161b'\n  surface-container: '#2d1a1f'\n  surface-container-high: '#382529'\n  surface-container-highest: '#442f34'\n  on-surface: '#fbdae1'\n  on-surface-variant: '#e5bcc5'\n  inverse-surface: '#fbdae1'\n  inverse-on-surface: '#3f2b30'\n  outline: '#ac878f'\n  outline-variant: '#5c3f46'\n  surface-tint: '#ffb1c4'\n  primary: '#ffb1c4'\n  on-primary: '#65002e'\n  primary-container: '#ff4a8d'\n  on-primary-container: '#590028'\n  inverse-primary: '#ba005b'\n  secondary: '#ffffff'\n  on-secondary: '#003737'\n  secondary-container: '#00fbfb'\n  on-secondary-container: '#007070'\n  tertiary: '#63e063'\n  on-tertiary: '#003908'\n  tertiary-container: '#21a732'\n  on-tertiary-container: '#003206'\n  error: '#ffb4ab'\n  on-error: '#690005'\n  error-container: '#93000a'\n  on-error-container: '#ffdad6'\n  primary-fixed: '#ffd9e1'\n  primary-fixed-dim: '#ffb1c4'\n  on-primary-fixed: '#3f001a'\n  on-primary-fixed-variant: '#8f0044'\n  secondary-fixed: '#00fbfb'\n  secondary-fixed-dim: '#00dddd'\n  on-secondary-fixed: '#002020'\n  on-secondary-fixed-variant: '#004f4f'\n  tertiary-fixed: '#7ffd7c'\n  tertiary-fixed-dim: '#63e063'\n  on-tertiary-fixed: '#002203'\n  on-tertiary-fixed-variant: '#00530f'\n  background: '#1f0e13'\n  on-background: '#fbdae1'\n  surface-variant: '#442f34'\n  accent-purple: '#8B00FF'\n  accent-sunset: '#FFD43F'\n  bg-deep: '#0B0C10'\n  bg-alt: '#0C0914'\n  text-glow: '#F4F4F9'\n  text-muted: '#757B96'\ntypography:\n  headline-xl:\n    fontFamily: spaceGrotesk\n    fontSize: 64px\n    fontWeight: '700'\n    lineHeight: '1.1'\n    letterSpacing: -0.02em\n  headline-lg:\n    fontFamily: spaceGrotesk\n    fontSize: 40px\n    fontWeight: '700'\n    lineHeight: '1.2'\n  headline-lg-mobile:\n    fontFamily: spaceGrotesk\n    fontSize: 32px\n    fontWeight: '700'\n    lineHeight: '1.2'\n  headline-md:\n    fontFamily: spaceGrotesk\n    fontSize: 24px\n    fontWeight: '600'\n    lineHeight: '1.3'\n  body-lg:\n    fontFamily: arimo\n    fontSize: 18px\n    fontWeight: '400'\n    lineHeight: '1.6'\n  body-md:\n    fontFamily: arimo\n    fontSize: 16px\n    fontWeight: '400'\n    lineHeight: '1.6'\n  body-sm:\n    fontFamily: arimo\n    fontSize: 14px\n    fontWeight: '400'\n    lineHeight: '1.4'\n  label-md:\n    fontFamily: courierPrime\n    fontSize: 14px\n    fontWeight: '400'\n    lineHeight: '1.2'\n    letterSpacing: 0.05em\n  label-sm:\n    fontFamily: courierPrime\n    fontSize: 12px\n    fontWeight: '400'\n    lineHeight: '1.2'\n    letterSpacing: 0.05em\nspacing:\n  xs: 4px\n  sm: 8px\n  md: 16px\n  lg: 24px\n  xl: 32px\n  xxl: 64px\n  grid-gutter: 16px\n  grid-margin: 24px\n---\n\nUltrawave Design System\nAesthetic mix: Synthwave core reforzado con matices Vaporwave (pixel‑art, glitch, estatuas clásicas) y Retrowave (electric purple, atmósfera arcade cinemática). Dirigido a la web app de gestión de gastos personales “Vibe to Live”.\n1. Visual Tokens\n1.1 Paleta de Colores\nTokenHexUso principalPrimary (Magenta‑Neón)#FF007FBotones de acción, acentos claveSecondary (Cian Eléctrico)#00FFFFEstados hover / interactivosAccent‑Purple (Electric Purple)#8B00FFDestacados en gráficos, badge‑XPAccent‑Sunset (Yellow Sunset)#FFD43FAlertas, barras de progresoBackground Deep#0B0C10Fondo global darkBackground Alt (Space Black)#0C0914Paneles profundos / sidebarText‑Base (White Glow)#F4F4F9Texto primarioText‑Muted (Purple‑Cyber)#757B96Texto secundario / deshabilitado\nRegla de contraste: Luminosidad mínima WCAG AA para textos (#F4F4F9 sobre cualquiera de los fondos).\n1.2 Tipografía\nTipoFuenteNotasBody'MS Sans Serif', sans-serifToque pixel‑retro legibleDisplay / Headings'Neon Tubes', 'Orbitron', 'Impact', sans-serifEstilo neón vintageMonospace UI'Courier New', monospaceInputs, tablas de gastosFont‑smoothingantialiased excepto en vapor blocks (usar none para efecto píxel)\n1.3 Spacing & Grid\nSistema base 8 px. Potencias de 2 para bloques grandes (xs 4 px → xxl 128 px). Incluye perspective grid SVG de fondo (opacity 4 %) en secciones hero y dashboard.\n2. Surface Styles & Effects\n\n\nGlow: box-shadow: 0 0 15px currentColor en estados hover/active.\n\nHover Neon‑Glow: transicionar sombra cian→magenta en 0.25s.\n\nGlitch: keyframes de desplazamiento x/clip‑path en textos H1.\n\nCRT Scanlines: pseudo‑elemento ::before con gradiente repeating‑linear y opacity 0.05.\n\nAudio‑Reactive (Sim.): añadir clase .beat toggle JS → escala‑y al ritmo (transform: scaleY(1.05)).\n\nStatue Hero: PNG 3D de escultura clásica con filtro duotone cian/magenta al 80 % opacity detrás del título.\n3. Component Guidelines\n3.1 Buttons\n\n\nBase: borde 2px solid currentColor, fondo transparente.\n\nVariantes:\n\n\n.btn-neon ➜ color Secondary, glow cian.\n\n.btn-danger ➜ color Primary, glow magenta.\n\nHover: Rellenar con color y aplicar glow dual (Primary+Secondary).\n3.2 Cards\n\n\nFondo: rgba(12, 9, 20, 0.8) con blur backdrop-filter: blur(10px).\n\nBorde: gradiente diagonal Accent‑Purple → Secondary.\n\nHover: elevación translateY(-4px) + glow suave.\n3.3 Inputs\n\n\nFondo: #050508.\n\nBorde: 1px solid Text‑Muted; en focus cambia a Secondary y glow.\n3.4 Gamification Widgets\n\n\nXP Bar: height: 8px, fondo Accent‑Purple desactivado; progreso Sunset Yellow animado.\n\nBadges: SVG retro‑pixel con glow individual, sombra Accent‑Purple.\n4. Motion & Transitions\n\n\nDuración estándar: 0.3s cubic-bezier(0.25,0.46,0.45,0.94).\n\nEasing más largo (0.6s) para efectos glitch.\n\nDesactivar prefers-reduced-motion: proveer versión estática sin glitch/neon‑pulse.\n5. Accessibility Notes\n\n\nContraste mínimo 4.5:1 para texto clave.\n\nTodos los efectos glow deben respetar accesibilidad (glow no sustituye color sólido).\n\nNavegación teclado: foco visible (outline: 2px dashed Accent‑Purple).\n6. Do & Don’t\n\n\nDO mantener máximo 2 colores neón simultáneos visibles.\n\nDO usar glow en interacciones importantes y feedback gamificado.\n\nDON’T saturar el fondo con más de un elemento decorativo animado por pantalla.\n\nDON’T aplicar glitch a textos menores de 24 px (legibilidad).\n7. Implementation Snippet (Tailwind Ex.)\n/* Neon-glow reusable class */\n.neon-glow {\n  box-shadow: 0 0 15px var(--tw-ring-color);\n  transition: box-shadow 0.25s ease;\n}\n.neon-glow:hover {\n  box-shadow: 0 0 25px var(--tw-ring-color),\n              0 0 45px var(--tw-ring-color);\n}",
+        "font": "SPACE_GROTESK",
+        "headlineFont": "SPACE_GROTESK",
+        "headlineFontFamily": "Space Grotesk",
+        "labelFont": "COURIER_PRIME",
+        "labelFontFamily": "Courier Prime",
+        "namedColors": {
+          "accent-purple": "#8B00FF",
+          "accent-sunset": "#FFD43F",
+          "background": "#1f0e13",
+          "bg-alt": "#0C0914",
+          "bg-deep": "#0B0C10",
+          "error": "#ffb4ab",
+          "error_container": "#93000a",
+          "inverse_on_surface": "#3f2b30",
+          "inverse_primary": "#ba005b",
+          "inverse_surface": "#fbdae1",
+          "on_background": "#fbdae1",
+          "on_error": "#690005",
+          "on_error_container": "#ffdad6",
+          "on_primary": "#65002e",
+          "on_primary_container": "#590028",
+          "on_primary_fixed": "#3f001a",
+          "on_primary_fixed_variant": "#8f0044",
+          "on_secondary": "#003737",
+          "on_secondary_container": "#007070",
+          "on_secondary_fixed": "#002020",
+          "on_secondary_fixed_variant": "#004f4f",
+          "on_surface": "#fbdae1",
+          "on_surface_variant": "#e5bcc5",
+          "on_tertiary": "#003908",
+          "on_tertiary_container": "#003206",
+          "on_tertiary_fixed": "#002203",
+          "on_tertiary_fixed_variant": "#00530f",
+          "outline": "#ac878f",
+          "outline_variant": "#5c3f46",
+          "primary": "#ffb1c4",
+          "primary_container": "#ff4a8d",
+          "primary_fixed": "#ffd9e1",
+          "primary_fixed_dim": "#ffb1c4",
+          "secondary": "#ffffff",
+          "secondary_container": "#00fbfb",
+          "secondary_fixed": "#00fbfb",
+          "secondary_fixed_dim": "#00dddd",
+          "surface": "#1f0e13",
+          "surface_bright": "#493338",
+          "surface_container": "#2d1a1f",
+          "surface_container_high": "#382529",
+          "surface_container_highest": "#442f34",
+          "surface_container_low": "#28161b",
+          "surface_container_lowest": "#19090e",
+          "surface_dim": "#1f0e13",
+          "surface_tint": "#ffb1c4",
+          "surface_variant": "#442f34",
+          "tertiary": "#63e063",
+          "tertiary_container": "#21a732",
+          "tertiary_fixed": "#7ffd7c",
+          "tertiary_fixed_dim": "#63e063",
+          "text-glow": "#F4F4F9",
+          "text-muted": "#757B96"
+        },
+        "overridePrimaryColor": "#ff007f",
+        "overrideSecondaryColor": "#00ffff",
+        "spacing": {
+          "grid-gutter": "16px",
+          "grid-margin": "24px",
+          "lg": "24px",
+          "md": "16px",
+          "sm": "8px",
+          "xl": "32px",
+          "xs": "4px",
+          "xxl": "64px"
+        },
+        "spacingScale": 2,
+        "typography": {
+          "body-lg": {
+            "fontFamily": "arimo",
+            "fontSize": "18px",
+            "fontWeight": "400",
+            "lineHeight": "1.6"
+          },
+          "body-md": {
+            "fontFamily": "arimo",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "1.6"
+          },
+          "body-sm": {
+            "fontFamily": "arimo",
+            "fontSize": "14px",
+            "fontWeight": "400",
+            "lineHeight": "1.4"
+          },
+          "headline-lg": {
+            "fontFamily": "spaceGrotesk",
+            "fontSize": "40px",
+            "fontWeight": "700",
+            "lineHeight": "1.2"
+          },
+          "headline-lg-mobile": {
+            "fontFamily": "spaceGrotesk",
+            "fontSize": "32px",
+            "fontWeight": "700",
+            "lineHeight": "1.2"
+          },
+          "headline-md": {
+            "fontFamily": "spaceGrotesk",
+            "fontSize": "24px",
+            "fontWeight": "600",
+            "lineHeight": "1.3"
+          },
+          "headline-xl": {
+            "fontFamily": "spaceGrotesk",
+            "fontSize": "64px",
+            "fontWeight": "700",
+            "letterSpacing": "-0.02em",
+            "lineHeight": "1.1"
+          },
+          "label-md": {
+            "fontFamily": "courierPrime",
+            "fontSize": "14px",
+            "fontWeight": "400",
+            "letterSpacing": "0.05em",
+            "lineHeight": "1.2"
+          },
+          "label-sm": {
+            "fontFamily": "courierPrime",
+            "fontSize": "12px",
+            "fontWeight": "400",
+            "letterSpacing": "0.05em",
+            "lineHeight": "1.2"
+          }
+        }
+      },
+      "deviceType": "DESKTOP",
+      "metadata": {
+        "userRole": "OWNER"
+      },
+      "name": "projects/11087553457034753859",
+      "origin": "STITCH",
+      "projectType": "TEXT_TO_UI_PRO",
+      "screenInstances": [
+        {
+          "height": 1024,
+          "hidden": true,
+          "id": "01ba8faa9bee4252890114b1d098f966",
+          "sourceScreen": "projects/11087553457034753859/screens/01ba8faa9bee4252890114b1d098f966",
+          "width": 1280,
+          "x": 6955
+        },
+        {
+          "height": 1024,
+          "hidden": true,
+          "id": "01cd19dcb08d405da5087a161a204511",
+          "sourceScreen": "projects/11087553457034753859/screens/01cd19dcb08d405da5087a161a204511",
+          "width": 1280,
+          "x": 8299
+        },
+        {
+          "height": 1024,
+          "hidden": true,
+          "id": "0c59707d2a4e4f47bd45d3da55a563c9",
+          "sourceScreen": "projects/11087553457034753859/screens/0c59707d2a4e4f47bd45d3da55a563c9",
+          "width": 1280,
+          "x": 13218,
+          "y": 1458
+        },
+        {
+          "height": 1024,
+          "hidden": true,
+          "id": "0dce4a03e6de44f3b1dd5c5dfd09a54c",
+          "sourceScreen": "projects/11087553457034753859/screens/0dce4a03e6de44f3b1dd5c5dfd09a54c",
+          "width": 1280,
+          "x": 6981,
+          "y": 1451
+        },
+        {
+          "height": 410,
+          "hidden": true,
+          "id": "23343507f288448f807a05011ff8a57f",
+          "sourceScreen": "projects/11087553457034753859/screens/23343507f288448f807a05011ff8a57f",
+          "width": 512,
+          "x": 3212
+        },
+        {
+          "height": 1768,
+          "id": "24ee8a5b-3db0-41fe-8d21-687d7001ba1e",
+          "sourceScreen": "projects/11087553457034753859/screens/11733537406343716325",
+          "type": "SCREEN_INSTANCE",
+          "width": 780
+        },
+        {
+          "height": 1024,
+          "hidden": true,
+          "id": "38579234b01744c286d0a543f2197345",
+          "sourceScreen": "projects/11087553457034753859/screens/38579234b01744c286d0a543f2197345",
+          "width": 1280,
+          "x": 8779,
+          "y": 1451
+        },
+        {
+          "height": 1024,
+          "id": "38579234b01744c286d0a543f2197345-1784092700705",
+          "isFavourite": true,
+          "label": "Vibe to Live - Dashboard",
+          "sourceScreen": "projects/11087553457034753859/screens/11325834955541918705",
+          "width": 1280,
+          "x": 1898,
+          "y": 8
+        },
+        {
+          "height": 1024,
+          "hidden": true,
+          "id": "38579234b01744c286d0a543f2197345-1784092700705-1784099307760",
+          "isFavourite": true,
+          "label": "Vibe to Live - Dashboard",
+          "sourceScreen": "projects/11087553457034753859/screens/7649936892066014243",
+          "width": 1280,
+          "x": 3266
+        },
+        {
+          "height": 390,
+          "hidden": true,
+          "id": "4025bf42505f4c9ab67613aa137494e9",
+          "sourceScreen": "projects/11087553457034753859/screens/4025bf42505f4c9ab67613aa137494e9",
+          "width": 390,
+          "x": 8325,
+          "y": 1451
+        },
+        {
+          "height": 1024,
+          "hidden": true,
+          "id": "44489303fb5d4348b90ab699fefef8b7",
+          "sourceScreen": "projects/11087553457034753859/screens/44489303fb5d4348b90ab699fefef8b7",
+          "width": 1280,
+          "x": 15019
+        },
+        {
+          "height": 286,
+          "hidden": true,
+          "id": "49df6287edf041e4a223b92cd872ed91",
+          "sourceScreen": "projects/11087553457034753859/screens/49df6287edf041e4a223b92cd872ed91",
+          "width": 512,
+          "x": 6187,
+          "y": 1087
+        },
+        {
+          "height": 975,
+          "hidden": true,
+          "id": "57c1cc204f0044e39ed029920f46f9af",
+          "sourceScreen": "projects/11087553457034753859/screens/d5d4e6934149487a8405639d5392241b",
+          "width": 390,
+          "x": 3813
+        },
+        {
+          "height": 1024,
+          "hidden": true,
+          "id": "8720895621e840a691a43d288542a23d",
+          "sourceScreen": "projects/11087553457034753859/screens/8720895621e840a691a43d288542a23d",
+          "width": 1280,
+          "x": 10987
+        },
+        {
+          "height": 1024,
+          "hidden": true,
+          "id": "872b33431fe949f6b56289183a274afa",
+          "sourceScreen": "projects/11087553457034753859/screens/872b33431fe949f6b56289183a274afa",
+          "width": 1280,
+          "x": 9643
+        },
+        {
+          "height": 763,
+          "hidden": true,
+          "id": "9329494ca2414b6db7593c1a54d89f99",
+          "sourceScreen": "projects/11087553457034753859/screens/9329494ca2414b6db7593c1a54d89f99",
+          "width": 512,
+          "x": 12642,
+          "y": 1458
+        },
+        {
+          "height": 1024,
+          "hidden": true,
+          "id": "9b9ceda85d234e3e9afa5c92ac891b17",
+          "sourceScreen": "projects/11087553457034753859/screens/9b9ceda85d234e3e9afa5c92ac891b17",
+          "width": 1280,
+          "x": 5611
+        },
+        {
+          "height": 1024,
+          "hidden": true,
+          "id": "a4678ef988f04a6482c4dc4aa024ad1b",
+          "sourceScreen": "projects/11087553457034753859/screens/a4678ef988f04a6482c4dc4aa024ad1b",
+          "width": 1280,
+          "x": 13675
+        },
+        {
+          "height": 924,
+          "hidden": true,
+          "id": "a9858d94f8e04347a563b18690e3c8e9",
+          "sourceScreen": "projects/11087553457034753859/screens/a9858d94f8e04347a563b18690e3c8e9",
+          "width": 390,
+          "x": 16817
+        },
+        {
+          "height": 1024,
+          "hidden": true,
+          "id": "ac8ee6076b0e4f91911f0cd81f1579fe",
+          "sourceScreen": "projects/11087553457034753859/screens/ac8ee6076b0e4f91911f0cd81f1579fe",
+          "width": 1280,
+          "y": 2367
+        },
+        {
+          "height": 540,
+          "id": "assets_f3984b45cd3048c2b4a4ace5751d12da",
+          "sourceAsset": "assets/f3984b45cd3048c2b4a4ace5751d12da",
+          "type": "DESIGN_SYSTEM_INSTANCE",
+          "width": 960,
+          "x": 844
+        },
+        {
+          "height": 884,
+          "hidden": true,
+          "id": "b25f2aea196d411fb978ed6afd7f3049",
+          "isFavourite": true,
+          "sourceScreen": "projects/11087553457034753859/screens/b25f2aea196d411fb978ed6afd7f3049",
+          "width": 390,
+          "x": 16363
+        },
+        {
+          "height": 1024,
+          "hidden": true,
+          "id": "b6845b5feec84634995d4276fda9f3b6",
+          "sourceScreen": "projects/11087553457034753859/screens/b6845b5feec84634995d4276fda9f3b6",
+          "width": 1280,
+          "x": 14562,
+          "y": 1458
+        },
+        {
+          "height": 1024,
+          "hidden": true,
+          "id": "c09867b8d3e342ef81314fd3e71d4db2",
+          "isFavourite": true,
+          "sourceScreen": "projects/11087553457034753859/screens/c09867b8d3e342ef81314fd3e71d4db2",
+          "width": 1280,
+          "x": 4267
+        },
+        {
+          "height": 1024,
+          "hidden": true,
+          "id": "c09867b8d3e342ef81314fd3e71d4db2-1784091864274",
+          "isFavourite": true,
+          "sourceScreen": "projects/11087553457034753859/screens/13722419590372381631",
+          "width": 1280,
+          "x": 4267,
+          "y": 1087
+        },
+        {
+          "height": 286,
+          "hidden": true,
+          "id": "c5ca748e6a0b4382ac4b9fd414724feb",
+          "sourceScreen": "projects/11087553457034753859/screens/c5ca748e6a0b4382ac4b9fd414724feb",
+          "width": 512,
+          "x": 12066,
+          "y": 1458
+        },
+        {
+          "height": 286,
+          "hidden": true,
+          "id": "d6000da8f8964521ab2a124093dc5e4b",
+          "sourceScreen": "projects/11087553457034753859/screens/d6000da8f8964521ab2a124093dc5e4b",
+          "width": 512,
+          "x": 11490,
+          "y": 1458
+        },
+        {
+          "height": 1077,
+          "hidden": true,
+          "id": "dfee97ad0c764eaa995f025c12d503c8",
+          "sourceScreen": "projects/11087553457034753859/screens/dfee97ad0c764eaa995f025c12d503c8",
+          "width": 1280,
+          "x": 12331
+        },
+        {
+          "height": 286,
+          "hidden": true,
+          "id": "e88c43700b5a4ba28b7ce20856c53cbb",
+          "sourceScreen": "projects/11087553457034753859/screens/e88c43700b5a4ba28b7ce20856c53cbb",
+          "width": 512,
+          "x": 5611,
+          "y": 1087
+        },
+        {
+          "height": 1024,
+          "hidden": true,
+          "id": "fe17fdbf3ef049158bbf3cb9877f2a7a",
+          "sourceScreen": "projects/11087553457034753859/screens/56637c5714104f88a53e14fbb73ab7b7",
+          "width": 1280,
+          "x": 1868
+        }
+      ],
+      "thumbnailScreenshot": {
+        "downloadUrl": "https://lh3.googleusercontent.com/aida/AP1WRLt_dNlDOmEYAsdh8226eKWeYLd_MI2Jd10kCqUjnNqYZw9f8DuhGEVf-3C_c32V1in0PyS_vM7f-c2XNdDH-JoznvG_5JQGwRdbPNt8dt_JH9aYc1eHC2iQK-oAE1kqovlVLHgcrju-eCuVMyZLW-mQxpmjfAmzA0HCXEjQBdizD2FQSfyErKPtLT_v7MlqVNM7PLkRK_iM6Ip-uA4-5FKz4Qjs7RXuveL8_zHFCDIGB5D5c139lwVBuys",
+        "name": "projects/11087553457034753859/files/037460f2579c470b9ed54c22e138baac"
+      },
+      "title": "Synthwave Finance Tracker",
+      "updateTime": "2026-07-15T17:43:36.021145Z",
+      "visibility": "PRIVATE"
+    }
+  }
+}
