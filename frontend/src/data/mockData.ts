@@ -109,14 +109,14 @@ export const gameHistory: GameEvent[] = [
 ]
 
 export const profile: UserProfile = {
-  id: 'user-mike',
-  displayName: 'Mike Fieldins',
-  email: 'mike@budgetrunner.local',
+  id: 'anonymous-mock-user',
+  displayName: 'Nómada',
+  email: 'anonimo@budgetrunner.local',
   primaryCurrency: 'EUR',
   locale: 'es-ES',
   timezone: 'Europe/Madrid',
   weekStartsOn: 1,
-  googleConnected: true,
+  googleConnected: false,
   progress,
   levelHistory: [
     { level: 24, flux: 4650, reachedAt: '2026-07-08T21:30:10Z', reason: 'Void Backplane equipado' },

@@ -18,7 +18,7 @@ const AuthContext = createContext<AuthValue | null>(null)
 const usesApi = import.meta.env.VITE_DATA_SOURCE === 'api'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(usesApi ? null : { id: 'mock-user', email: 'mock@local', displayName: 'Nómada' })
+  const [user, setUser] = useState<AuthUser | null>(usesApi ? null : { id: 'anonymous-mock-user', email: 'anonimo@budgetrunner.local', displayName: 'Nómada' })
   const [loading, setLoading] = useState(usesApi)
 
   useEffect(() => {
@@ -43,19 +43,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     loading,
     async login(email, password) {
-      if (!usesApi) { setUser({ id: 'mock-user', email, displayName: 'Nómada' }); return }
+      if (!usesApi) { setUser({ id: 'anonymous-mock-user', email, displayName: 'Nómada' }); return }
       const result = await apiClient.request<{ accessToken: string; user: AuthUser }>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) })
       apiClient.setAccessToken(result.accessToken)
       setUser(result.user)
     },
     async register(input) {
-      if (!usesApi) { setUser({ id: 'mock-user', email: input.email, displayName: input.displayName }); return }
+      if (!usesApi) { setUser({ id: 'anonymous-mock-user', email: input.email, displayName: 'Nómada' }); return }
       const result = await apiClient.request<{ accessToken: string; user: AuthUser }>('/auth/register', { method: 'POST', body: JSON.stringify(input) })
       apiClient.setAccessToken(result.accessToken)
       setUser(result.user)
     },
     async completeGoogleLogin() {
-      if (!usesApi) { setUser({ id: 'mock-google-user', email: 'google@local', displayName: 'Nómada Google' }); return }
+      if (!usesApi) { setUser({ id: 'anonymous-mock-user', email: 'anonimo@budgetrunner.local', displayName: 'Nómada' }); return }
       if (!await apiClient.refresh()) throw new Error('No se ha podido crear la sesión de Google.')
       const current = await apiClient.request<AuthUser>('/me')
       setUser(current)
