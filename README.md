@@ -43,6 +43,26 @@ NeonRunner!2026
 
 Las credenciales y secretos de `.env` son exclusivamente locales. Producción debe proporcionar valores distintos mediante variables seguras.
 
+### Google OAuth
+
+El flujo Google OAuth/OIDC está implementado en la API. Para activarlo en local, crea un cliente OAuth de tipo **Aplicación web** en Google Cloud y registra exactamente esta URI de redirección:
+
+```text
+http://localhost:5173/api/v1/auth/google/callback
+```
+
+Después completa en `backend/.env`:
+
+```text
+FRONTEND_URL=http://localhost:5173
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GOOGLE_REDIRECT_URI=http://localhost:5173/api/v1/auth/google/callback
+GOOGLE_OAUTH_STATE_SECRET=un-secreto-aleatorio-de-al-menos-32-caracteres
+```
+
+Reinicia la API después de cambiar estas variables. El callback intercambia el código en el servidor y entrega al frontend únicamente la sesión segura; ningún token de Google se incluye en la URL.
+
 ## Verificación
 
 ```bash
@@ -51,7 +71,6 @@ npm run lint
 npm run build
 ```
 
-La vertical persistente actual cubre identidad email/contraseña, perfil, categorías, transacciones, dashboard, cyberdeck, tienda, compras y reparaciones. Los presupuestos permanecen como datos de demostración hasta implementar scheduler, cierres y recompensas.
+La vertical persistente actual cubre identidad email/contraseña y Google OAuth, perfil, categorías, transacciones, dashboard, cyberdeck, tienda, compras y reparaciones. Los presupuestos permanecen como datos de demostración hasta implementar scheduler, cierres y recompensas.
 
 Budget Runner © 2026 Mike Fieldins · MIT License
-

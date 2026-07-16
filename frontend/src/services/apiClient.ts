@@ -1,6 +1,10 @@
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? '/api/v1'
 const tokenKey = 'budget-runner-access-token'
 
+export function apiUrl(path: string) {
+  return `${baseUrl}${path}`
+}
+
 export class ApiClientError extends Error {
   constructor(public readonly status: number, public readonly code: string, message: string, public readonly details: unknown = {}) {
     super(message)
@@ -56,4 +60,3 @@ export const apiClient = new ApiClient()
 export function idempotencyHeaders() {
   return { 'Idempotency-Key': crypto.randomUUID() }
 }
-

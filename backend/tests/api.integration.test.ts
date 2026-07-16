@@ -2,12 +2,14 @@ import { randomUUID } from 'node:crypto'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import { createApp } from '../src/app.js'
-import { closeDatabase, pool } from '../src/db.js'
+import { closeDatabase, pool, withTransaction } from '../src/db.js'
+import { findOrCreateGoogleUser } from '../src/googleOAuth.js'
 
 const app = createApp()
 const password = 'TestRunner!2026'
 const primaryEmail = `api-${randomUUID()}@budgetrunner.local`
 const secondaryEmail = `isolation-${randomUUID()}@budgetrunner.local`
+const googleOnlyEmail = `google-${randomUUID()}@budgetrunner.local`
 let token = ''
 let secondaryToken = ''
 let userId = ''
@@ -52,7 +54,7 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  await pool.query('DELETE FROM users WHERE email IN ($1, $2)', [primaryEmail, secondaryEmail])
+  await pool.query('DELETE FROM users WHERE email IN ($1, $2, $3)', [primaryEmail, secondaryEmail, googleOnlyEmail])
   await closeDatabase()
 })
 
@@ -61,6 +63,40 @@ describe.sequential('Budget Runner API', () => {
     const response = await request(app).get('/api/v1/transactions')
     expect(response.status).toBe(401)
     expect(response.body.error.code).toBe('AUTHENTICATION_REQUIRED')
+  })
+
+  test('vincula Google por email verificado y aprovisiona una cuenta nueva sin duplicados', async () => {
+    const linkedSubject = `google-linked-${randomUUID()}`
+    const linkedUserId = await withTransaction((client) => findOrCreateGoogleUser(client, {
+      subject: linkedSubject,
+      email: primaryEmail,
+      displayName: 'API Runner desde Google',
+      avatarUrl: 'https://lh3.googleusercontent.com/a/test-avatar',
+    }))
+    expect(linkedUserId).toBe(userId)
+    const repeatedUserId = await withTransaction((client) => findOrCreateGoogleUser(client, {
+      subject: linkedSubject,
+      email: primaryEmail,
+      displayName: 'API Runner desde Google',
+    }))
+    expect(repeatedUserId).toBe(userId)
+    const linkedCount = await pool.query<{ count: string }>(`
+      SELECT count(*)::text AS count FROM oauth_accounts WHERE provider = 'google' AND provider_subject = $1
+    `, [linkedSubject])
+    expect(Number(linkedCount.rows[0]?.count)).toBe(1)
+
+    const googleUserId = await withTransaction((client) => findOrCreateGoogleUser(client, {
+      subject: `google-new-${randomUUID()}`,
+      email: googleOnlyEmail,
+      displayName: 'Google Runner',
+    }))
+    const provisioned = await pool.query<{ password_hash: string | null; categories: string; progress: boolean }>(`
+      SELECT u.password_hash,
+        (SELECT count(*)::text FROM categories c WHERE c.user_id = u.id) AS categories,
+        EXISTS (SELECT 1 FROM user_progress p WHERE p.user_id = u.id) AS progress
+      FROM users u WHERE u.id = $1
+    `, [googleUserId])
+    expect(provisioned.rows[0]).toMatchObject({ password_hash: null, categories: '9', progress: true })
   })
 
   test('crea, edita y archiva categorías usadas sin romper el historial', async () => {

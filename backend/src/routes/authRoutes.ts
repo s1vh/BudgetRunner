@@ -4,19 +4,26 @@ import { Router, type Request, type Response } from 'express'
 import { z } from 'zod'
 import {
   type AppRequest,
+  googleOAuthCookieClearOptions,
+  googleOAuthCookieName,
+  googleOAuthCookieOptions,
   hashIp,
   hashToken,
   refreshCookieName,
   refreshCookieOptions,
   requireAuth,
+  signGoogleOAuthState,
   signAccessToken,
   signRefreshToken,
   verifyRefreshToken,
+  verifyGoogleOAuthState,
 } from '../auth.js'
 import { config } from '../config.js'
 import { type DbClient, pool, withTransaction } from '../db.js'
 import { ApiError, asyncHandler } from '../errors.js'
 import { getProgressSummary } from '../progress.js'
+import { createGoogleAuthorizationRequest, exchangeGoogleCode, findOrCreateGoogleUser } from '../googleOAuth.js'
+import { provisionNewUser } from '../userProvisioning.js'
 
 const registerSchema = z.object({
   email: z.string().email().transform((value) => value.trim().toLowerCase()),
@@ -41,18 +48,6 @@ const preferencesSchema = z.object({
   }),
 })
 
-const defaultCategories = [
-  ['Combustible de Neón', 'fuel', '#FF007F'],
-  ['Raciones Orbitales', 'utensils', '#00FFFF'],
-  ['Mantenimiento del Hovercar', 'wrench', '#8B00FF'],
-  ['Suscripciones de la Red', 'radio', '#A69DFF'],
-  ['Ocio Holográfico', 'gamepad', '#F785C6'],
-  ['Salud Biónica', 'heart-pulse', '#FF6E84'],
-  ['Vivienda en la Megaciudad', 'building', '#FFD43F'],
-  ['Tecnología del Cyberdeck', 'cpu', '#7DD3FC'],
-  ['Otros', 'shapes', '#986780'],
-] as const
-
 async function createSession(client: DbClient, userId: string, request: Request, rotatedFromId?: string) {
   const sessionId = randomUUID()
   const refreshToken = signRefreshToken(userId, sessionId)
@@ -67,8 +62,11 @@ async function createSession(client: DbClient, userId: string, request: Request,
 async function userDto(client: DbClient, userId: string) {
   const result = await client.query<{
     id: string; email: string; display_name: string; avatar_url: string | null; primary_currency: string;
-    locale: string; timezone: string; week_starts_on: number; preferences: Record<string, boolean>;
-  }>('SELECT id, email, display_name, avatar_url, primary_currency, locale, timezone, week_starts_on, preferences FROM users WHERE id = $1 AND deleted_at IS NULL', [userId])
+    locale: string; timezone: string; week_starts_on: number; preferences: Record<string, boolean>; google_connected: boolean;
+  }>(`SELECT u.id, u.email, u.display_name, u.avatar_url, u.primary_currency, u.locale, u.timezone,
+      u.week_starts_on, u.preferences,
+      EXISTS (SELECT 1 FROM oauth_accounts oa WHERE oa.user_id = u.id AND oa.provider = 'google') AS google_connected
+    FROM users u WHERE u.id = $1 AND u.deleted_at IS NULL`, [userId])
   const user = result.rows[0]
   if (!user) throw new ApiError(404, 'USER_NOT_FOUND', 'No se ha encontrado el usuario.')
   return {
@@ -80,7 +78,7 @@ async function userDto(client: DbClient, userId: string) {
     locale: user.locale,
     timezone: user.timezone,
     weekStartsOn: user.week_starts_on,
-    googleConnected: false,
+    googleConnected: user.google_connected,
     preferences: user.preferences,
   }
 }
@@ -97,18 +95,71 @@ authRouter.post('/register', asyncHandler(async (request, response) => {
     `, [input.email, passwordHash, input.displayName, input.currency, input.timezone])
     const userId = inserted.rows[0]?.id
     if (!userId) throw new Error('User insert failed')
-    await client.query('INSERT INTO user_progress (user_id) VALUES ($1)', [userId])
-    for (const [name, icon, color] of defaultCategories) {
-      await client.query(`
-        INSERT INTO categories (user_id, name, icon_key, color_token, is_system_seed)
-        VALUES ($1, $2, $3, $4, true)
-      `, [userId, name, icon, color])
-    }
+    await provisionNewUser(client, userId)
     const session = await createSession(client, userId, request)
     return { session, user: await userDto(client, userId) }
   })
   response.cookie(refreshCookieName, result.session.refreshToken, refreshCookieOptions)
   response.status(201).json({ data: { accessToken: result.session.accessToken, user: result.user }, meta: {} })
+}))
+
+function oauthResultUrl(error?: string) {
+  const url = new URL('/oauth/callback', config.frontendUrl)
+  if (error) url.searchParams.set('error', error)
+  return url.toString()
+}
+
+authRouter.get('/google', asyncHandler(async (_request, response) => {
+  if (!config.googleOAuthEnabled) {
+    response.redirect(oauthResultUrl('google_not_configured'))
+    return
+  }
+  const authorization = createGoogleAuthorizationRequest()
+  response.cookie(googleOAuthCookieName, signGoogleOAuthState(authorization), googleOAuthCookieOptions)
+  response.redirect(authorization.url)
+}))
+
+authRouter.get('/google/callback', asyncHandler(async (request, response) => {
+  response.clearCookie(googleOAuthCookieName, googleOAuthCookieClearOptions)
+  const providerError = typeof request.query.error === 'string' ? request.query.error : undefined
+  if (providerError) {
+    response.redirect(oauthResultUrl(providerError === 'access_denied' ? 'access_denied' : 'google_rejected'))
+    return
+  }
+  const code = typeof request.query.code === 'string' ? request.query.code : undefined
+  const returnedState = typeof request.query.state === 'string' ? request.query.state : undefined
+  const stateCookie = request.cookies?.[googleOAuthCookieName] as string | undefined
+  if (!code || !returnedState || !stateCookie) {
+    response.redirect(oauthResultUrl('invalid_oauth_callback'))
+    return
+  }
+
+  let oauthState
+  try { oauthState = verifyGoogleOAuthState(stateCookie) } catch {
+    response.redirect(oauthResultUrl('invalid_oauth_state'))
+    return
+  }
+  if (oauthState.state !== returnedState) {
+    response.redirect(oauthResultUrl('invalid_oauth_state'))
+    return
+  }
+
+  try {
+    const identity = await exchangeGoogleCode(code, oauthState.codeVerifier, oauthState.nonce)
+    const session = await withTransaction(async (client) => {
+      const userId = await findOrCreateGoogleUser(client, identity)
+      await client.query(`
+        INSERT INTO audit_events (user_id, actor_type, action, entity_type, entity_id, request_id, metadata)
+        VALUES ($1, 'user', 'auth.google_login', 'user', $1, $2, jsonb_build_object('provider', 'google'))
+      `, [userId, (request as AppRequest).requestId])
+      return createSession(client, userId, request)
+    })
+    response.cookie(refreshCookieName, session.refreshToken, refreshCookieOptions)
+    response.redirect(oauthResultUrl())
+  } catch (error) {
+    console.error(`[${(request as AppRequest).requestId}] Google OAuth callback failed`, error)
+    response.redirect(oauthResultUrl('google_exchange_failed'))
+  }
 }))
 
 authRouter.post('/login', asyncHandler(async (request, response) => {

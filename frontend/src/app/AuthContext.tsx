@@ -10,6 +10,7 @@ interface AuthValue {
   loading: boolean
   login: (email: string, password: string) => Promise<void>
   register: (input: RegisterInput) => Promise<void>
+  completeGoogleLogin: () => Promise<void>
   logout: () => Promise<void>
 }
 
@@ -52,6 +53,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const result = await apiClient.request<{ accessToken: string; user: AuthUser }>('/auth/register', { method: 'POST', body: JSON.stringify(input) })
       apiClient.setAccessToken(result.accessToken)
       setUser(result.user)
+    },
+    async completeGoogleLogin() {
+      if (!usesApi) { setUser({ id: 'mock-google-user', email: 'google@local', displayName: 'Nómada Google' }); return }
+      if (!await apiClient.refresh()) throw new Error('No se ha podido crear la sesión de Google.')
+      const current = await apiClient.request<AuthUser>('/me')
+      setUser(current)
     },
     async logout() {
       if (usesApi) await apiClient.request<void>('/auth/logout', { method: 'POST' }).catch(() => undefined)

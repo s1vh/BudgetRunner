@@ -1,11 +1,25 @@
-import { useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { ArrowRight, Globe as Chrome, KeyRound, LockKeyhole, Mail, ShieldCheck, UserPlus } from 'lucide-react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useLocation, useNavigate } from 'react-router'
 import { useAuth } from '@/app/AuthContext'
 import { Button, Field, Input, SynthCard } from '@/components/ui/primitives'
+import { apiUrl } from '@/services/apiClient'
 
 function AuthCard({ eyebrow, title, description, children, footer }: { eyebrow: string; title: string; description: string; children: ReactNode; footer?: ReactNode }) {
   return <SynthCard className="w-full max-w-md p-6 sm:p-8"><p className="font-mono text-[10px] tracking-[0.16em] text-neon-cyan uppercase">{eyebrow}</p><h1 className="mt-2 font-display text-2xl font-black sm:text-3xl">{title}</h1><p className="mt-3 text-sm leading-6 text-text-muted">{description}</p><div className="mt-7">{children}</div>{footer && <div className="mt-6 border-t border-outline-soft/50 pt-5 text-center text-sm text-text-muted">{footer}</div>}</SynthCard>
+}
+
+function startGoogleOAuth() {
+  window.location.assign(apiUrl('/auth/google'))
+}
+
+const oauthErrorMessages: Record<string, string> = {
+  google_not_configured: 'Google OAuth está implementado, pero faltan las credenciales del proyecto en la API.',
+  access_denied: 'Has cancelado el acceso con Google. No se ha creado ninguna sesión.',
+  invalid_oauth_callback: 'La respuesta de Google está incompleta. Inicia el proceso de nuevo.',
+  invalid_oauth_state: 'La solicitud ha caducado o no supera la validación de seguridad.',
+  google_exchange_failed: 'Google no ha podido validar la identidad. Inténtalo de nuevo.',
+  google_rejected: 'Google ha rechazado la solicitud de acceso.',
 }
 
 export function LoginPage() {
@@ -35,7 +49,7 @@ export function LoginPage() {
       <Field label="Contraseña" htmlFor="login-password" required><Input id="login-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" /></Field>
       <div className="flex items-center justify-between text-xs"><span className="text-text-muted">Refresh seguro activado</span><Link to="/recuperar" className="text-tertiary hover:underline">¿Olvidaste la clave?</Link></div>
       <Button type="submit" className="w-full" icon={ArrowRight} loading={busy}>Entrar al sistema</Button>
-      <Button type="button" className="w-full" variant="ghost" icon={Chrome} disabled title="Google OAuth se conectará en la siguiente fase">Google OAuth · próxima fase</Button>
+      <Button type="button" className="w-full" variant="ghost" icon={Chrome} onClick={startGoogleOAuth}>Continuar con Google</Button>
     </form>
   </AuthCard>
 }
@@ -73,6 +87,8 @@ export function RegisterPage() {
       <div className="grid gap-4 sm:grid-cols-2"><Field label="Moneda" htmlFor="register-currency"><select id="register-currency" name="currency" className="form-control"><option>EUR</option><option>USD</option></select></Field><Field label="Zona" htmlFor="register-timezone"><select id="register-timezone" name="timezone" className="form-control"><option>Europe/Madrid</option><option>UTC</option></select></Field></div>
       <Field label="Contraseña" htmlFor="register-password" hint="Mínimo 10 caracteres." required><Input id="register-password" name="password" type="password" minLength={10} autoComplete="new-password" required /></Field>
       <Button className="w-full" icon={UserPlus} loading={busy}>Crear identidad</Button>
+      <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.12em] text-text-muted"><i className="h-px flex-1 bg-outline-soft/60" />o<i className="h-px flex-1 bg-outline-soft/60" /></div>
+      <Button type="button" className="w-full" variant="ghost" icon={Chrome} onClick={startGoogleOAuth} disabled={busy}>Crear cuenta con Google</Button>
     </form>
   </AuthCard>
 }
@@ -89,7 +105,23 @@ export function ResetPasswordPage() {
 
 export function OAuthCallbackPage() {
   const navigate = useNavigate()
-  return <AuthCard eyebrow="Google OAuth" title="Canal pendiente" description="La vinculación con Google está reservada para la siguiente fase."><div className="grid gap-5 text-center"><ShieldCheck className="mx-auto size-14 text-tertiary" /><Button className="w-full" icon={ArrowRight} onClick={() => navigate('/login')}>Volver al acceso</Button></div></AuthCard>
+  const location = useLocation()
+  const { completeGoogleLogin } = useAuth()
+  const attempted = useRef(false)
+  const providerError = new URLSearchParams(location.search).get('error')
+  const [callbackError, setCallbackError] = useState<string | null>(null)
+  const error = providerError ? (oauthErrorMessages[providerError] ?? 'No se ha podido completar el acceso con Google.') : callbackError
+
+  useEffect(() => {
+    if (attempted.current) return
+    attempted.current = true
+    if (providerError) return
+    completeGoogleLogin()
+      .then(() => navigate('/', { replace: true }))
+      .catch((caught: unknown) => setCallbackError(caught instanceof Error ? caught.message : 'No se ha podido completar el acceso con Google.'))
+  }, [completeGoogleLogin, navigate, providerError])
+
+  return <AuthCard eyebrow="Google OAuth" title={error ? 'Enlace interrumpido' : 'Sincronizando identidad'} description={error ?? 'Estamos validando la sesión segura y preparando tu espacio personal.'}><div className="grid gap-5 text-center">{error ? <LockKeyhole className="mx-auto size-14 text-neon-magenta" /> : <ShieldCheck className="mx-auto size-14 animate-pulse text-tertiary" />}<Button className="w-full" variant={error ? 'ghost' : 'cyan'} icon={error ? ArrowRight : ShieldCheck} disabled={!error} onClick={() => navigate('/login')}>{error ? 'Volver al acceso' : 'Verificando con Google…'}</Button></div></AuthCard>
 }
 
 export function ErrorPage() {

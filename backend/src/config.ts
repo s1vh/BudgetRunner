@@ -11,6 +11,11 @@ const schema = z.object({
   ACCESS_TOKEN_TTL: z.string().default('15m'),
   REFRESH_TOKEN_DAYS: z.coerce.number().int().positive().default(30),
   COOKIE_SECURE: z.enum(['true', 'false']).default('false'),
+  FRONTEND_URL: z.string().url().default('http://localhost:5173'),
+  GOOGLE_CLIENT_ID: z.string().trim().default(''),
+  GOOGLE_CLIENT_SECRET: z.string().trim().default(''),
+  GOOGLE_REDIRECT_URI: z.string().trim().default(''),
+  GOOGLE_OAUTH_STATE_SECRET: z.string().trim().default(''),
 })
 
 const env = schema.parse(process.env)
@@ -25,5 +30,10 @@ export const config = {
   accessTokenTtl: env.ACCESS_TOKEN_TTL,
   refreshTokenDays: env.REFRESH_TOKEN_DAYS,
   cookieSecure: env.COOKIE_SECURE === 'true',
+  frontendUrl: env.FRONTEND_URL.replace(/\/$/, ''),
+  googleClientId: env.GOOGLE_CLIENT_ID,
+  googleClientSecret: env.GOOGLE_CLIENT_SECRET,
+  googleRedirectUri: env.GOOGLE_REDIRECT_URI,
+  googleOAuthStateSecret: env.GOOGLE_OAUTH_STATE_SECRET || env.REFRESH_TOKEN_SECRET,
+  googleOAuthEnabled: Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_REDIRECT_URI),
 } as const
-

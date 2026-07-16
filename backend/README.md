@@ -18,7 +18,8 @@ npm run build
 
 ## Módulos
 
-- `src/routes/authRoutes.ts`: registro, login, refresh rotatorio, logout y perfil.
+- `src/routes/authRoutes.ts`: registro, login, Google OAuth/OIDC, refresh rotatorio, logout y perfil.
+- `src/googleOAuth.ts`: PKCE, intercambio de código, validación de ID token y vinculación de identidad.
 - `src/routes/transactionRoutes.ts`: categorías, listado/CRUD de operaciones y dashboard.
 - `src/routes/gameRoutes.ts`: progreso, slots, tienda, compra, reparación, bonus e historial.
 - `src/dashboard.ts`: agregaciones financieras server-side.
@@ -35,6 +36,7 @@ npm run build
 - Saldo SynthCoin no negativo.
 - Compra y reparación atómicas, auditadas e idempotentes.
 - Refresh token rotatorio guardado como hash y cookie `HttpOnly`.
+- Google OAuth con `state`, `nonce`, PKCE, email verificado y callback sin tokens en URL.
 - Respuestas y errores con el formato de `API.md` y request ID.
 
 ## Endpoints principales
@@ -42,10 +44,13 @@ npm run build
 ```text
 POST /api/v1/auth/register
 POST /api/v1/auth/login
+GET /api/v1/auth/google
+GET /api/v1/auth/google/callback
 POST /api/v1/auth/refresh
 POST /api/v1/auth/logout
 GET|PATCH /api/v1/me
-GET /api/v1/categories
+GET|POST /api/v1/categories
+PATCH|DELETE /api/v1/categories/:id
 GET|POST /api/v1/transactions
 PATCH|DELETE /api/v1/transactions/:id
 GET /api/v1/dashboard

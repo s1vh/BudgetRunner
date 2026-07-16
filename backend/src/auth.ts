@@ -10,12 +10,20 @@ interface BudgetRunnerToken extends JwtPayload {
   sid?: string
 }
 
+interface GoogleOAuthStateToken extends JwtPayload {
+  type: 'google_oauth_state'
+  state: string
+  nonce: string
+  codeVerifier: string
+}
+
 export interface AppRequest extends Request {
   requestId: string
   userId: string
 }
 
 export const refreshCookieName = 'budget_runner_refresh'
+export const googleOAuthCookieName = 'budget_runner_google_oauth'
 
 export const refreshCookieOptions: CookieOptions = {
   httpOnly: true,
@@ -23,6 +31,21 @@ export const refreshCookieOptions: CookieOptions = {
   secure: config.cookieSecure,
   path: '/api/v1/auth',
   maxAge: config.refreshTokenDays * 24 * 60 * 60 * 1000,
+}
+
+export const googleOAuthCookieOptions: CookieOptions = {
+  httpOnly: true,
+  sameSite: 'lax',
+  secure: config.cookieSecure,
+  path: '/api/v1/auth/google/callback',
+  maxAge: 10 * 60 * 1000,
+}
+
+export const googleOAuthCookieClearOptions: CookieOptions = {
+  httpOnly: true,
+  sameSite: 'lax',
+  secure: config.cookieSecure,
+  path: '/api/v1/auth/google/callback',
 }
 
 export function signAccessToken(userId: string) {
@@ -46,6 +69,25 @@ export function signRefreshToken(userId: string, sessionId: string) {
 export function verifyRefreshToken(token: string): BudgetRunnerToken {
   const payload = jwt.verify(token, config.refreshTokenSecret) as BudgetRunnerToken
   if (payload.type !== 'refresh' || !payload.sub || !payload.sid) throw new ApiError(401, 'INVALID_REFRESH_TOKEN', 'La sesión no es válida.')
+  return payload
+}
+
+export function signGoogleOAuthState(input: Pick<GoogleOAuthStateToken, 'state' | 'nonce' | 'codeVerifier'>) {
+  return jwt.sign(
+    { ...input, type: 'google_oauth_state' },
+    config.googleOAuthStateSecret as Secret,
+    { expiresIn: '10m', audience: 'budget-runner-google-oauth', issuer: 'budget-runner' },
+  )
+}
+
+export function verifyGoogleOAuthState(token: string): GoogleOAuthStateToken {
+  const payload = jwt.verify(token, config.googleOAuthStateSecret as Secret, {
+    audience: 'budget-runner-google-oauth',
+    issuer: 'budget-runner',
+  }) as GoogleOAuthStateToken
+  if (payload.type !== 'google_oauth_state' || !payload.state || !payload.nonce || !payload.codeVerifier) {
+    throw new ApiError(401, 'INVALID_GOOGLE_OAUTH_STATE', 'La solicitud de Google OAuth no es válida.')
+  }
   return payload
 }
 
