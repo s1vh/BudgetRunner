@@ -1,4 +1,19 @@
 {
+  "functions": {
+    "source": "backend",
+    "runtime": "nodejs22",
+    "predeploy": [
+      "npm --prefix backend run build"
+    ],
+    "ignore": [
+      "node_modules",
+      ".git",
+      "firebase-debug.log",
+      "firebase-debug.*.log",
+      "tests",
+      "coverage"
+    ]
+  },
   "hosting": {
     "public": "frontend/dist",
     "ignore": [
@@ -10,6 +25,14 @@
       "npm --prefix frontend run build"
     ],
     "rewrites": [
+      {
+        "source": "/api/**",
+        "function": {
+          "functionId": "api",
+          "region": "europe-west1",
+          "pinTag": true
+        }
+      },
       {
         "source": "**",
         "destination": "/index.html"
