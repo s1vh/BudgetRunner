@@ -4,6 +4,10 @@
 backend/node_modules/
 backend/dist/
 backend/coverage/
+frontend/dist/
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
 frontend/.vite.*.log
 backend/.api.*.log
 frontend/.category-*.log
