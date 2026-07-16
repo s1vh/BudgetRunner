@@ -120,6 +120,7 @@ export interface CyberModule {
   energy: number
   state: ModuleState
   priceCoins: number
+  repairCost?: number
   description: string
 }
 

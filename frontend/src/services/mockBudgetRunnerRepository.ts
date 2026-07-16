@@ -140,4 +140,12 @@ export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
     this.currentProfile = { ...this.currentProfile, preferences: input }
     return structuredClone(this.currentProfile)
   }
+
+  async purchaseModule(): Promise<AppSnapshot['game']> {
+    return (await this.getSnapshot()).game
+  }
+
+  async repairModule(): Promise<AppSnapshot['game']> {
+    return (await this.getSnapshot()).game
+  }
 }

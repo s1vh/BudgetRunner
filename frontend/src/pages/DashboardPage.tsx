@@ -24,7 +24,7 @@ export function DashboardPage() {
       <header className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
         <div>
           <p className="mb-2 flex items-center gap-2 font-mono text-[10px] tracking-[0.16em] text-tertiary uppercase"><span className="status-dot text-success" />{dashboard.systemStatus}</p>
-          <h1 className="glitch-text font-display text-3xl font-black tracking-[-0.04em] text-neon-cyan uppercase sm:text-5xl" data-text="Hola, Nómada">Hola, Nómada</h1>
+          <h1 className="glitch-text font-display text-3xl font-black tracking-[-0.04em] text-neon-cyan uppercase sm:text-5xl" data-text={`Hola, ${dashboard.displayName}`}>Hola, {dashboard.displayName}</h1>
           <p className="mt-2 text-sm text-text-muted">Tu economía está sincronizada. Aquí tienes la telemetría del ciclo actual.</p>
         </div>
         <SynthCard className="w-full p-4 lg:w-72" tone="purple">
@@ -60,7 +60,7 @@ export function DashboardPage() {
         {dashboard.alerts.map((alert) => <div key={alert.id} className={`flex items-start gap-3 rounded-lg border p-4 text-sm ${alert.tone === 'warning' ? 'border-sunset/25 bg-sunset/5 text-sunset' : 'border-tertiary/20 bg-tertiary/5 text-text-muted'}`}><BellRing className="mt-0.5 size-4 shrink-0" /><span>{alert.message}</span></div>)}
       </section>
 
-      <Modal open={formOpen} onClose={() => setFormOpen(false)} title="Nueva operación" description="El mock conserva la operación durante esta sesión y actualiza todos los indicadores.">
+      <Modal open={formOpen} onClose={() => setFormOpen(false)} title="Nueva operación" description="PostgreSQL conservará la operación y la API devolverá los indicadores actualizados.">
         <TransactionForm categories={data.categories} onCancel={() => setFormOpen(false)} onSubmit={async (draft) => { await createTransaction(draft); setFormOpen(false) }} />
       </Modal>
     </div>

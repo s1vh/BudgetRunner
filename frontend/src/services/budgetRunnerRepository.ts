@@ -3,6 +3,7 @@ import type {
   Budget,
   BudgetDraft,
   FinancialTransaction,
+  GameData,
   TransactionDraft,
   UserPreferences,
   UserProfile,
@@ -15,4 +16,6 @@ export interface BudgetRunnerRepository {
   deleteTransaction(id: string): Promise<void>
   createBudget(input: BudgetDraft): Promise<Budget>
   updatePreferences(input: UserPreferences): Promise<UserProfile>
+  purchaseModule(offerId: string): Promise<GameData>
+  repairModule(instanceId: string): Promise<GameData>
 }

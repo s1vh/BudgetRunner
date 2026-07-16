@@ -1,0 +1,25 @@
+name: budget-runner
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: budget-runner-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: budget_runner
+      POSTGRES_USER: budget_runner
+      POSTGRES_PASSWORD: budget_runner_local
+    ports:
+      - "5432:5432"
+    volumes:
+      - budget_runner_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U budget_runner -d budget_runner"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+volumes:
+  budget_runner_pgdata:
+

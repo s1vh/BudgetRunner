@@ -19,6 +19,8 @@ interface AppDataValue {
   deleteTransaction: (transaction: FinancialTransaction) => Promise<void>
   createBudget: (draft: BudgetDraft) => Promise<void>
   updatePreferences: (preferences: UserPreferences) => Promise<void>
+  purchaseModule: (offerId: string) => Promise<void>
+  repairModule: (instanceId: string) => Promise<void>
 }
 
 const AppDataContext = createContext<AppDataValue | null>(null)
@@ -74,6 +76,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     deleteTransaction: (transaction) => mutate(() => repository.deleteTransaction(transaction.id)),
     createBudget: (draft) => mutate(() => repository.createBudget(draft)),
     updatePreferences: (preferences) => mutate(() => repository.updatePreferences(preferences)),
+    purchaseModule: (offerId) => mutate(() => repository.purchaseModule(offerId)),
+    repairModule: (instanceId) => mutate(() => repository.repairModule(instanceId)),
   }), [data, error, loading, mutate, refresh])
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>
@@ -83,4 +87,8 @@ export function useAppData() {
   const context = useContext(AppDataContext)
   if (!context) throw new Error('useAppData debe utilizarse dentro de AppDataProvider.')
   return context
+}
+
+export function useOptionalAppData() {
+  return useContext(AppDataContext)
 }
