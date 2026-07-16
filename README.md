@@ -10,3 +10,22 @@
 Fuente visual: mockup de Stitch UI y `DESIGN.md` Ultrawave suministrados con el proyecto.
 
 Orden recomendado de lectura: PRD → GAME_SYSTEM → DATABASE → API → ROADMAP → TEST_PLAN.
+
+## Frontend ejecutable
+
+El prototipo React + TypeScript + Tailwind se encuentra en `frontend/`. Utiliza datos internos mutables durante la sesión y una interfaz de repositorio preparada para sustituirse por la API REST.
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Validación de producción:
+
+```bash
+npm run build
+npm run lint
+```
+
+Consulta `frontend/README.md` para conocer la arquitectura, las rutas y el cambio entre mock y API.
