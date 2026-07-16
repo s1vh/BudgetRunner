@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.example
+backend/node_modules/
+backend/dist/
+backend/coverage/
+frontend/.vite.*.log
+backend/.api.*.log
+frontend/.category-*.log
+backend/.category-*.log

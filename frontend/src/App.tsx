@@ -1,5 +1,7 @@
 import { Route, Routes } from 'react-router'
 import { AppShell } from '@/components/layout/AppShell'
+import { AppDataProvider } from '@/app/AppDataContext'
+import { RequireAuth } from '@/app/AuthContext'
 import { PublicShell } from '@/components/layout/PublicShell'
 import { BudgetsPage } from '@/pages/BudgetsPage'
 import { DashboardPage } from '@/pages/DashboardPage'
@@ -14,7 +16,7 @@ import { NotFoundPage } from '@/pages/NotFoundPage'
 export function App() {
   return (
     <Routes>
-      <Route element={<AppShell />}>
+      <Route element={<RequireAuth><AppDataProvider><AppShell /></AppDataProvider></RequireAuth>}>
         <Route index element={<DashboardPage />} />
         <Route path="gastos" element={<TransactionsPage />} />
         <Route path="presupuestos" element={<BudgetsPage />} />
