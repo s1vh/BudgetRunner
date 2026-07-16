@@ -61,6 +61,14 @@ GOOGLE_REDIRECT_URI=http://localhost:5173/api/v1/auth/google/callback
 GOOGLE_OAUTH_STATE_SECRET=un-secreto-aleatorio-de-al-menos-32-caracteres
 ```
 
+Y habilita el punto de entrada en `frontend/.env` cuando quieras mostrarlo:
+
+```text
+VITE_GOOGLE_OAUTH_ENABLED=true
+```
+
+Para el MVP esta bandera permanece en `false`: los botones están desactivados, pero la implementación OAuth continúa disponible por detrás.
+
 Reinicia la API después de cambiar estas variables. El callback intercambia el código en el servidor y entrega al frontend únicamente la sesión segura; ningún token de Google se incluye en la URL.
 
 ## Verificación

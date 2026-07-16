@@ -13,6 +13,8 @@ function startGoogleOAuth() {
   window.location.assign(apiUrl('/auth/google'))
 }
 
+const googleOAuthEnabled = import.meta.env.VITE_GOOGLE_OAUTH_ENABLED === 'true'
+
 const oauthErrorMessages: Record<string, string> = {
   google_not_configured: 'Google OAuth está implementado, pero faltan las credenciales del proyecto en la API.',
   access_denied: 'Has cancelado el acceso con Google. No se ha creado ninguna sesión.',
@@ -49,7 +51,7 @@ export function LoginPage() {
       <Field label="Contraseña" htmlFor="login-password" required><Input id="login-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" /></Field>
       <div className="flex items-center justify-between text-xs"><span className="text-text-muted">Refresh seguro activado</span><Link to="/recuperar" className="text-tertiary hover:underline">¿Olvidaste la clave?</Link></div>
       <Button type="submit" className="w-full" icon={ArrowRight} loading={busy}>Entrar al sistema</Button>
-      <Button type="button" className="w-full" variant="ghost" icon={Chrome} onClick={startGoogleOAuth}>Continuar con Google</Button>
+      <Button type="button" className="w-full" variant="ghost" icon={Chrome} onClick={googleOAuthEnabled ? startGoogleOAuth : undefined} disabled={!googleOAuthEnabled} title={googleOAuthEnabled ? 'Continuar con Google' : 'Google OAuth se habilitará después del MVP'}>{googleOAuthEnabled ? 'Continuar con Google' : 'Google OAuth · próximamente'}</Button>
     </form>
   </AuthCard>
 }
@@ -88,7 +90,7 @@ export function RegisterPage() {
       <Field label="Contraseña" htmlFor="register-password" hint="Mínimo 10 caracteres." required><Input id="register-password" name="password" type="password" minLength={10} autoComplete="new-password" required /></Field>
       <Button className="w-full" icon={UserPlus} loading={busy}>Crear identidad</Button>
       <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.12em] text-text-muted"><i className="h-px flex-1 bg-outline-soft/60" />o<i className="h-px flex-1 bg-outline-soft/60" /></div>
-      <Button type="button" className="w-full" variant="ghost" icon={Chrome} onClick={startGoogleOAuth} disabled={busy}>Crear cuenta con Google</Button>
+      <Button type="button" className="w-full" variant="ghost" icon={Chrome} onClick={googleOAuthEnabled ? startGoogleOAuth : undefined} disabled={busy || !googleOAuthEnabled} title={googleOAuthEnabled ? 'Crear cuenta con Google' : 'Google OAuth se habilitará después del MVP'}>{googleOAuthEnabled ? 'Crear cuenta con Google' : 'Google OAuth · próximamente'}</Button>
     </form>
   </AuthCard>
 }
