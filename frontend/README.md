@@ -1,56 +1,49 @@
 # Budget Runner Frontend
 
-SPA de demostración construida con React, TypeScript, Vite y Tailwind CSS. Implementa el sistema visual Ultrawave y las pantallas definidas en la documentación raíz.
+SPA React + TypeScript + Tailwind que implementa el sistema visual Ultrawave y consume la API REST de Budget Runner.
 
 ## Arranque
+
+Con PostgreSQL y la API activos:
 
 ```bash
 npm install
 npm run dev
 ```
 
-La aplicación se inicia con datos internos. Las altas y ediciones se conservan en memoria mientras la pestaña permanezca abierta.
+Vite publica la aplicación en `http://127.0.0.1:5173` y redirige `/api` a la API local.
 
 ## Variables
 
-Copiar `.env.example` si se necesita una configuración local:
-
 ```env
-VITE_DATA_SOURCE=mock
+VITE_DATA_SOURCE=api
 VITE_API_BASE_URL=/api/v1
 ```
 
-- `mock`: utiliza `MockBudgetRunnerRepository`.
-- `api`: activa el adapter HTTP preparado para la futura integración. Hasta que exista backend, responde con un error explicativo.
+- `api`: autenticación JWT, finanzas y gamificación persistidas en PostgreSQL.
+- `mock`: repositorio en memoria útil para trabajo visual aislado.
 
 ## Arquitectura
 
-- `src/app`: providers y estado de aplicación.
-- `src/components/ui`: primitivas Ultrawave.
+- `src/app/AuthContext.tsx`: sesión, restauración mediante refresh y protección de rutas.
+- `src/app/AppDataContext.tsx`: estado de dominio y revalidación tras mutaciones.
+- `src/services/apiClient.ts`: cliente HTTP, errores normalizados y renovación automática.
+- `src/services/httpBudgetRunnerRepository.ts`: adaptación del contrato REST a los tipos de UI.
 - `src/components/forms`: formularios reutilizables.
 - `src/components/charts`: gráficos SVG accesibles.
-- `src/components/game`: cyberdeck y módulos.
-- `src/data`: dataset de demostración.
+- `src/components/game`: cyberdeck WebGL/SVG y tarjetas de módulos.
 - `src/pages`: rutas completas.
-- `src/services`: contrato de repositorio, mock y adapter HTTP.
-- `src/types`: modelos alineados con `API.md`.
 
-La lógica económica —recompensas, daño, coste de compra, cierres e idempotencia— no se ejecuta en el navegador. Los valores mostrados son snapshots o estimaciones que la futura API deberá recalcular.
+El servidor calcula balance, distribución, flujo mensual, costes, SynthCoins, Power, bonus y Flux. React solo renderiza los snapshots canónicos.
 
-## Rutas
+## Actualización dinámica
 
-- `/`: dashboard.
-- `/gastos`: transacciones, filtros y formulario modular.
-- `/presupuestos`: presupuestos, gauges y detalle de periodos.
-- `/gamificacion`: resumen, cyberdeck, tienda, reparaciones y registro.
-- `/perfil`: Flux, rachas e historial.
-- `/ajustes`: región, animación, accesibilidad y categorías.
-- `/login`, `/registro`, `/recuperar`, `/restablecer`: identidad.
-- `/licencia`, `/privacidad`: páginas legales.
+Después de registrar, editar o eliminar una operación, la aplicación revalida el snapshot y actualiza balance, donut, barras y lista reciente sin recargar la página. Comprar o reparar actualiza de la misma forma saldo, progreso, módulos, ofertas e historial.
 
 ## Verificación
 
 ```bash
-npm run build
 npm run lint
+npm run build
 ```
+

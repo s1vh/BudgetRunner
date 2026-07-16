@@ -14,6 +14,8 @@ export interface Category {
   color: string
 }
 
+export type CategoryDraft = Omit<Category, 'id'>
+
 export interface FinancialTransaction {
   id: string
   type: TransactionType
@@ -120,6 +122,7 @@ export interface CyberModule {
   energy: number
   state: ModuleState
   priceCoins: number
+  repairCost?: number
   description: string
 }
 

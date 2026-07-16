@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { NavLink, Outlet, useNavigate } from 'react-router'
 import { useAppData } from '@/app/AppDataContext'
+import { useAuth } from '@/app/AuthContext'
 import { AmbientBackground } from './AmbientBackground'
 import { cn, Progress } from '@/components/ui/primitives'
 
@@ -24,9 +25,11 @@ const navItems: NavItem[] = [
   { to: '/perfil', label: 'Perfil', icon: UserRound },
   { to: '/ajustes', label: 'Ajustes', icon: Settings },
 ]
+const connectionLabel = import.meta.env.VITE_DATA_SOURCE === 'api' ? 'API online' : 'Mock online'
 
 function DesktopNav() {
   const { data } = useAppData()
+  const { logout } = useAuth()
   const navigate = useNavigate()
   const profile = data?.profile
   const initials = profile?.displayName.split(' ').map((part) => part[0]).slice(0, 2).join('') ?? 'BR'
@@ -52,7 +55,7 @@ function DesktopNav() {
           <span className="min-w-0 flex-1"><strong className="block truncate text-sm">{profile?.displayName ?? 'Nómada'}</strong><small className="font-mono text-[10px] text-text-muted">Nivel {profile?.progress.level ?? '--'} · {profile?.progress.synthcoins ?? 0} SC</small></span>
         </button>
         <Progress value={levelProgress} max={levelRange} tone="purple" />
-        <button type="button" onClick={() => navigate('/login')} className="flex min-h-11 items-center gap-3 rounded-lg px-3 font-mono text-xs text-text-muted transition hover:bg-neon-magenta/6 hover:text-neon-magenta"><LogOut className="size-4" />Cerrar sesión</button>
+        <button type="button" onClick={() => { void logout().finally(() => navigate('/login')) }} className="flex min-h-11 items-center gap-3 rounded-lg px-3 font-mono text-xs text-text-muted transition hover:bg-neon-magenta/6 hover:text-neon-magenta"><LogOut className="size-4" />Cerrar sesión</button>
       </div>
     </aside>
   )
@@ -83,7 +86,7 @@ export function AppShell() {
           </footer>
         </div>
       </main>
-      <div className="fixed right-4 top-4 z-30 hidden items-center gap-2 rounded-full border border-success/20 bg-void/65 px-3 py-1.5 font-mono text-[9px] tracking-widest text-success uppercase backdrop-blur md:flex"><span className="status-dot" />Mock online</div>
+      <div className="fixed right-4 top-4 z-30 hidden items-center gap-2 rounded-full border border-success/20 bg-void/65 px-3 py-1.5 font-mono text-[9px] tracking-widest text-success uppercase backdrop-blur md:flex"><span className="status-dot" />{connectionLabel}</div>
       <Zap className="fixed right-5 bottom-24 -z-1 size-28 text-neon-magenta opacity-[0.025] md:bottom-8" aria-hidden="true" />
     </div>
   )

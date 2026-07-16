@@ -36,16 +36,19 @@ export function TransactionForm({ categories, initial, onSubmit, onCancel }: Tra
 
     setSubmitting(true)
     try {
+      const today = new Date().toISOString().slice(0, 10)
       await onSubmit({
         type,
         concept: concept.trim(),
         amountMinor: Math.round(numericAmount * 100),
         currency,
         categoryId,
-        occurredAt: new Date(`${occurredAt}T12:00:00Z`).toISOString(),
+        occurredAt: occurredAt === today ? new Date().toISOString() : new Date(`${occurredAt}T12:00:00Z`).toISOString(),
         notes: notes.trim() || undefined,
         status,
       })
+    } catch (error) {
+      setErrors((current) => ({ ...current, form: error instanceof Error ? error.message : 'No se pudo registrar la operación.' }))
     } finally {
       setSubmitting(false)
     }
@@ -53,6 +56,7 @@ export function TransactionForm({ categories, initial, onSubmit, onCancel }: Tra
 
   return (
     <form onSubmit={submit} className="grid gap-5" noValidate>
+      {errors.form && <div role="alert" className="rounded-lg border border-neon-magenta/30 bg-neon-magenta/7 p-3 text-sm text-neon-magenta">{errors.form}</div>}
       {initial?.lockedByReward && <div className="rounded-lg border border-sunset/30 bg-sunset/7 p-3 text-sm text-sunset">Esta transacción está incluida en un cierre recompensado. El backend bloqueará su edición y propondrá un ajuste compensatorio.</div>}
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Tipo" htmlFor="transaction-type" required>

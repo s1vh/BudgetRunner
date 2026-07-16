@@ -11,7 +11,7 @@ export function PublicShell() {
         <span className="hidden font-mono text-[10px] tracking-[0.16em] text-text-muted uppercase sm:block">Personal finance & cyberdeck</span>
       </header>
       <main className="relative z-10 grid min-h-[calc(100vh-148px)] place-items-center px-4 py-8"><Outlet /></main>
-      <footer className="relative z-10 p-5 text-center font-mono text-[10px] text-text-muted">Budget Runner © 2026 Mike Fieldins · MIT License</footer>
+      <footer className="relative z-10 p-5 text-center font-mono text-[10px] text-text-muted">Budget Runner © 2026 <a href="https://www.linkedin.com/in/mikefieldins/" target="_blank" rel="noreferrer noopener" className="text-neon-cyan transition hover:underline">Mike Fieldins</a> · MIT License</footer>
     </div>
   )
 }

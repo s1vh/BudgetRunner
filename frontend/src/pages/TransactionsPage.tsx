@@ -34,7 +34,7 @@ export function TransactionsPage() {
     if (editing && editing !== 'new') await updateTransaction(editing.id, draft)
     else await createTransaction(draft)
     setEditing(null)
-    setFeedback(editing === 'new' ? 'Operación registrada en la memoria local.' : 'Operación actualizada.')
+    setFeedback(editing === 'new' ? 'Operación registrada en PostgreSQL.' : 'Operación actualizada.')
   }
 
   async function confirmDelete() {
@@ -95,7 +95,7 @@ export function TransactionsPage() {
       <Modal open={Boolean(editing)} onClose={() => setEditing(null)} title={editing === 'new' ? 'Nueva operación' : 'Editar operación'} description="El mismo formulario se utiliza para alta y edición.">
         {editing && <TransactionForm key={editing === 'new' ? 'new' : editing.id} categories={data.categories} initial={editing === 'new' ? undefined : editing} onSubmit={save} onCancel={() => setEditing(null)} />}
       </Modal>
-      <Modal open={Boolean(deleting)} onClose={() => setDeleting(null)} title="Confirmar eliminación" description={deleting?.lockedByReward ? 'Esta operación está protegida. El backend responderá 409 y se ofrecerá un ajuste compensatorio.' : 'Esta acción retirará la operación de la sesión mock.'}>
+      <Modal open={Boolean(deleting)} onClose={() => setDeleting(null)} title="Confirmar eliminación" description={deleting?.lockedByReward ? 'Esta operación está protegida. El backend responderá 409 y se ofrecerá un ajuste compensatorio.' : 'Esta acción eliminará la operación persistida.'}>
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><Button variant="ghost" onClick={() => setDeleting(null)}>Cancelar</Button><Button variant="magenta" icon={Trash2} loading={deletingBusy} onClick={() => void confirmDelete()}>Eliminar</Button></div>
       </Modal>
     </div>
