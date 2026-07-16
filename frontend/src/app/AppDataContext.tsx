@@ -4,6 +4,8 @@ import { repository } from '@/services/repository'
 import type {
   AppSnapshot,
   BudgetDraft,
+  Category,
+  CategoryDraft,
   FinancialTransaction,
   TransactionDraft,
   UserPreferences,
@@ -14,6 +16,9 @@ interface AppDataValue {
   loading: boolean
   error: string | null
   refresh: () => Promise<void>
+  createCategory: (draft: CategoryDraft) => Promise<Category>
+  updateCategory: (id: string, draft: CategoryDraft) => Promise<Category>
+  deleteCategory: (id: string) => Promise<void>
   createTransaction: (draft: TransactionDraft) => Promise<void>
   updateTransaction: (id: string, draft: TransactionDraft) => Promise<void>
   deleteTransaction: (transaction: FinancialTransaction) => Promise<void>
@@ -71,6 +76,19 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     loading,
     error,
     refresh,
+    createCategory: async (draft) => {
+      let category: Category | undefined
+      await mutate(async () => { category = await repository.createCategory(draft) })
+      if (!category) throw new Error('No se ha podido crear la categoría.')
+      return category
+    },
+    updateCategory: async (id, draft) => {
+      let category: Category | undefined
+      await mutate(async () => { category = await repository.updateCategory(id, draft) })
+      if (!category) throw new Error('No se ha podido actualizar la categoría.')
+      return category
+    },
+    deleteCategory: (id) => mutate(() => repository.deleteCategory(id)),
     createTransaction: (draft) => mutate(() => repository.createTransaction(draft)),
     updateTransaction: (id, draft) => mutate(() => repository.updateTransaction(id, draft)),
     deleteTransaction: (transaction) => mutate(() => repository.deleteTransaction(transaction.id)),

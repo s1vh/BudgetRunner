@@ -14,6 +14,8 @@ export interface Category {
   color: string
 }
 
+export type CategoryDraft = Omit<Category, 'id'>
+
 export interface FinancialTransaction {
   id: string
   type: TransactionType

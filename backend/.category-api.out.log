@@ -1,0 +1,9 @@
+
+> budget-runner@0.1.0 dev:api
+> npm --prefix backend run dev
+
+
+> budget-runner-backend@0.1.0 dev
+> tsx watch src/server.ts
+
+Budget Runner API listening on http://127.0.0.1:3001

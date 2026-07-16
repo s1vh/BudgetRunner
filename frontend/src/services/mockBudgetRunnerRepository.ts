@@ -1,9 +1,11 @@
-import { cashflow, categories, gameHistory, initialBudgets, initialTransactions, modules, offers, profile, progress } from '@/data/mockData'
+import { cashflow, categories as initialCategories, gameHistory, initialBudgets, initialTransactions, modules, offers, profile, progress } from '@/data/mockData'
 import type { BudgetRunnerRepository } from './budgetRunnerRepository'
 import type {
   AppSnapshot,
   Budget,
   BudgetDraft,
+  Category,
+  CategoryDraft,
   CategoryDistribution,
   FinancialTransaction,
   TransactionDraft,
@@ -17,10 +19,11 @@ const wait = (milliseconds = 180) => new Promise((resolve) => window.setTimeout(
 export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
   private transactions = [...initialTransactions]
   private budgets = [...initialBudgets]
+  private categories = structuredClone(initialCategories)
   private currentProfile = structuredClone(profile)
 
   private categoryName(categoryId: string) {
-    return categories.find((category) => category.id === categoryId)?.name ?? 'Otros'
+    return this.categories.find((category) => category.id === categoryId)?.name ?? 'Otros'
   }
 
   private distribution(): CategoryDistribution[] {
@@ -31,7 +34,7 @@ export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
 
     return [...grouped.entries()]
       .map(([categoryId, amountMinor]) => {
-        const category = categories.find((item) => item.id === categoryId)
+        const category = this.categories.find((item) => item.id === categoryId)
         return {
           category: category?.name ?? 'Otros',
           amountMinor,
@@ -82,8 +85,38 @@ export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
         ],
       },
       profile: this.currentProfile,
-      categories,
+      categories: this.categories,
     })
+  }
+
+  async createCategory(input: CategoryDraft): Promise<Category> {
+    await wait(180)
+    if (this.categories.some((category) => category.name.toLocaleLowerCase() === input.name.toLocaleLowerCase())) {
+      throw new Error('Ya existe una categoría activa con ese nombre.')
+    }
+    const category = { id: createId('category'), ...input }
+    this.categories = [...this.categories, category]
+    return structuredClone(category)
+  }
+
+  async updateCategory(id: string, input: CategoryDraft): Promise<Category> {
+    await wait(180)
+    const current = this.categories.find((category) => category.id === id)
+    if (!current) throw new Error('No se ha encontrado la categoría.')
+    if (this.categories.some((category) => category.id !== id && category.name.toLocaleLowerCase() === input.name.toLocaleLowerCase())) {
+      throw new Error('Ya existe una categoría activa con ese nombre.')
+    }
+    const category = { ...current, ...input }
+    this.categories = this.categories.map((item) => item.id === id ? category : item)
+    this.transactions = this.transactions.map((transaction) => transaction.categoryId === id
+      ? { ...transaction, categoryName: category.name }
+      : transaction)
+    return structuredClone(category)
+  }
+
+  async deleteCategory(id: string): Promise<void> {
+    await wait(180)
+    this.categories = this.categories.filter((category) => category.id !== id)
   }
 
   async createTransaction(input: TransactionDraft): Promise<FinancialTransaction> {

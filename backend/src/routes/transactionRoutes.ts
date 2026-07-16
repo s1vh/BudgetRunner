@@ -16,6 +16,28 @@ const transactionSchema = z.object({
   status: z.enum(['posted', 'scheduled']).default('posted'),
 })
 
+const categorySchema = z.object({
+  name: z.string().trim().min(2).max(80),
+  icon: z.string().trim().regex(/^[a-z0-9-]{1,64}$/).default('shapes'),
+  color: z.string().trim().regex(/^#[0-9a-fA-F]{6}$/).transform((value) => value.toUpperCase()).default('#986780'),
+})
+
+const categoryUpdateSchema = categorySchema.partial().refine(
+  (input) => Object.keys(input).length > 0,
+  { message: 'Debes indicar al menos un campo para actualizar.' },
+)
+
+interface CategoryRow {
+  id: string
+  name: string
+  icon_key: string
+  color_token: string
+}
+
+function categoryDto(row: CategoryRow) {
+  return { id: row.id, name: row.name, icon: row.icon_key, color: row.color_token }
+}
+
 const listSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(25),
@@ -72,11 +94,88 @@ transactionRouter.use(requireAuth)
 
 transactionRouter.get('/categories', asyncHandler(async (request, response) => {
   const userId = (request as AppRequest).userId
-  const result = await pool.query<{ id: string; name: string; icon_key: string; color_token: string }>(`
+  const result = await pool.query<CategoryRow>(`
     SELECT id, name, icon_key, color_token FROM categories
      WHERE user_id = $1 AND is_archived = false ORDER BY is_system_seed DESC, name
   `, [userId])
-  response.json({ data: result.rows.map((row) => ({ id: row.id, name: row.name, icon: row.icon_key, color: row.color_token })), meta: {} })
+  response.json({ data: result.rows.map(categoryDto), meta: {} })
+}))
+
+transactionRouter.post('/categories', asyncHandler(async (request, response) => {
+  const appRequest = request as AppRequest
+  const userId = appRequest.userId
+  const input = categorySchema.parse(request.body)
+  const category = await withTransaction(async (client) => {
+    const inserted = await client.query<CategoryRow>(`
+      INSERT INTO categories (user_id, name, icon_key, color_token)
+      VALUES ($1, $2, $3, $4)
+      RETURNING id, name, icon_key, color_token
+    `, [userId, input.name, input.icon, input.color])
+    const row = inserted.rows[0]
+    if (!row) throw new Error('Category insert failed')
+    await client.query(`
+      INSERT INTO audit_events (user_id, actor_type, action, entity_type, entity_id, request_id, metadata)
+      VALUES ($1, 'user', 'category.created', 'category', $2, $3, jsonb_build_object('name', $4::text))
+    `, [userId, row.id, appRequest.requestId, row.name])
+    return categoryDto(row)
+  })
+  response.status(201).json({ data: category, meta: {} })
+}))
+
+transactionRouter.patch('/categories/:id', asyncHandler(async (request, response) => {
+  const appRequest = request as AppRequest
+  const userId = appRequest.userId
+  const categoryId = z.string().uuid().parse(request.params.id)
+  const input = categoryUpdateSchema.parse(request.body)
+  const category = await withTransaction(async (client) => {
+    const updated = await client.query<CategoryRow>(`
+      UPDATE categories
+         SET name = coalesce($3, name), icon_key = coalesce($4, icon_key), color_token = coalesce($5, color_token)
+       WHERE id = $1 AND user_id = $2 AND is_archived = false
+       RETURNING id, name, icon_key, color_token
+    `, [categoryId, userId, input.name ?? null, input.icon ?? null, input.color ?? null])
+    const row = updated.rows[0]
+    if (!row) throw new ApiError(404, 'CATEGORY_NOT_FOUND', 'No se ha encontrado la categoría.')
+    await client.query(`
+      INSERT INTO audit_events (user_id, actor_type, action, entity_type, entity_id, request_id, metadata)
+      VALUES ($1, 'user', 'category.updated', 'category', $2, $3, jsonb_build_object('name', $4::text))
+    `, [userId, row.id, appRequest.requestId, row.name])
+    return categoryDto(row)
+  })
+  response.json({ data: category, meta: {} })
+}))
+
+transactionRouter.delete('/categories/:id', asyncHandler(async (request, response) => {
+  const appRequest = request as AppRequest
+  const userId = appRequest.userId
+  const categoryId = z.string().uuid().parse(request.params.id)
+  const result = await withTransaction(async (client) => {
+    const current = await client.query<{ id: string; name: string }>(`
+      SELECT id, name FROM categories
+       WHERE id = $1 AND user_id = $2 AND is_archived = false
+       FOR UPDATE
+    `, [categoryId, userId])
+    const category = current.rows[0]
+    if (!category) throw new ApiError(404, 'CATEGORY_NOT_FOUND', 'No se ha encontrado la categoría.')
+
+    const references = await client.query<{ count: string }>(`
+      SELECT count(*)::text AS count FROM financial_transactions
+       WHERE category_id = $1 AND user_id = $2
+    `, [categoryId, userId])
+    const archived = Number(references.rows[0]?.count ?? 0) > 0
+    if (archived) {
+      await client.query('UPDATE categories SET is_archived = true WHERE id = $1 AND user_id = $2', [categoryId, userId])
+    } else {
+      await client.query('DELETE FROM categories WHERE id = $1 AND user_id = $2', [categoryId, userId])
+    }
+    await client.query(`
+      INSERT INTO audit_events (user_id, actor_type, action, entity_type, entity_id, request_id, metadata)
+      VALUES ($1, 'user', 'category.deleted', 'category', $2, $3,
+        jsonb_build_object('name', $4::text, 'archived', $5::boolean))
+    `, [userId, categoryId, appRequest.requestId, category.name, archived])
+    return { id: categoryId, archived }
+  })
+  response.json({ data: result, meta: {} })
 }))
 
 transactionRouter.get('/transactions', asyncHandler(async (request, response) => {

@@ -2,7 +2,7 @@ import { initialBudgets } from '@/data/mockData'
 import { apiClient, idempotencyHeaders } from './apiClient'
 import type { BudgetRunnerRepository } from './budgetRunnerRepository'
 import type {
-  AppSnapshot, Budget, Category, CyberModule, DashboardData, FinancialTransaction,
+  AppSnapshot, Budget, Category, CategoryDraft, CyberModule, DashboardData, FinancialTransaction,
   GameData, GameEvent, ProgressSummary, StoreOffer, TransactionDraft, UserPreferences, UserProfile,
 } from '@/types/domain'
 
@@ -80,6 +80,18 @@ export class HttpBudgetRunnerRepository implements BudgetRunnerRepository {
       profile,
       categories,
     }
+  }
+
+  async createCategory(input: CategoryDraft): Promise<Category> {
+    return apiClient.request<Category>('/categories', { method: 'POST', body: JSON.stringify(input) })
+  }
+
+  async updateCategory(id: string, input: CategoryDraft): Promise<Category> {
+    return apiClient.request<Category>(`/categories/${id}`, { method: 'PATCH', body: JSON.stringify(input) })
+  }
+
+  async deleteCategory(id: string): Promise<void> {
+    await apiClient.request(`/categories/${id}`, { method: 'DELETE' })
   }
 
   async createTransaction(input: TransactionDraft): Promise<FinancialTransaction> {

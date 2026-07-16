@@ -63,6 +63,47 @@ describe.sequential('Budget Runner API', () => {
     expect(response.body.error.code).toBe('AUTHENTICATION_REQUIRED')
   })
 
+  test('crea, edita y archiva categorías usadas sin romper el historial', async () => {
+    const created = await request(app).post('/api/v1/categories')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'Viajes estelares', icon: 'car', color: '#12ABEF' })
+    expect(created.status).toBe(201)
+    expect(created.body.data.name).toBe('Viajes estelares')
+    const id = created.body.data.id as string
+
+    const isolated = await request(app).patch(`/api/v1/categories/${id}`)
+      .set('Authorization', `Bearer ${secondaryToken}`)
+      .send({ name: 'Categoría ajena' })
+    expect(isolated.status).toBe(404)
+
+    const updated = await request(app).patch(`/api/v1/categories/${id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'Viajes hiperespaciales', icon: 'car', color: '#FF007F' })
+    expect(updated.status).toBe(200)
+    expect(updated.body.data).toMatchObject({ name: 'Viajes hiperespaciales', color: '#FF007F' })
+
+    const transaction = await request(app).post('/api/v1/transactions')
+      .set('Authorization', `Bearer ${token}`).set('Idempotency-Key', randomUUID())
+      .send({
+        type: 'expense', concept: 'Salto de prueba', amountMinor: 321, currency: 'EUR', categoryId: id,
+        occurredAt: new Date().toISOString(), status: 'posted',
+      })
+    expect(transaction.status).toBe(201)
+
+    const removed = await request(app).delete(`/api/v1/categories/${id}`).set('Authorization', `Bearer ${token}`)
+    expect(removed.status).toBe(200)
+    expect(removed.body.data.archived).toBe(true)
+
+    const active = await request(app).get('/api/v1/categories').set('Authorization', `Bearer ${token}`)
+    expect(active.body.data.some((category: { id: string }) => category.id === id)).toBe(false)
+    const history = await request(app).get('/api/v1/transactions').set('Authorization', `Bearer ${token}`)
+    expect(history.body.data.find((item: { id: string }) => item.id === transaction.body.data.transaction.id)?.categoryName)
+      .toBe('Viajes hiperespaciales')
+
+    await request(app).delete(`/api/v1/transactions/${transaction.body.data.transaction.id}`)
+      .set('Authorization', `Bearer ${token}`).set('Idempotency-Key', randomUUID())
+  })
+
   test('crea un gasto una sola vez y actualiza el dashboard', async () => {
     const key = randomUUID()
     const input = {
