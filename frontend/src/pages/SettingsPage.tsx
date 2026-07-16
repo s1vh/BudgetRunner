@@ -1,0 +1,37 @@
+import { useState } from 'react'
+import { Accessibility, BellRing, Eye, Globe2, Palette, Save, Settings, Shield, SlidersHorizontal, Tags, Trash2 } from 'lucide-react'
+import { useAppData } from '@/app/AppDataContext'
+import { Badge, Button, Field, Input, PageSkeleton, Select, SynthCard } from '@/components/ui/primitives'
+import { PageHeader } from '@/components/ui/PageHeader'
+import type { UserPreferences } from '@/types/domain'
+
+function Toggle({ checked, onChange, label, description }: { checked: boolean; onChange: (value: boolean) => void; label: string; description: string }) {
+  return <label className="flex cursor-pointer items-start justify-between gap-4 border-b border-outline-soft/45 py-4 last:border-0"><span><strong className="block text-sm">{label}</strong><small className="mt-1 block max-w-lg text-xs leading-5 text-text-muted">{description}</small></span><input className="peer sr-only" type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} /><span className="relative mt-1 h-6 w-11 shrink-0 rounded-full border border-outline-soft bg-panel-high transition peer-checked:border-neon-cyan/60 peer-checked:bg-neon-cyan/20 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-tertiary after:absolute after:left-1 after:top-1 after:size-4 after:rounded-full after:bg-text-muted after:transition peer-checked:after:translate-x-5 peer-checked:after:bg-neon-cyan peer-checked:after:shadow-[0_0_8px_#00ffff]" aria-hidden="true" /></label>
+}
+
+export function SettingsPage() {
+  const { data, loading, updatePreferences } = useAppData()
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [preferences, setPreferences] = useState<UserPreferences | null>(null)
+  if (loading || !data) return <PageSkeleton />
+  const current = preferences ?? data.profile.preferences
+  const change = (key: keyof UserPreferences, value: boolean) => { setPreferences({ ...current, [key]: value }); setSaved(false) }
+  async function save() { setSaving(true); try { await updatePreferences(current); setPreferences(null); setSaved(true) } finally { setSaving(false) } }
+
+  return (
+    <div className="page-enter grid gap-6">
+      <PageHeader eyebrow="Configuración del sistema" title="Ajustes" description="Preferencias regionales, visuales, categorías y controles de privacidad." icon={Settings} actions={<Button icon={Save} loading={saving} onClick={() => void save()}>Guardar cambios</Button>} />
+      {saved && <div className="rounded-lg border border-success/25 bg-success/5 p-3 text-sm text-success">Preferencias guardadas en el repositorio mock.</div>}
+      <div className="grid gap-4 xl:grid-cols-2">
+        <SynthCard className="p-5 sm:p-6"><div className="mb-4 flex items-center gap-2"><Globe2 className="size-4 text-neon-cyan" /><h2 className="font-display text-sm font-bold uppercase">Región & moneda</h2></div><div className="grid gap-4 sm:grid-cols-2"><Field label="Moneda principal" htmlFor="settings-currency"><Select id="settings-currency" defaultValue={data.profile.primaryCurrency}><option>EUR</option><option>USD</option><option>GBP</option></Select></Field><Field label="Formato regional" htmlFor="settings-locale"><Select id="settings-locale" defaultValue={data.profile.locale}><option value="es-ES">Español · España</option><option value="en-US">English · US</option></Select></Field><Field label="Zona horaria" htmlFor="settings-timezone"><Select id="settings-timezone" defaultValue={data.profile.timezone}><option>Europe/Madrid</option><option>UTC</option><option>America/New_York</option></Select></Field><Field label="Inicio de semana" htmlFor="settings-week"><Select id="settings-week" defaultValue="1"><option value="1">Lunes</option><option value="7">Domingo</option></Select></Field></div><p className="mt-4 rounded-lg border border-sunset/20 bg-sunset/5 p-3 text-xs leading-5 text-text-muted">Cambiar la moneda principal no convertirá datos históricos. Los periodos conservan la zona horaria de su creación.</p></SynthCard>
+        <SynthCard className="p-5 sm:p-6"><div className="flex items-center gap-2"><Palette className="size-4 text-neon-magenta" /><h2 className="font-display text-sm font-bold uppercase">Experiencia Ultrawave</h2></div><div className="mt-2"><Toggle checked={current.ambientEffects} onChange={(value) => change('ambientEffects', value)} label="Efectos ambientales" description="Nebulosa, horizonte, rejilla y brillos de baja intensidad." /><Toggle checked={current.scanlines} onChange={(value) => change('scanlines', value)} label="Scanlines CRT" description="Textura analógica sutil sobre la interfaz." /><Toggle checked={current.audioReactive} onChange={(value) => change('audioReactive', value)} label="Pulso audio-reactive simulado" description="No reproduce audio; modifica únicamente decoración ambiental." /><Toggle checked={current.reducedMotion} onChange={(value) => change('reducedMotion', value)} label="Reducir movimiento" description="Desactiva glitch, pulsos y transiciones no esenciales." /><Toggle checked={current.compactMode} onChange={(value) => change('compactMode', value)} label="Modo compacto" description="Limita el ancho de contenido para una lectura más densa." /></div></SynthCard>
+        <SynthCard className="p-5 sm:p-6"><div className="mb-4 flex items-center justify-between gap-3"><div className="flex items-center gap-2"><Tags className="size-4 text-tertiary" /><h2 className="font-display text-sm font-bold uppercase">Categorías</h2></div><Button variant="ghost" className="min-h-9 px-3 text-[10px]">Añadir</Button></div><div className="grid gap-2">{data.categories.map((category) => <div key={category.id} className="flex items-center justify-between gap-3 rounded-lg border border-white/7 bg-white/[0.025] p-3"><span className="flex items-center gap-3"><i className="size-2.5 rounded-full" style={{ background: category.color, boxShadow: `0 0 8px ${category.color}` }} /><span className="text-sm">{category.name}</span></span><Badge tone="muted">Activa</Badge></div>)}</div></SynthCard>
+        <div className="grid gap-4">
+          <SynthCard className="p-5 sm:p-6"><div className="mb-4 flex items-center gap-2"><Accessibility className="size-4 text-success" /><h2 className="font-display text-sm font-bold uppercase">Accesibilidad</h2></div><ul className="grid gap-3 text-sm text-text-muted"><li className="flex gap-2"><Eye className="mt-0.5 size-4 shrink-0 text-neon-cyan" />Contraste verificado sobre las capas ambientales.</li><li className="flex gap-2"><SlidersHorizontal className="mt-0.5 size-4 shrink-0 text-tertiary" />Todos los controles admiten navegación por teclado.</li><li className="flex gap-2"><BellRing className="mt-0.5 size-4 shrink-0 text-sunset" />Los estados importantes incluyen texto e icono, no solo color.</li></ul></SynthCard>
+          <SynthCard className="p-5 sm:p-6" tone="danger"><div className="mb-3 flex items-center gap-2"><Shield className="size-4 text-neon-magenta" /><h2 className="font-display text-sm font-bold uppercase">Privacidad & cuenta</h2></div><p className="text-sm leading-6 text-text-muted">La eliminación requerirá reautenticación y confirmación explícita cuando exista backend.</p><div className="mt-4 flex gap-3"><Field label="Confirmación" htmlFor="delete-account"><Input id="delete-account" placeholder="Escribe ELIMINAR" /></Field><Button className="self-end" variant="magenta" icon={Trash2} disabled>Eliminar</Button></div></SynthCard>
+        </div>
+      </div>
+    </div>
+  )
+}
