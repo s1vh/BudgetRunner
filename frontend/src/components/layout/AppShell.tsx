@@ -21,11 +21,11 @@ import type { TranslationKey } from '@/i18n/messages'
 interface NavItem { to: string; labelKey: TranslationKey; icon: LucideIcon; end?: boolean }
 const navItems: NavItem[] = [
   { to: '/', labelKey: 'nav.dashboard', icon: Gauge, end: true },
-  { to: '/gastos', labelKey: 'nav.transactions', icon: WalletCards },
-  { to: '/presupuestos', labelKey: 'nav.budgets', icon: Radar },
-  { to: '/gamificacion', labelKey: 'nav.game', icon: Gamepad2 },
-  { to: '/perfil', labelKey: 'nav.profile', icon: UserRound },
-  { to: '/ajustes', labelKey: 'nav.settings', icon: Settings },
+  { to: '/transactions', labelKey: 'nav.transactions', icon: WalletCards },
+  { to: '/budgets', labelKey: 'nav.budgets', icon: Radar },
+  { to: '/gamification', labelKey: 'nav.game', icon: Gamepad2 },
+  { to: '/profile', labelKey: 'nav.profile', icon: UserRound },
+  { to: '/settings', labelKey: 'nav.settings', icon: Settings },
 ]
 
 function DesktopNav() {
@@ -52,7 +52,7 @@ function DesktopNav() {
         ))}
       </nav>
       <div className="grid gap-3 border-t border-outline-soft/60 pt-4">
-        <button type="button" onClick={() => navigate('/perfil')} className="flex items-center gap-3 rounded-lg p-2 text-left transition hover:bg-white/4">
+        <button type="button" onClick={() => navigate('/profile')} className="flex items-center gap-3 rounded-lg p-2 text-left transition hover:bg-white/4">
           <span className="grid size-10 place-items-center rounded-full border border-neon-magenta/55 bg-neon-magenta/10 font-display text-xs font-bold text-neon-magenta">{initials}</span>
           <span className="min-w-0 flex-1"><strong className="block truncate text-sm">{profile?.displayName ?? t('nav.nomad')}</strong><small className="font-mono text-[10px] text-text-muted">{t('common.level', { level: profile?.progress.level ?? '--' })} · {profile?.progress.synthcoins ?? 0} SC</small></span>
         </button>
