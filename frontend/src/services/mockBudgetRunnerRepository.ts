@@ -12,6 +12,7 @@ import type {
   UserPreferences,
   UserProfile,
 } from '@/types/domain'
+import { detectSystemLocale, readStoredLocale, type SupportedLocale } from '@/i18n/locales'
 import { createId } from '@/utils/format'
 
 const wait = (milliseconds = 180) => new Promise((resolve) => window.setTimeout(resolve, milliseconds))
@@ -20,7 +21,7 @@ export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
   private transactions = [...initialTransactions]
   private budgets = [...initialBudgets]
   private categories = structuredClone(initialCategories)
-  private currentProfile = structuredClone(profile)
+  private currentProfile = { ...structuredClone(profile), locale: readStoredLocale() ?? detectSystemLocale() }
 
   private categoryName(categoryId: string) {
     return this.categories.find((category) => category.id === categoryId)?.name ?? 'Otros'
@@ -37,6 +38,7 @@ export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
         const category = this.categories.find((item) => item.id === categoryId)
         return {
           category: category?.name ?? 'Otros',
+          ...(category?.systemKey ? { systemKey: category.systemKey } : {}),
           amountMinor,
           percentage: total > 0 ? Math.round((amountMinor / total) * 100) : 0,
           color: category?.color ?? '#986780',
@@ -57,7 +59,7 @@ export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
     return structuredClone({
       dashboard: {
         displayName: this.currentProfile.displayName,
-        systemStatus: 'Sistema online · Tracking activo',
+        systemStatus: 'dashboard.systemOnline',
         balanceMinor: income - expenses,
         budgetRemainingMinor: remaining,
         currency: this.currentProfile.primaryCurrency,
@@ -66,9 +68,9 @@ export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
         recentTransactions: [...this.transactions].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt)).slice(0, 5),
         progress,
         alerts: [
-          { id: 'alert-1', tone: 'warning', message: 'Ghostlink Q7 está en estado crítico: 18% Energy.' },
-          { id: 'alert-2', tone: 'info', message: 'La rotación de tienda expira en 5 días.' },
-        ],
+          { id: 'alert-1', tone: 'warning', message: { key: 'alert.criticalModule', params: { name: 'Ghostlink Q7', energy: 18 } } },
+          { id: 'alert-2', tone: 'info', message: { key: 'alert.storeRotation.other', params: { days: 5 } } },
+        ] as AppSnapshot['dashboard']['alerts'],
       },
       transactions: [...this.transactions].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt)),
       budgets: this.budgets,
@@ -92,7 +94,7 @@ export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
   async createCategory(input: CategoryDraft): Promise<Category> {
     await wait(180)
     if (this.categories.some((category) => category.name.toLocaleLowerCase() === input.name.toLocaleLowerCase())) {
-      throw new Error('Ya existe una categoría activa con ese nombre.')
+      throw new Error('RESOURCE_CONFLICT')
     }
     const category = { id: createId('category'), ...input }
     this.categories = [...this.categories, category]
@@ -102,11 +104,11 @@ export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
   async updateCategory(id: string, input: CategoryDraft): Promise<Category> {
     await wait(180)
     const current = this.categories.find((category) => category.id === id)
-    if (!current) throw new Error('No se ha encontrado la categoría.')
+    if (!current) throw new Error('CATEGORY_NOT_FOUND')
     if (this.categories.some((category) => category.id !== id && category.name.toLocaleLowerCase() === input.name.toLocaleLowerCase())) {
-      throw new Error('Ya existe una categoría activa con ese nombre.')
+      throw new Error('RESOURCE_CONFLICT')
     }
-    const category = { ...current, ...input }
+    const category = { ...current, ...input, systemKey: current.name === input.name ? current.systemKey : undefined }
     this.categories = this.categories.map((item) => item.id === id ? category : item)
     this.transactions = this.transactions.map((transaction) => transaction.categoryId === id
       ? { ...transaction, categoryName: category.name }
@@ -134,8 +136,8 @@ export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
   async updateTransaction(id: string, input: TransactionDraft): Promise<FinancialTransaction> {
     await wait(260)
     const current = this.transactions.find((transaction) => transaction.id === id)
-    if (!current) throw new Error('Transacción no encontrada.')
-    if (current.lockedByReward) throw new Error('Esta transacción pertenece a un cierre recompensado y no puede editarse.')
+    if (!current) throw new Error('TRANSACTION_NOT_FOUND')
+    if (current.lockedByReward) throw new Error('REWARDED_TRANSACTION_LOCKED')
     const updated = { ...current, ...input, categoryName: this.categoryName(input.categoryId), status: input.status ?? current.status }
     this.transactions = this.transactions.map((transaction) => transaction.id === id ? updated : transaction)
     return structuredClone(updated)
@@ -171,6 +173,12 @@ export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
   async updatePreferences(input: UserPreferences): Promise<UserProfile> {
     await wait(180)
     this.currentProfile = { ...this.currentProfile, preferences: input }
+    return structuredClone(this.currentProfile)
+  }
+
+  async updateLocale(locale: SupportedLocale): Promise<UserProfile> {
+    await wait(120)
+    this.currentProfile = { ...this.currentProfile, locale }
     return structuredClone(this.currentProfile)
   }
 

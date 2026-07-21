@@ -10,6 +10,7 @@ import type {
   UserPreferences,
   UserProfile,
 } from '@/types/domain'
+import type { SupportedLocale } from '@/i18n/locales'
 
 export interface BudgetRunnerRepository {
   getSnapshot(): Promise<AppSnapshot>
@@ -21,6 +22,7 @@ export interface BudgetRunnerRepository {
   deleteTransaction(id: string): Promise<void>
   createBudget(input: BudgetDraft): Promise<Budget>
   updatePreferences(input: UserPreferences): Promise<UserProfile>
+  updateLocale(locale: SupportedLocale): Promise<UserProfile>
   purchaseModule(offerId: string): Promise<GameData>
   repairModule(instanceId: string): Promise<GameData>
 }

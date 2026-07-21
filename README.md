@@ -10,6 +10,7 @@ Aplicación web responsive de finanzas personales y gamificación cyberdeck. El 
 - `GAME_SYSTEM.md`: SynthCoins, Flux, Power y reglas del cyberdeck.
 - `DESIGN.md`: sistema visual Ultrawave.
 - `TEST_PLAN.md`: escenarios funcionales, económicos y responsive.
+- `I18N.md`: arquitectura multilingüe y guía de prueba local de idiomas.
 - `ROADMAP.md`: fases del MVP.
 
 ## Arranque local
@@ -78,6 +79,17 @@ npm test
 npm run lint
 npm run build
 ```
+
+### Prueba rápida de idiomas sin API
+
+El modo mock permite revisar toda la interfaz sin Docker ni PostgreSQL:
+
+```powershell
+$env:VITE_DATA_SOURCE='mock'
+npm run dev:web
+```
+
+Abre `http://127.0.0.1:5173`, cambia el idioma en **Perfil** y recorre Dashboard, Gastos, Presupuestos, Gamificación, Perfil y Ajustes. Para volver a probar la autodetección, borra `budget-runner-ui-locale` de `localStorage`, cambia el idioma preferido del navegador y recarga. Los pasos completos están en `I18N.md`.
 
 La vertical persistente actual cubre identidad email/contraseña y Google OAuth, perfil, categorías, transacciones, dashboard, cyberdeck, tienda, compras y reparaciones. Los presupuestos permanecen como datos de demostración hasta implementar scheduler, cierres y recompensas.
 

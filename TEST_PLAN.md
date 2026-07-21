@@ -218,6 +218,32 @@ Energy llega a 0, módulo destruido, Power 0, slot disponible para compra.
 
 Cada cierre aplica daño una vez; dos cierres distintos se aplican en orden.
 
+## 11. Internacionalización
+
+### T-070 Autodetección
+
+Detecta los ocho locales admitidos desde las preferencias del sistema. Un locale no compatible usa `en-US`.
+
+### T-071 Persistencia
+
+El cambio desde Perfil es inmediato, se guarda en la cuenta y se mantiene tras cerrar sesión y volver a entrar.
+
+### T-072 Cobertura
+
+Acceso, registro, navegación, dashboard, transacciones, presupuestos, gamificación, perfil, ajustes, privacidad, licencia, 404, modales, errores, gráficas y SVG no muestran textos de interfaz en otro idioma.
+
+### T-073 Contenido protegido
+
+Budget Runner, Flux, SynthCoins, Power, los nombres de las mejoras y todo nombre/concepto/nota creado por el usuario permanecen literales al cambiar de idioma.
+
+### T-074 Categorías
+
+Las categorías iniciales se traducen. Una categoría creada o renombrada por el usuario conserva literalmente su nombre en todos los locales.
+
+### T-075 Formatos y tipografía
+
+Fechas, meses, cifras y moneda usan el locale activo; cirílico, chino simplificado, japonés y coreano se renderizan sin glifos ausentes ni desbordes críticos en los viewports mínimos.
+
 ### T-066 Reintento
 
 Reprocesar el mismo cierre no daña de nuevo.
