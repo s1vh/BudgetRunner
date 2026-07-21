@@ -26,6 +26,7 @@ function moduleDto(row: Record<string, unknown>) {
     priceCoins,
     ...(energy > 0 && energy < 100 ? { repairCost: Math.ceil(priceCoins * (100 - energy) / 100) } : {}),
     description: String(row.description),
+    ...(row.sku ? { descriptionKey: `module.${String(row.sku)}.description` } : {}),
   }
 }
 
@@ -34,7 +35,7 @@ async function getCyberdeck(client: DbClient, userId: string) {
     SELECT slots.slot::text AS slot, slots.ordinality,
            selected.id AS instance_id, selected.power_snapshot, selected.shield_snapshot,
            selected.energy, selected.state::text, selected.original_price_coins,
-           d.name, d.family::text, d.rarity::text, d.description
+           d.name, d.sku, d.family::text, d.rarity::text, d.description
       FROM unnest(enum_range(NULL::module_slot)) WITH ORDINALITY AS slots(slot, ordinality)
       LEFT JOIN LATERAL (
         SELECT i.* FROM user_module_instances i
@@ -55,7 +56,7 @@ async function getCyberdeck(client: DbClient, userId: string) {
 async function getStore(client: DbClient, userId: string) {
   const result = await client.query(`
     SELECT o.id AS offer_id, o.expires_at, o.price_snapshot, o.min_level_snapshot,
-           d.id AS definition_id, d.name, d.slot::text, d.family::text, d.rarity::text,
+           d.id AS definition_id, d.sku, d.name, d.slot::text, d.family::text, d.rarity::text,
            d.power, d.shield, d.description,
            current.original_price_coins AS current_price
       FROM store_offers o
@@ -92,6 +93,7 @@ async function getStore(client: DbClient, userId: string) {
         state: 'equipped',
         priceCoins: price,
         description: String(row.description),
+        descriptionKey: `module.${String(row.sku)}.description`,
       },
     }
   })
@@ -118,9 +120,9 @@ async function getHistory(client: DbClient, userId: string) {
     `, [userId]),
   ])
   return [
-    ...purchases.rows.map((row) => ({ id: row.id, type: 'purchase', title: `Módulo adquirido · ${row.module_name}`, detail: 'Compra confirmada y equipada de forma atómica.', amount: -Number(row.net_cost), occurredAt: row.created_at.toISOString() })),
-    ...repairs.rows.map((row) => ({ id: row.id, type: 'repair', title: `Módulo reparado · ${row.module_name}`, detail: `Energy restaurada desde ${row.energy_before}% hasta 100%.`, amount: -Number(row.repair_cost), occurredAt: row.created_at.toISOString() })),
-    ...rewards.rows.map((row) => ({ id: row.id, type: 'reward', title: 'Crédito SynthCoin', detail: 'Movimiento registrado en el ledger auditable.', amount: Number(row.amount), occurredAt: row.created_at.toISOString() })),
+    ...purchases.rows.map((row) => ({ id: row.id, type: 'purchase', title: { key: 'game.history.purchaseTitle', params: { name: row.module_name } }, detail: { key: 'game.history.purchaseDetail' }, amount: -Number(row.net_cost), occurredAt: row.created_at.toISOString() })),
+    ...repairs.rows.map((row) => ({ id: row.id, type: 'repair', title: { key: 'game.history.repairTitle', params: { name: row.module_name } }, detail: { key: 'game.history.repairDetail', params: { energy: row.energy_before } }, amount: -Number(row.repair_cost), occurredAt: row.created_at.toISOString() })),
+    ...rewards.rows.map((row) => ({ id: row.id, type: 'reward', title: { key: 'game.history.rewardTitle' }, detail: { key: 'game.history.rewardDetail' }, amount: Number(row.amount), occurredAt: row.created_at.toISOString() })),
   ].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt)).slice(0, 40)
 }
 
@@ -190,7 +192,7 @@ gameRouter.post('/store/offers/:offerId/purchase', asyncHandler(async (request, 
       description: string; price_snapshot: string; min_level_snapshot: number;
     }>(`
       SELECT o.id AS offer_id, o.purchased_at, o.expires_at, r.status AS rotation_status, r.ends_at AS rotation_ends_at,
-             d.id AS definition_id, d.slot::text, d.name, d.family::text, d.rarity::text, d.power, d.shield,
+             d.id AS definition_id, d.sku, d.slot::text, d.name, d.family::text, d.rarity::text, d.power, d.shield,
              d.description, o.price_snapshot::text, o.min_level_snapshot
       FROM store_offers o JOIN store_rotations r ON r.id = o.rotation_id
       JOIN module_definitions d ON d.id = o.module_definition_id

@@ -1,9 +1,9 @@
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
-export function PageHeader({ eyebrow, title, description, icon: Icon, actions }: { eyebrow: string; title: string; description: string; icon?: LucideIcon; actions?: ReactNode }) {
+export function PageHeader({ eyebrow, title, description, icon: Icon, actions, tourId }: { eyebrow: string; title: string; description: string; icon?: LucideIcon; actions?: ReactNode; tourId?: string }) {
   return (
-    <header className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+    <header className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end" data-tour={tourId}>
       <div className="max-w-3xl">
         <div className="mb-2 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-neon-cyan uppercase">
           {Icon && <Icon className="size-4" aria-hidden="true" />}{eyebrow}

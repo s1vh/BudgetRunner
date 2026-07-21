@@ -11,14 +11,14 @@ import type {
 } from '@/types/domain'
 
 export const categories: Category[] = [
-  { id: 'cat-food', name: 'Raciones Orbitales', icon: 'utensils', color: '#FF007F' },
-  { id: 'cat-tech', name: 'Tecnología Cyberdeck', icon: 'cpu', color: '#00FFFF' },
-  { id: 'cat-home', name: 'Vivienda Megaciudad', icon: 'building', color: '#A69DFF' },
-  { id: 'cat-fuel', name: 'Combustible de Neón', icon: 'fuel', color: '#FFD43F' },
-  { id: 'cat-fun', name: 'Ocio Holográfico', icon: 'gamepad', color: '#F785C6' },
-  { id: 'cat-health', name: 'Salud Biónica', icon: 'heart', color: '#63E063' },
-  { id: 'cat-income', name: 'Créditos de misión', icon: 'wallet', color: '#00FFFF' },
-  { id: 'cat-other', name: 'Otros', icon: 'shapes', color: '#986780' },
+  { id: 'cat-food', name: 'Raciones Orbitales', icon: 'utensils', color: '#FF007F', systemKey: 'systemCategory.food' },
+  { id: 'cat-tech', name: 'Tecnología del Cyberdeck', icon: 'cpu', color: '#00FFFF', systemKey: 'systemCategory.technology' },
+  { id: 'cat-home', name: 'Vivienda en la Megaciudad', icon: 'building', color: '#A69DFF', systemKey: 'systemCategory.housing' },
+  { id: 'cat-fuel', name: 'Combustible de Neón', icon: 'fuel', color: '#FFD43F', systemKey: 'systemCategory.fuel' },
+  { id: 'cat-fun', name: 'Ocio Holográfico', icon: 'gamepad', color: '#F785C6', systemKey: 'systemCategory.leisure' },
+  { id: 'cat-health', name: 'Salud Biónica', icon: 'heart-pulse', color: '#63E063', systemKey: 'systemCategory.health' },
+  { id: 'cat-income', name: 'Créditos de misión', icon: 'wallet', color: '#00FFFF', systemKey: 'systemCategory.missionCredits' },
+  { id: 'cat-other', name: 'Otros', icon: 'shapes', color: '#986780', systemKey: 'systemCategory.other' },
 ]
 
 export const initialTransactions: FinancialTransaction[] = [
@@ -58,13 +58,13 @@ export const progress: ProgressSummary = {
 }
 
 export const cashflow: CashflowPoint[] = [
-  { label: 'ENE', incomeMinor: 274000, expenseMinor: 121000 },
-  { label: 'FEB', incomeMinor: 286000, expenseMinor: 98000 },
-  { label: 'MAR', incomeMinor: 286000, expenseMinor: 154000 },
-  { label: 'ABR', incomeMinor: 305000, expenseMinor: 112000 },
-  { label: 'MAY', incomeMinor: 286000, expenseMinor: 138000 },
-  { label: 'JUN', incomeMinor: 331000, expenseMinor: 176000 },
-  { label: 'JUL', incomeMinor: 348500, expenseMinor: 196189 },
+  { label: '2026-01', incomeMinor: 274000, expenseMinor: 121000 },
+  { label: '2026-02', incomeMinor: 286000, expenseMinor: 98000 },
+  { label: '2026-03', incomeMinor: 286000, expenseMinor: 154000 },
+  { label: '2026-04', incomeMinor: 305000, expenseMinor: 112000 },
+  { label: '2026-05', incomeMinor: 286000, expenseMinor: 138000 },
+  { label: '2026-06', incomeMinor: 331000, expenseMinor: 176000 },
+  { label: '2026-07', incomeMinor: 348500, expenseMinor: 196189 },
 ]
 
 const moduleBase: CyberModule[] = [
@@ -80,7 +80,7 @@ const moduleBase: CyberModule[] = [
   { instanceId: 'mod-power', slot: 'power', slotLabel: 'Fusion Cell', name: 'Helios Cell', family: 'retrowave', rarity: 'epic', power: 220, shield: 6, energy: 88, state: 'equipped', priceCoins: 840, description: 'Fuente de fusión estable con reserva sunset.' },
 ]
 
-export const modules = moduleBase
+export const modules = moduleBase.map((module) => ({ ...module, descriptionKey: `module.mock.${module.instanceId}.description` }))
 
 const offerModules: CyberModule[] = [
   { instanceId: 'offer-1-module', slot: 'jammer', slotLabel: 'Frequency Jammer', name: 'Signal Reaper', family: 'synthwave', rarity: 'rare', power: 155, shield: 5, energy: 100, state: 'equipped', priceCoins: 420, description: 'Silencia el ruido financiero de banda ancha.' },
@@ -93,7 +93,7 @@ const offerModules: CyberModule[] = [
 
 export const offers: StoreOffer[] = offerModules.map((module, index) => ({
   id: `offer-${index + 1}`,
-  module,
+  module: { ...module, descriptionKey: `module.mock.${module.instanceId}.description` },
   expiresAt: '2026-07-21T00:00:00Z',
   netCost: index === 0 ? module.priceCoins : Math.max(0, module.priceCoins - 195),
   tradeInValue: index === 0 ? 0 : 195,
@@ -101,11 +101,11 @@ export const offers: StoreOffer[] = offerModules.map((module, index) => ({
 }))
 
 export const gameHistory: GameEvent[] = [
-  { id: 'game-1', type: 'reward', title: 'Presupuesto cumplido', detail: 'Raciones de la semana · +25 Flux', amount: 46, occurredAt: '2026-07-14T00:05:00Z' },
-  { id: 'game-2', type: 'damage', title: 'Impacto de exceso', detail: 'Ghostlink Q7 perdió 62 Energy', occurredAt: '2026-07-12T00:06:00Z' },
-  { id: 'game-3', type: 'purchase', title: 'Módulo equipado', detail: 'Void Backplane · Expansion Board', amount: -1060, occurredAt: '2026-07-08T21:30:00Z' },
-  { id: 'game-4', type: 'level', title: 'Nivel 24 alcanzado', detail: 'Umbral Flux sincronizado', occurredAt: '2026-07-08T21:30:10Z' },
-  { id: 'game-5', type: 'repair', title: 'Reparación completada', detail: 'Helios Cell restaurado al 100%', amount: -84, occurredAt: '2026-07-03T16:20:00Z' },
+  { id: 'game-1', type: 'reward', title: { key: 'game.history.budgetMet' }, detail: { key: 'game.history.mockReward', params: { name: 'Raciones de la semana', flux: 25 } }, amount: 46, occurredAt: '2026-07-14T00:05:00Z' },
+  { id: 'game-2', type: 'damage', title: { key: 'game.history.excessImpact' }, detail: { key: 'game.history.mockDamage', params: { name: 'Ghostlink Q7', energy: 62 } }, occurredAt: '2026-07-12T00:06:00Z' },
+  { id: 'game-3', type: 'purchase', title: { key: 'game.history.moduleEquipped' }, detail: { key: 'game.history.mockEquipped', params: { name: 'Void Backplane' } }, amount: -1060, occurredAt: '2026-07-08T21:30:00Z' },
+  { id: 'game-4', type: 'level', title: { key: 'game.history.levelReached', params: { level: 24 } }, detail: { key: 'game.history.fluxSynced' }, occurredAt: '2026-07-08T21:30:10Z' },
+  { id: 'game-5', type: 'repair', title: { key: 'game.history.repairCompleted' }, detail: { key: 'game.history.mockRestored', params: { name: 'Helios Cell' } }, amount: -84, occurredAt: '2026-07-03T16:20:00Z' },
 ]
 
 export const profile: UserProfile = {
@@ -117,11 +117,12 @@ export const profile: UserProfile = {
   timezone: 'Europe/Madrid',
   weekStartsOn: 1,
   googleConnected: true,
+  guidedTourCompleted: false,
   progress,
   levelHistory: [
-    { level: 24, flux: 4650, reachedAt: '2026-07-08T21:30:10Z', reason: 'Void Backplane equipado' },
-    { level: 23, flux: 4320, reachedAt: '2026-06-28T00:05:00Z', reason: 'Ciclo mensual completado' },
-    { level: 22, flux: 3990, reachedAt: '2026-06-02T18:10:00Z', reason: 'Bonus Synthwave activado' },
+    { level: 24, flux: 4650, reachedAt: '2026-07-08T21:30:10Z', reason: { key: 'levelReason.moduleEquipped', params: { name: 'Void Backplane' } } },
+    { level: 23, flux: 4320, reachedAt: '2026-06-28T00:05:00Z', reason: { key: 'levelReason.monthlyCycle' } },
+    { level: 22, flux: 3990, reachedAt: '2026-06-02T18:10:00Z', reason: { key: 'levelReason.familyBonus', params: { family: 'Synthwave' } } },
   ],
   preferences: {
     reducedMotion: false,
@@ -129,5 +130,6 @@ export const profile: UserProfile = {
     audioReactive: false,
     scanlines: true,
     compactMode: false,
+    helpHints: true,
   },
 }
