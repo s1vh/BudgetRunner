@@ -8,34 +8,61 @@ import { useI18n } from '@/i18n/I18nContext'
 import type { TranslationKey } from '@/i18n/messages'
 
 interface TourStep {
-  route: string
+  route?: string
   target?: string
   titleKey: TranslationKey
   bodyKey: TranslationKey
 }
 
 const tourSteps: readonly TourStep[] = [
-  { route: '/', titleKey: 'tour.welcome.title', bodyKey: 'tour.welcome.body' },
-  { route: '/', target: 'dashboard', titleKey: 'tour.dashboard.title', bodyKey: 'tour.dashboard.body' },
-  { route: '/gastos', target: 'transactions', titleKey: 'tour.transactions.title', bodyKey: 'tour.transactions.body' },
-  { route: '/presupuestos', target: 'budgets', titleKey: 'tour.budgets.title', bodyKey: 'tour.budgets.body' },
-  { route: '/gamificacion', target: 'game', titleKey: 'tour.game.title', bodyKey: 'tour.game.body' },
-  { route: '/perfil', target: 'profile', titleKey: 'tour.profile.title', bodyKey: 'tour.profile.body' },
-  { route: '/ajustes', target: 'settings', titleKey: 'tour.settings.title', bodyKey: 'tour.settings.body' },
+  { titleKey: 'tour.welcome.title', bodyKey: 'tour.welcome.body' },
+  { route: '/', target: 'dashboard-header', titleKey: 'tour.dashboard.title', bodyKey: 'tour.dashboard.body' },
+  { route: '/', target: 'dashboard-metrics', titleKey: 'tour.dashboard.metrics.title', bodyKey: 'tour.dashboard.metrics.body' },
+  { route: '/', target: 'dashboard-distribution', titleKey: 'dashboard.distribution', bodyKey: 'help.dashboard.distribution' },
+  { route: '/', target: 'dashboard-recent', titleKey: 'dashboard.transmissions', bodyKey: 'help.dashboard.recent' },
+  { route: '/', target: 'dashboard-cashflow', titleKey: 'dashboard.monthlyFlow', bodyKey: 'help.dashboard.cashflow' },
+  { route: '/gastos', target: 'transactions-header', titleKey: 'tour.transactions.title', bodyKey: 'tour.transactions.body' },
+  { route: '/gastos', target: 'transactions-summary', titleKey: 'tour.transactions.summary.title', bodyKey: 'tour.transactions.summary.body' },
+  { route: '/gastos', target: 'transactions-filters', titleKey: 'tour.transactions.filters.title', bodyKey: 'help.transactions.filters' },
+  { route: '/gastos', target: 'transactions-list', titleKey: 'tour.transactions.list.title', bodyKey: 'help.transactions.list' },
+  { route: '/presupuestos', target: 'budgets-header', titleKey: 'tour.budgets.title', bodyKey: 'tour.budgets.body' },
+  { route: '/presupuestos', target: 'budgets-filters', titleKey: 'tour.budgets.filters.title', bodyKey: 'tour.budgets.filters.body' },
+  { route: '/presupuestos', target: 'budgets-cards', titleKey: 'tour.budgets.cards.title', bodyKey: 'tour.budgets.cards.body' },
+  { route: '/gamificacion', target: 'game-tabs', titleKey: 'tour.game.title', bodyKey: 'tour.game.body' },
+  { route: '/gamificacion', target: 'game-summary', titleKey: 'tour.game.summary.title', bodyKey: 'tour.game.summary.body' },
+  { route: '/gamificacion', target: 'game-flux', titleKey: 'profile.totalFlux', bodyKey: 'help.game.totalFlux' },
+  { route: '/gamificacion', target: 'game-families', titleKey: 'game.familyBonus', bodyKey: 'help.game.family' },
+  { route: '/gamificacion', target: 'game-deck', titleKey: 'game.tab.deck', bodyKey: 'help.game.cyberdeck' },
+  { route: '/gamificacion', target: 'game-store', titleKey: 'game.tab.store', bodyKey: 'help.game.storeModule' },
+  { route: '/gamificacion', target: 'game-repairs', titleKey: 'game.tab.repairs', bodyKey: 'help.game.repairModule' },
+  { route: '/gamificacion', target: 'game-history', titleKey: 'game.tab.history', bodyKey: 'help.game.history' },
+  { route: '/perfil', target: 'profile-identity', titleKey: 'tour.profile.identity.title', bodyKey: 'tour.profile.identity.body' },
+  { route: '/perfil', target: 'profile-progress', titleKey: 'tour.profile.progress.title', bodyKey: 'tour.profile.progress.body' },
+  { route: '/perfil', target: 'profile-history', titleKey: 'profile.levelHistory', bodyKey: 'tour.profile.history.body' },
+  { route: '/perfil', target: 'profile-regional', titleKey: 'profile.regionalContext', bodyKey: 'tour.profile.region.body' },
+  { route: '/ajustes', target: 'settings-header', titleKey: 'tour.settings.title', bodyKey: 'tour.settings.body' },
+  { route: '/ajustes', target: 'settings-region', titleKey: 'settings.region', bodyKey: 'tour.settings.region.body' },
+  { route: '/ajustes', target: 'settings-experience', titleKey: 'settings.experience', bodyKey: 'tour.settings.experience.body' },
+  { route: '/ajustes', target: 'settings-help', titleKey: 'settings.helpTitle', bodyKey: 'tour.settings.help.body' },
+  { route: '/ajustes', target: 'settings-categories', titleKey: 'tour.settings.categories.title', bodyKey: 'tour.settings.categories.body' },
+  { route: '/ajustes', target: 'settings-accessibility', titleKey: 'settings.accessibility', bodyKey: 'tour.settings.accessibility.body' },
+  { route: '/ajustes', target: 'settings-privacy', titleKey: 'settings.privacy', bodyKey: 'tour.settings.privacy.body' },
 ]
 
 interface HelpCenterValue {
   startTour: () => void
   tourOpen: boolean
+  activeTourTarget: string | null
 }
 
 const HelpCenterContext = createContext<HelpCenterValue | null>(null)
 
-function GuidedTour({ open, stepIndex, onStepChange, onExit }: {
+function GuidedTour({ open, stepIndex, onStepChange, onExit, onFinish }: {
   open: boolean
   stepIndex: number
   onStepChange: (step: number) => void
   onExit: () => void
+  onFinish: () => void
 }) {
   const { t } = useI18n()
   const navigate = useNavigate()
@@ -47,8 +74,7 @@ function GuidedTour({ open, stepIndex, onStepChange, onExit }: {
 
   useEffect(() => {
     if (!open) return
-    if (location.pathname !== step.route) navigate(step.route)
-    window.scrollTo({ top: 0, behavior: 'auto' })
+    if (step.route && location.pathname !== step.route) navigate(step.route)
   }, [location.pathname, navigate, open, step.route])
 
   useEffect(() => {
@@ -57,8 +83,14 @@ function GuidedTour({ open, stepIndex, onStepChange, onExit }: {
       const target = step.target ? document.querySelector<HTMLElement>(`[data-tour="${step.target}"]`) : null
       setTargetRect(target?.getBoundingClientRect() ?? null)
     }
-    const frame = window.requestAnimationFrame(measure)
-    const delayed = window.setTimeout(measure, 120)
+    const reveal = () => {
+      const target = step.target ? document.querySelector<HTMLElement>(`[data-tour="${step.target}"]`) : null
+      if (target) target.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'auto' })
+      else if (step.route) window.scrollTo({ top: 0, behavior: 'auto' })
+      measure()
+    }
+    const frame = window.requestAnimationFrame(reveal)
+    const delayed = window.setTimeout(reveal, 180)
     window.addEventListener('resize', measure)
     window.addEventListener('scroll', measure, true)
     return () => {
@@ -67,7 +99,7 @@ function GuidedTour({ open, stepIndex, onStepChange, onExit }: {
       window.removeEventListener('resize', measure)
       window.removeEventListener('scroll', measure, true)
     }
-  }, [location.pathname, open, step.target])
+  }, [location.pathname, open, step.route, step.target])
 
   useEffect(() => {
     if (!open) return
@@ -129,7 +161,7 @@ function GuidedTour({ open, stepIndex, onStepChange, onExit }: {
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
           <Button variant="ghost" icon={ArrowLeft} disabled={stepIndex === 0} onClick={() => onStepChange(stepIndex - 1)}>{t('tour.back')}</Button>
           {lastStep
-            ? <Button icon={Check} onClick={onExit}>{t('tour.finish')}</Button>
+            ? <Button icon={Check} onClick={onFinish}>{t('tour.finish')}</Button>
             : <Button icon={ArrowRight} onClick={() => onStepChange(stepIndex + 1)}>{t('tour.next')}</Button>}
         </div>
       </SynthCard>
@@ -139,6 +171,7 @@ function GuidedTour({ open, stepIndex, onStepChange, onExit }: {
 
 export function HelpCenterProvider({ children }: { children: ReactNode }) {
   const { data, completeGuidedTour } = useAppData()
+  const navigate = useNavigate()
   const [tourOpen, setTourOpen] = useState(false)
   const [stepIndex, setStepIndex] = useState(0)
   const autoStartedUsers = useRef(new Set<string>())
@@ -155,17 +188,29 @@ export function HelpCenterProvider({ children }: { children: ReactNode }) {
     startTour()
   }, [data?.profile, startTour])
 
-  const exitTour = useCallback(() => {
-    setTourOpen(false)
+  const markTourCompleted = useCallback(() => {
     if (!data?.profile.guidedTourCompleted) void completeGuidedTour().catch(() => undefined)
   }, [completeGuidedTour, data?.profile.guidedTourCompleted])
 
-  const value = useMemo<HelpCenterValue>(() => ({ startTour, tourOpen }), [startTour, tourOpen])
+  const exitTour = useCallback(() => {
+    setTourOpen(false)
+    markTourCompleted()
+  }, [markTourCompleted])
+
+  const finishTour = useCallback(() => {
+    setTourOpen(false)
+    navigate('/')
+    window.scrollTo({ top: 0, behavior: 'auto' })
+    markTourCompleted()
+  }, [markTourCompleted, navigate])
+
+  const activeTourTarget = tourOpen ? tourSteps[stepIndex]?.target ?? null : null
+  const value = useMemo<HelpCenterValue>(() => ({ startTour, tourOpen, activeTourTarget }), [activeTourTarget, startTour, tourOpen])
 
   return (
     <HelpCenterContext.Provider value={value}>
       {children}
-      <GuidedTour open={tourOpen} stepIndex={stepIndex} onStepChange={setStepIndex} onExit={exitTour} />
+      <GuidedTour open={tourOpen} stepIndex={stepIndex} onStepChange={setStepIndex} onExit={exitTour} onFinish={finishTour} />
     </HelpCenterContext.Provider>
   )
 }

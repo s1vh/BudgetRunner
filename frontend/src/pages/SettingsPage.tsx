@@ -47,10 +47,10 @@ export function SettingsPage() {
 
   return (
     <div className="page-enter grid gap-6">
-      <PageHeader eyebrow={t('settings.eyebrow')} title={t('settings.title')} description={t('settings.description')} icon={Settings} tourId="settings" actions={<Button icon={Save} loading={saving} onClick={() => void save()}>{t('settings.saveChanges')}</Button>} />
+      <PageHeader eyebrow={t('settings.eyebrow')} title={t('settings.title')} description={t('settings.description')} icon={Settings} tourId="settings-header" actions={<Button icon={Save} loading={saving} onClick={() => void save()}>{t('settings.saveChanges')}</Button>} />
       {saved && <div className="rounded-lg border border-success/25 bg-success/5 p-3 text-sm text-success">{t('settings.saved')}</div>}
       <div className="grid gap-4 xl:grid-cols-2">
-        <SynthCard className="p-5 sm:p-6">
+        <SynthCard className="p-5 sm:p-6" data-tour="settings-region">
           <div className="mb-4 flex items-center gap-2"><Globe2 className="size-4 text-neon-cyan" /><h2 className="font-display text-sm font-bold uppercase">{t('settings.region')}</h2></div>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label={t('profile.language')} htmlFor="settings-language" hint={t('profile.languageHint')}>
@@ -65,7 +65,7 @@ export function SettingsPage() {
           {languageNotice && <p className={`mt-4 rounded-lg border p-3 text-xs ${languageNotice.failed ? 'border-neon-magenta/25 bg-neon-magenta/5 text-neon-magenta' : 'border-success/25 bg-success/5 text-success'}`} role={languageNotice.failed ? 'alert' : 'status'} aria-live="polite">{languageNotice.message}</p>}
           <p className="mt-4 rounded-lg border border-sunset/20 bg-sunset/5 p-3 text-xs leading-5 text-text-muted">{t('settings.currencyWarning')}</p>
         </SynthCard>
-        <SynthCard className="p-5 sm:p-6">
+        <SynthCard className="p-5 sm:p-6" data-tour="settings-experience">
           <div className="flex items-center gap-2"><Palette className="size-4 text-neon-magenta" /><h2 className="font-display text-sm font-bold uppercase">{t('settings.experience')}</h2></div>
           <div className="mt-2">
             <Toggle checked={current.ambientEffects} onChange={(value) => change('ambientEffects', value)} label={t('settings.ambient')} description={t('settings.ambientDesc')} />
@@ -75,7 +75,7 @@ export function SettingsPage() {
             <Toggle checked={current.compactMode} onChange={(value) => change('compactMode', value)} label={t('settings.compact')} description={t('settings.compactDesc')} />
           </div>
         </SynthCard>
-        <SynthCard className="p-5 sm:p-6">
+        <SynthCard className="p-5 sm:p-6" data-tour="settings-help">
           <div className="flex items-center gap-2"><CircleHelp className="size-4 text-neon-cyan" /><h2 className="font-display text-sm font-bold uppercase">{t('settings.helpTitle')}</h2></div>
           <p className="mt-2 text-xs leading-5 text-text-muted">{t('settings.helpDescription')}</p>
           <div className="mt-2">
@@ -86,10 +86,10 @@ export function SettingsPage() {
             <Button icon={Play} variant="cyan" onClick={startTour}>{t('settings.startTour')}</Button>
           </div>
         </SynthCard>
-        <CategoryManager />
+        <div data-tour="settings-categories"><CategoryManager /></div>
         <div className="grid gap-4">
-          <SynthCard className="p-5 sm:p-6"><div className="mb-4 flex items-center gap-2"><Accessibility className="size-4 text-success" /><h2 className="font-display text-sm font-bold uppercase">{t('settings.accessibility')}</h2></div><ul className="grid gap-3 text-sm text-text-muted"><li className="flex gap-2"><Eye className="mt-0.5 size-4 shrink-0 text-neon-cyan" />{t('settings.contrast')}</li><li className="flex gap-2"><SlidersHorizontal className="mt-0.5 size-4 shrink-0 text-tertiary" />{t('settings.keyboard')}</li><li className="flex gap-2"><BellRing className="mt-0.5 size-4 shrink-0 text-sunset" />{t('settings.stateText')}</li></ul></SynthCard>
-          <SynthCard className="p-5 sm:p-6" tone="danger"><div className="mb-3 flex items-center gap-2"><Shield className="size-4 text-neon-magenta" /><h2 className="font-display text-sm font-bold uppercase">{t('settings.privacy')}</h2></div><p className="text-sm leading-6 text-text-muted">{t('settings.deleteDesc')}</p><div className="mt-4 flex gap-3"><Field label={t('auth.confirmation')} htmlFor="delete-account"><Input id="delete-account" placeholder={t('settings.deletePlaceholder')} /></Field><Button className="self-end" variant="magenta" icon={Trash2} disabled>{t('common.delete')}</Button></div></SynthCard>
+          <SynthCard className="p-5 sm:p-6" data-tour="settings-accessibility"><div className="mb-4 flex items-center gap-2"><Accessibility className="size-4 text-success" /><h2 className="font-display text-sm font-bold uppercase">{t('settings.accessibility')}</h2></div><ul className="grid gap-3 text-sm text-text-muted"><li className="flex gap-2"><Eye className="mt-0.5 size-4 shrink-0 text-neon-cyan" />{t('settings.contrast')}</li><li className="flex gap-2"><SlidersHorizontal className="mt-0.5 size-4 shrink-0 text-tertiary" />{t('settings.keyboard')}</li><li className="flex gap-2"><BellRing className="mt-0.5 size-4 shrink-0 text-sunset" />{t('settings.stateText')}</li></ul></SynthCard>
+          <SynthCard className="p-5 sm:p-6" tone="danger" data-tour="settings-privacy"><div className="mb-3 flex items-center gap-2"><Shield className="size-4 text-neon-magenta" /><h2 className="font-display text-sm font-bold uppercase">{t('settings.privacy')}</h2></div><p className="text-sm leading-6 text-text-muted">{t('settings.deleteDesc')}</p><div className="mt-4 flex gap-3"><Field label={t('auth.confirmation')} htmlFor="delete-account"><Input id="delete-account" placeholder={t('settings.deletePlaceholder')} /></Field><Button className="self-end" variant="magenta" icon={Trash2} disabled>{t('common.delete')}</Button></div></SynthCard>
         </div>
       </div>
     </div>
