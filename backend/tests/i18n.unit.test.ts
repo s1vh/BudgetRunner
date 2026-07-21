@@ -30,6 +30,11 @@ describe('internationalization contracts', () => {
       expect(catalogs[locale]['help.game.totalFlux']).toContain('Power')
       expect(catalogs[locale]['help.game.synthcoins']).toContain('SynthCoins')
       expect(catalogs[locale]['help.game.cyberdeck']).toContain('Cyberdeck')
+      expect(catalogs[locale]['tour.game.flux.body']).toContain('Flux')
+      expect(catalogs[locale]['tour.game.flux.body']).toContain('Power')
+      expect(catalogs[locale]['tour.game.cyberdeck.body']).toContain('Power')
+      expect(catalogs[locale]['tour.game.cyberdeck.body']).toContain('Shield')
+      expect(catalogs[locale]['tour.game.cyberdeck.body']).toContain('Energy')
     }
   })
 

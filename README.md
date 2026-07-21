@@ -93,7 +93,7 @@ Abre `http://127.0.0.1:5173`, cambia el idioma en **Ajustes → Región y moneda
 
 ### Prueba rápida de la ayuda y el tour
 
-Con el mismo modo mock, el primer inicio de sesión abre automáticamente el tour. El recorrido resalta las secciones principales de cada página y cambia por sí mismo entre las pestañas de Gamificación. **Salir del tour** conserva la página del paso actual; **Finalizar** devuelve al Dashboard. En ambos casos, al recargar no debe volver a aparecer automáticamente. En **Ajustes → Ayuda y tour guiado** se pueden ocultar los iconos informativos y volver a iniciar el recorrido en cualquier momento.
+Con el mismo modo mock, el primer inicio de sesión abre automáticamente el tour. El recorrido resalta las secciones principales de cada página y cambia por sí mismo entre las pestañas de Gamificación. Al iniciarlo manualmente desde Ajustes, el primer paso abre el Dashboard. **Salir del tour** conserva la página del paso actual; **Finalizar** devuelve al Dashboard. En ambos casos, al recargar no debe volver a aparecer automáticamente. En **Ajustes → Ayuda y tour guiado** se pueden ocultar los iconos informativos y volver a iniciar el recorrido en cualquier momento.
 
 Para simular otra cuenta que todavía no ha visto el tour, elimina `budget-runner.mock.guided-tour-completed` de `localStorage` y vuelve a iniciar sesión. El estado de los iconos se conserva en `budget-runner.mock.help-hints`. Con la API y PostgreSQL, `npm run db:setup` aplica la migración que deja el tour pendiente tanto para las cuentas existentes como para las nuevas.
 

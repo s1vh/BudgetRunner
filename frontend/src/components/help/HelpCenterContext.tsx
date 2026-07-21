@@ -15,7 +15,7 @@ interface TourStep {
 }
 
 const tourSteps: readonly TourStep[] = [
-  { titleKey: 'tour.welcome.title', bodyKey: 'tour.welcome.body' },
+  { route: '/', titleKey: 'tour.welcome.title', bodyKey: 'tour.welcome.body' },
   { route: '/', target: 'dashboard-header', titleKey: 'tour.dashboard.title', bodyKey: 'tour.dashboard.body' },
   { route: '/', target: 'dashboard-metrics', titleKey: 'tour.dashboard.metrics.title', bodyKey: 'tour.dashboard.metrics.body' },
   { route: '/', target: 'dashboard-distribution', titleKey: 'dashboard.distribution', bodyKey: 'help.dashboard.distribution' },
@@ -30,9 +30,9 @@ const tourSteps: readonly TourStep[] = [
   { route: '/presupuestos', target: 'budgets-cards', titleKey: 'tour.budgets.cards.title', bodyKey: 'tour.budgets.cards.body' },
   { route: '/gamificacion', target: 'game-tabs', titleKey: 'tour.game.title', bodyKey: 'tour.game.body' },
   { route: '/gamificacion', target: 'game-summary', titleKey: 'tour.game.summary.title', bodyKey: 'tour.game.summary.body' },
-  { route: '/gamificacion', target: 'game-flux', titleKey: 'profile.totalFlux', bodyKey: 'help.game.totalFlux' },
+  { route: '/gamificacion', target: 'game-flux', titleKey: 'profile.totalFlux', bodyKey: 'tour.game.flux.body' },
   { route: '/gamificacion', target: 'game-families', titleKey: 'game.familyBonus', bodyKey: 'help.game.family' },
-  { route: '/gamificacion', target: 'game-deck', titleKey: 'game.tab.deck', bodyKey: 'help.game.cyberdeck' },
+  { route: '/gamificacion', target: 'game-deck', titleKey: 'game.tab.deck', bodyKey: 'tour.game.cyberdeck.body' },
   { route: '/gamificacion', target: 'game-store', titleKey: 'game.tab.store', bodyKey: 'help.game.storeModule' },
   { route: '/gamificacion', target: 'game-repairs', titleKey: 'game.tab.repairs', bodyKey: 'help.game.repairModule' },
   { route: '/gamificacion', target: 'game-history', titleKey: 'game.tab.history', bodyKey: 'help.game.history' },
