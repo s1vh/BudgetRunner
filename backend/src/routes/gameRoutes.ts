@@ -100,7 +100,7 @@ async function getStore(client: DbClient, userId: string) {
 }
 
 async function getHistory(client: DbClient, userId: string) {
-  const [purchases, repairs, rewards] = await Promise.all([
+  const [purchases, repairs, rewards, damages, levels] = await Promise.all([
     client.query<{ id: string; module_name: string; net_cost: string; created_at: Date }>(`
       SELECT e.id, d.name AS module_name, e.net_cost::text, e.created_at
       FROM module_purchase_events e JOIN user_module_instances i ON i.id = e.new_instance_id
@@ -113,16 +113,29 @@ async function getHistory(client: DbClient, userId: string) {
       JOIN module_definitions d ON d.id = i.definition_id
       WHERE e.user_id = $1 ORDER BY e.created_at DESC LIMIT 30
     `, [userId]),
-    client.query<{ id: string; amount: string; created_at: Date }>(`
-      SELECT id, amount::text, created_at FROM synthcoin_ledger
-      WHERE user_id = $1 AND type IN ('budget_reward', 'adjustment')
-      ORDER BY created_at DESC LIMIT 30
+    client.query<{ id: string; amount: string; created_at: Date; budget_name: string | null; flux_awarded: number | null }>(`
+      SELECT l.id, l.amount::text, l.created_at, b.name AS budget_name, p.flux_awarded
+      FROM synthcoin_ledger l
+      LEFT JOIN budget_periods p ON p.id = l.period_id
+      LEFT JOIN budgets b ON b.id = p.budget_id
+      WHERE l.user_id = $1 AND l.type IN ('budget_reward', 'adjustment')
+      ORDER BY l.created_at DESC LIMIT 30
+    `, [userId]),
+    client.query<{ id: string; total_damage: string; created_at: Date }>(`
+      SELECT d.id, coalesce(sum(md.damage_applied), 0)::text AS total_damage, d.created_at
+      FROM damage_events d LEFT JOIN module_damage_events md ON md.damage_event_id = d.id
+      WHERE d.user_id = $1 GROUP BY d.id ORDER BY d.created_at DESC LIMIT 30
+    `, [userId]),
+    client.query<{ id: string; new_level: number; created_at: Date }>(`
+      SELECT id, new_level, created_at FROM level_history WHERE user_id = $1 ORDER BY created_at DESC LIMIT 30
     `, [userId]),
   ])
   return [
     ...purchases.rows.map((row) => ({ id: row.id, type: 'purchase', title: { key: 'game.history.purchaseTitle', params: { name: row.module_name } }, detail: { key: 'game.history.purchaseDetail' }, amount: -Number(row.net_cost), occurredAt: row.created_at.toISOString() })),
     ...repairs.rows.map((row) => ({ id: row.id, type: 'repair', title: { key: 'game.history.repairTitle', params: { name: row.module_name } }, detail: { key: 'game.history.repairDetail', params: { energy: row.energy_before } }, amount: -Number(row.repair_cost), occurredAt: row.created_at.toISOString() })),
-    ...rewards.rows.map((row) => ({ id: row.id, type: 'reward', title: { key: 'game.history.rewardTitle' }, detail: { key: 'game.history.rewardDetail' }, amount: Number(row.amount), occurredAt: row.created_at.toISOString() })),
+    ...rewards.rows.map((row) => ({ id: row.id, type: 'reward', title: { key: row.budget_name ? 'game.history.budgetMet' : 'game.history.rewardTitle' }, detail: row.budget_name ? { key: 'game.history.mockReward', params: { name: row.budget_name, flux: row.flux_awarded ?? 0 } } : { key: 'game.history.rewardDetail' }, amount: Number(row.amount), occurredAt: row.created_at.toISOString() })),
+    ...damages.rows.map((row) => ({ id: row.id, type: 'damage', title: { key: 'game.history.excessImpact' }, detail: { key: 'game.history.mockDamage', params: { name: 'Cyberdeck', energy: Number(row.total_damage) } }, occurredAt: row.created_at.toISOString() })),
+    ...levels.rows.map((row) => ({ id: row.id, type: 'level', title: { key: 'game.history.levelReached', params: { level: row.new_level } }, detail: { key: 'game.history.fluxSynced' }, occurredAt: row.created_at.toISOString() })),
   ].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt)).slice(0, 40)
 }
 

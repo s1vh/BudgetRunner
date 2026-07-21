@@ -1,9 +1,12 @@
 import { randomUUID } from 'node:crypto'
+import type { DecodedIdToken } from 'firebase-admin/auth'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import { createApp } from '../src/app.js'
+import { evaluateBudgetPeriod } from '../src/budgetEngine.js'
 import { closeDatabase, pool, withTransaction } from '../src/db.js'
 import { findOrCreateGoogleUser } from '../src/googleOAuth.js'
+import { findOrCreateFirebaseUser } from '../src/firebaseAuth.js'
 
 const app = createApp()
 const password = 'TestRunner!2026'
@@ -139,6 +142,27 @@ describe.sequential('Budget Runner API', () => {
     expect(provisioned.rows[0]).toMatchObject({ password_hash: null, categories: '9', progress: true })
   })
 
+  test('vincula una identidad Firebase verificada al UUID interno sin duplicar el usuario', async () => {
+    const firebaseUid = `firebase-${randomUUID()}`
+    const identity = {
+      uid: firebaseUid,
+      sub: firebaseUid,
+      email: primaryEmail,
+      email_verified: true,
+      name: 'API Runner Firebase',
+      firebase: { identities: { email: [primaryEmail] }, sign_in_provider: 'google.com' },
+    } as unknown as DecodedIdToken
+    const first = await withTransaction((client) => findOrCreateFirebaseUser(client, identity))
+    const replay = await withTransaction((client) => findOrCreateFirebaseUser(client, identity))
+    expect(first).toBe(userId)
+    expect(replay).toBe(userId)
+    const count = await pool.query<{ count: string; firebase_uid: string }>(`
+      SELECT (SELECT count(*)::text FROM users WHERE email = $1) AS count, firebase_uid
+      FROM users WHERE id = $2
+    `, [primaryEmail, userId])
+    expect(count.rows[0]).toMatchObject({ count: '1', firebase_uid: firebaseUid })
+  })
+
   test('crea, edita y archiva categorías usadas sin romper el historial', async () => {
     const created = await request(app).post('/api/v1/categories')
       .set('Authorization', `Bearer ${token}`)
@@ -233,5 +257,106 @@ describe.sequential('Budget Runner API', () => {
     ])
     expect(deck.body.data).toHaveLength(10)
     expect(summary.body.data.totalFlux).toBe(summary.body.data.baseFlux + summary.body.data.activePower + summary.body.data.familyBonusPower)
+  })
+
+  test('cierra una sola vez y deduplica la recompensa semanal frente a la mensual', async () => {
+    const weekly = await request(app).post('/api/v1/budgets').set('Authorization', `Bearer ${token}`).send({
+      name: 'Semana solapada', frequency: 'weekly', scope: 'category', categoryId,
+      limitMinor: 10_000, currency: 'EUR', startsOn: '2025-01-01',
+    })
+    const monthly = await request(app).post('/api/v1/budgets').set('Authorization', `Bearer ${token}`).send({
+      name: 'Mes solapado', frequency: 'monthly', scope: 'category', categoryId,
+      limitMinor: 30_000, currency: 'EUR', startsOn: '2025-01-01',
+    })
+    expect(weekly.status).toBe(201)
+    expect(monthly.status).toBe(201)
+
+    const paused = await request(app).post(`/api/v1/budgets/${weekly.body.data.id}/pause`).set('Authorization', `Bearer ${token}`)
+    expect(paused.status).toBe(200)
+    expect(paused.body.data.status).toBe('paused')
+    const resumed = await request(app).post(`/api/v1/budgets/${weekly.body.data.id}/resume`).set('Authorization', `Bearer ${token}`)
+    expect(resumed.status).toBe(200)
+
+    const transaction = await request(app).post('/api/v1/transactions')
+      .set('Authorization', `Bearer ${token}`).set('Idempotency-Key', randomUUID()).send({
+        type: 'expense', concept: 'Gasto compartido', amountMinor: 4_000, currency: 'EUR', categoryId,
+        occurredAt: '2025-01-03T12:00:00.000Z', status: 'posted',
+      })
+    const transactionId = transaction.body.data.transaction.id as string
+    const periods = await pool.query<{ id: string; budget_id: string }>(`
+      SELECT id, budget_id FROM budget_periods WHERE budget_id = ANY($1::uuid[])
+      ORDER BY ends_at
+    `, [[weekly.body.data.id, monthly.body.data.id]])
+    const weeklyPeriod = periods.rows.find((item) => item.budget_id === weekly.body.data.id)
+    const monthlyPeriod = periods.rows.find((item) => item.budget_id === monthly.body.data.id)
+    expect(weeklyPeriod).toBeDefined()
+    expect(monthlyPeriod).toBeDefined()
+
+    const first = await evaluateBudgetPeriod(weeklyPeriod!.id)
+    const replay = await evaluateBudgetPeriod(weeklyPeriod!.id)
+    const second = await evaluateBudgetPeriod(monthlyPeriod!.id)
+    expect(first).toMatchObject({ status: 'met', evaluated: true })
+    expect(replay).toMatchObject({ status: 'met', evaluated: false })
+    expect(second).toMatchObject({ status: 'met', evaluated: true })
+
+    const snapshots = await pool.query<{
+      budget_id: string; eligible_surplus_minor: string; excluded_reward_minor: string; synthcoins_awarded: string;
+    }>(`SELECT budget_id, eligible_surplus_minor::text, excluded_reward_minor::text, synthcoins_awarded::text
+      FROM budget_periods WHERE id = ANY($1::uuid[])`, [[weeklyPeriod!.id, monthlyPeriod!.id]])
+    expect(snapshots.rows.find((item) => item.budget_id === weekly.body.data.id)).toMatchObject({
+      eligible_surplus_minor: '6000', excluded_reward_minor: '0', synthcoins_awarded: '60',
+    })
+    expect(snapshots.rows.find((item) => item.budget_id === monthly.body.data.id)).toMatchObject({
+      eligible_surplus_minor: '22000', excluded_reward_minor: '4000', synthcoins_awarded: '220',
+    })
+    const ledgers = await pool.query<{ rewards: string; allocations: string; locked: boolean }>(`
+      SELECT (SELECT count(*)::text FROM synthcoin_ledger WHERE period_id = $1) AS rewards,
+             (SELECT count(*)::text FROM reward_allocations WHERE transaction_id = $2) AS allocations,
+             (SELECT locked_by_reward FROM financial_transactions WHERE id = $2) AS locked
+    `, [weeklyPeriod!.id, transactionId])
+    expect(ledgers.rows[0]).toMatchObject({ rewards: '1', allocations: '1', locked: true })
+
+    const history = await request(app).get(`/api/v1/budgets/${weekly.body.data.id}/periods`).set('Authorization', `Bearer ${token}`)
+    expect(history.status).toBe(200)
+    expect(history.body.data.some((item: { status: string }) => item.status === 'met')).toBe(true)
+
+    const blocked = await request(app).delete(`/api/v1/transactions/${transactionId}`)
+      .set('Authorization', `Bearer ${token}`).set('Idempotency-Key', randomUUID())
+    expect(blocked.status).toBe(409)
+    expect(blocked.body.error.code).toBe('REWARDED_TRANSACTION_LOCKED')
+  })
+
+  test('un cierre excedido aplica daño y penalización una sola vez', async () => {
+    const startsOn = new Date().toISOString().slice(0, 10)
+    const budget = await request(app).post('/api/v1/budgets').set('Authorization', `Bearer ${token}`).send({
+      name: 'Impacto controlado', frequency: 'weekly', scope: 'category', categoryId,
+      limitMinor: 1_000, currency: 'EUR', startsOn,
+    })
+    const expense = await request(app).post('/api/v1/transactions')
+      .set('Authorization', `Bearer ${token}`).set('Idempotency-Key', randomUUID()).send({
+        type: 'expense', concept: 'Exceso controlado', amountMinor: 1_100, currency: 'EUR', categoryId,
+        occurredAt: new Date().toISOString(), status: 'posted',
+      })
+    expect(expense.status).toBe(201)
+    const period = await pool.query<{ id: string }>(
+      'SELECT id FROM budget_periods WHERE budget_id = $1 ORDER BY starts_at DESC LIMIT 1', [budget.body.data.id],
+    )
+    const periodId = period.rows[0]!.id
+    const first = await evaluateBudgetPeriod(periodId, { force: true })
+    const replay = await evaluateBudgetPeriod(periodId, { force: true })
+    expect(first).toMatchObject({ status: 'exceeded', evaluated: true })
+    expect(replay).toMatchObject({ status: 'exceeded', evaluated: false })
+
+    const effects = await pool.query<{ base_damage: number; damages: string; penalties: string }>(`
+      SELECT d.base_damage,
+             (SELECT count(*)::text FROM module_damage_events md WHERE md.damage_event_id = d.id) AS damages,
+             (SELECT count(*)::text FROM budget_penalties bp WHERE bp.period_id = $1 AND bp.active AND bp.ends_at > now()) AS penalties
+      FROM damage_events d WHERE d.period_id = $1
+    `, [periodId])
+    expect(effects.rows[0]?.base_damage).toBe(110)
+    expect(Number(effects.rows[0]?.damages)).toBeGreaterThan(0)
+    expect(effects.rows[0]?.penalties).toBe('1')
+    const eventCount = await pool.query<{ count: string }>('SELECT count(*)::text AS count FROM damage_events WHERE period_id = $1', [periodId])
+    expect(eventCount.rows[0]?.count).toBe('1')
   })
 })

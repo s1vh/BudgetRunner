@@ -5,9 +5,10 @@ const { Pool } = pg
 
 export const pool = new Pool({
   connectionString: config.databaseUrl,
-  max: 12,
-  idleTimeoutMillis: 30_000,
+  max: config.dbPoolMax,
+  idleTimeoutMillis: 10_000,
   connectionTimeoutMillis: 5_000,
+  allowExitOnIdle: true,
 })
 
 export interface DbClient {

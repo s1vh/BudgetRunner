@@ -4,6 +4,7 @@ import { repository } from '@/services/repository'
 import type {
   AppSnapshot,
   BudgetDraft,
+  BudgetPeriod,
   Category,
   CategoryDraft,
   FinancialTransaction,
@@ -26,6 +27,10 @@ interface AppDataValue {
   updateTransaction: (id: string, draft: TransactionDraft) => Promise<void>
   deleteTransaction: (transaction: FinancialTransaction) => Promise<void>
   createBudget: (draft: BudgetDraft) => Promise<void>
+  pauseBudget: (id: string) => Promise<void>
+  resumeBudget: (id: string) => Promise<void>
+  archiveBudget: (id: string) => Promise<void>
+  loadBudgetPeriods: (id: string) => Promise<BudgetPeriod[]>
   updatePreferences: (preferences: UserPreferences) => Promise<void>
   updateLocale: (locale: SupportedLocale) => Promise<void>
   completeGuidedTour: () => Promise<void>
@@ -101,6 +106,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     updateTransaction: (id, draft) => mutate(() => repository.updateTransaction(id, draft)),
     deleteTransaction: (transaction) => mutate(() => repository.deleteTransaction(transaction.id)),
     createBudget: (draft) => mutate(() => repository.createBudget(draft)),
+    pauseBudget: (id) => mutate(() => repository.pauseBudget(id)),
+    resumeBudget: (id) => mutate(() => repository.resumeBudget(id)),
+    archiveBudget: (id) => mutate(() => repository.archiveBudget(id)),
+    loadBudgetPeriods: (id) => repository.getBudgetPeriods(id),
     updatePreferences: (preferences) => mutate(() => repository.updatePreferences(preferences)),
     updateLocale: (locale) => mutate(() => repository.updateLocale(locale)),
     completeGuidedTour: () => mutate(() => repository.completeGuidedTour()),

@@ -1,9 +1,9 @@
 import { apiErrorMessage } from '@/i18n/apiErrors'
 import { catalogs } from '@/i18n/messages'
 import { getRuntimeLocale } from '@/i18n/locales'
+import { firebaseIdToken } from '@/firebase'
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? '/api/v1'
-const tokenKey = 'budget-runner-access-token'
 
 export function apiUrl(path: string) {
   return `${baseUrl}${path}`
@@ -43,37 +43,11 @@ function unreachableError() {
 }
 
 class ApiClient {
-  private accessToken = window.localStorage.getItem(tokenKey)
-  private refreshing: Promise<boolean> | null = null
-
-  setAccessToken(token: string | null) {
-    this.accessToken = token
-    if (token) window.localStorage.setItem(tokenKey, token)
-    else window.localStorage.removeItem(tokenKey)
-  }
-
-  hasAccessToken() { return Boolean(this.accessToken) }
-
-  async refresh() {
-    if (!this.refreshing) {
-      this.refreshing = fetch(`${baseUrl}/auth/refresh`, { method: 'POST', credentials: 'include' })
-        .then(async (response) => {
-          if (!response.ok) return false
-          const payload = await readPayload<{ accessToken: string }>(response)
-          if (!payload?.data?.accessToken) return false
-          this.setAccessToken(payload.data.accessToken)
-          return true
-        })
-        .catch(() => false)
-        .finally(() => { this.refreshing = null })
-    }
-    return this.refreshing
-  }
-
   async request<T>(path: string, init: RequestInit = {}, retry = true): Promise<T> {
     const headers = new Headers(init.headers)
     if (init.body && !headers.has('content-type')) headers.set('content-type', 'application/json')
-    if (this.accessToken) headers.set('authorization', `Bearer ${this.accessToken}`)
+    const token = await firebaseIdToken()
+    if (token) headers.set('authorization', `Bearer ${token}`)
     let response: Response
     try {
       response = await fetch(`${baseUrl}${path}`, { ...init, headers, credentials: 'include' })
@@ -81,7 +55,7 @@ class ApiClient {
       throw unreachableError()
     }
     if (response.status === 401 && retry && !path.startsWith('/auth/')) {
-      if (await this.refresh()) return this.request<T>(path, init, false)
+      if (await firebaseIdToken(true)) return this.request<T>(path, init, false)
     }
     if (response.status === 204) return undefined as T
     const payload = await readPayload<T>(response)

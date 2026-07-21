@@ -2,7 +2,9 @@ import { createHash, randomUUID } from 'node:crypto'
 import type { CookieOptions, NextFunction, Request, Response } from 'express'
 import jwt, { type JwtPayload, type Secret, type SignOptions } from 'jsonwebtoken'
 import { config } from './config.js'
+import { pool, withTransaction } from './db.js'
 import { ApiError } from './errors.js'
+import { findOrCreateFirebaseUser, verifyFirebaseToken } from './firebaseAuth.js'
 
 interface BudgetRunnerToken extends JwtPayload {
   sub: string
@@ -100,7 +102,7 @@ export function hashIp(value: string | undefined) {
   return value ? createHash('sha256').update(value).digest('hex') : null
 }
 
-export function requireAuth(request: Request, _response: Response, next: NextFunction) {
+export async function requireAuth(request: Request, _response: Response, next: NextFunction) {
   const authorization = request.header('authorization')
   if (!authorization?.startsWith('Bearer ')) {
     next(new ApiError(401, 'AUTHENTICATION_REQUIRED', 'Debes iniciar sesión.'))
@@ -108,12 +110,23 @@ export function requireAuth(request: Request, _response: Response, next: NextFun
   }
 
   try {
+    if (config.firebaseAuthEnabled) {
+      const identity = await verifyFirebaseToken(authorization.slice(7))
+      const existing = await pool.query<{ id: string }>(
+        'SELECT id FROM users WHERE firebase_uid = $1 AND deleted_at IS NULL',
+        [identity.uid],
+      )
+      const userId = existing.rows[0]?.id ?? await withTransaction((client) => findOrCreateFirebaseUser(client, identity))
+      ;(request as AppRequest).userId = userId
+      next()
+      return
+    }
     const payload = jwt.verify(authorization.slice(7), config.accessTokenSecret) as BudgetRunnerToken
     if (payload.type !== 'access' || !payload.sub) throw new Error('Invalid access token')
     ;(request as AppRequest).userId = payload.sub
     next()
-  } catch {
-    next(new ApiError(401, 'INVALID_ACCESS_TOKEN', 'La sesión ha expirado o no es válida.'))
+  } catch (error) {
+    next(error instanceof ApiError ? error : new ApiError(401, 'INVALID_ACCESS_TOKEN', 'La sesión ha expirado o no es válida.'))
   }
 }
 

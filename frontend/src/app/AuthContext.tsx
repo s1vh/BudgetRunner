@@ -1,7 +1,9 @@
 /* eslint-disable react-refresh/only-export-components -- provider and hook share one module intentionally */
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router'
+import { createUserWithEmailAndPassword, GoogleAuthProvider, onAuthStateChanged, sendPasswordResetEmail, signInWithEmailAndPassword, signInWithPopup, signOut, updateProfile } from 'firebase/auth'
 import { apiClient } from '@/services/apiClient'
+import { firebaseAuth } from '@/firebase'
 import { useI18n } from '@/i18n/I18nContext'
 import type { SupportedLocale } from '@/i18n/locales'
 
@@ -12,7 +14,9 @@ interface AuthValue {
   loading: boolean
   login: (email: string, password: string) => Promise<void>
   register: (input: RegisterInput) => Promise<void>
+  loginWithGoogle: () => Promise<void>
   completeGoogleLogin: () => Promise<void>
+  requestPasswordReset: (email: string) => Promise<void>
   logout: () => Promise<void>
 }
 
@@ -20,26 +24,27 @@ const AuthContext = createContext<AuthValue | null>(null)
 const usesApi = import.meta.env.VITE_DATA_SOURCE === 'api'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { t } = useI18n()
   const [user, setUser] = useState<AuthUser | null>(usesApi ? null : { id: 'anonymous-mock-user', email: 'anonimo@budgetrunner.local', displayName: 'Nómada' })
   const [loading, setLoading] = useState(usesApi)
 
   useEffect(() => {
     if (!usesApi) return
     let active = true
-    async function restore() {
+    const unsubscribe = onAuthStateChanged(firebaseAuth(), async (firebaseUser) => {
+      if (!firebaseUser) {
+        if (active) { setUser(null); setLoading(false) }
+        return
+      }
       try {
-        if (!apiClient.hasAccessToken() && !await apiClient.refresh()) return
         const current = await apiClient.request<AuthUser>('/me')
         if (active) setUser(current)
       } catch {
-        apiClient.setAccessToken(null)
+        if (active) setUser(null)
       } finally {
         if (active) setLoading(false)
       }
-    }
-    void restore()
-    return () => { active = false }
+    })
+    return () => { active = false; unsubscribe() }
   }, [])
 
   const value = useMemo<AuthValue>(() => ({
@@ -47,28 +52,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     async login(email, password) {
       if (!usesApi) { setUser({ id: 'anonymous-mock-user', email, displayName: 'Nómada' }); return }
-      const result = await apiClient.request<{ accessToken: string; user: AuthUser }>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) })
-      apiClient.setAccessToken(result.accessToken)
-      setUser(result.user)
+      await signInWithEmailAndPassword(firebaseAuth(), email, password)
+      setUser(await apiClient.request<AuthUser>('/me'))
     },
     async register(input) {
       if (!usesApi) { setUser({ id: 'anonymous-mock-user', email: input.email, displayName: 'Nómada' }); return }
-      const result = await apiClient.request<{ accessToken: string; user: AuthUser }>('/auth/register', { method: 'POST', body: JSON.stringify(input) })
-      apiClient.setAccessToken(result.accessToken)
+      const credential = await createUserWithEmailAndPassword(firebaseAuth(), input.email, input.password)
+      await updateProfile(credential.user, { displayName: input.displayName })
+      const result = await apiClient.request<{ user: AuthUser }>('/auth/bootstrap', { method: 'POST', body: JSON.stringify(input) })
       setUser(result.user)
+    },
+    async loginWithGoogle() {
+      if (!usesApi) { setUser({ id: 'anonymous-mock-user', email: 'anonimo@budgetrunner.local', displayName: 'Nómada' }); return }
+      await signInWithPopup(firebaseAuth(), new GoogleAuthProvider())
+      setUser(await apiClient.request<AuthUser>('/me'))
     },
     async completeGoogleLogin() {
       if (!usesApi) { setUser({ id: 'anonymous-mock-user', email: 'anonimo@budgetrunner.local', displayName: 'Nómada' }); return }
-      if (!await apiClient.refresh()) throw new Error(t('auth.google.failed'))
+      if (!firebaseAuth().currentUser) throw new Error('No existe una sesión de Google activa.')
       const current = await apiClient.request<AuthUser>('/me')
       setUser(current)
     },
+    async requestPasswordReset(email) {
+      if (!usesApi) return
+      await sendPasswordResetEmail(firebaseAuth(), email, { url: `${window.location.origin}/login` })
+    },
     async logout() {
-      if (usesApi) await apiClient.request<void>('/auth/logout', { method: 'POST' }).catch(() => undefined)
-      apiClient.setAccessToken(null)
+      if (usesApi) await signOut(firebaseAuth())
       setUser(null)
     },
-  }), [loading, t, user])
+  }), [loading, user])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
