@@ -46,6 +46,7 @@ const preferencesSchema = z.object({
     audioReactive: z.boolean(),
     scanlines: z.boolean(),
     compactMode: z.boolean(),
+    helpHints: z.boolean(),
   }).optional(),
   locale: z.enum(['es-ES', 'en-US', 'fr-FR', 'de-DE', 'ru-RU', 'zh-CN', 'ja-JP', 'ko-KR']).optional(),
 }).refine((input) => input.preferences !== undefined || input.locale !== undefined, { message: 'At least one profile field is required.' })
@@ -64,9 +65,10 @@ async function createSession(client: DbClient, userId: string, request: Request,
 async function userDto(client: DbClient, userId: string) {
   const result = await client.query<{
     id: string; email: string; display_name: string; avatar_url: string | null; primary_currency: string;
-    locale: string; timezone: string; week_starts_on: number; preferences: Record<string, boolean>; google_connected: boolean;
+    locale: string; timezone: string; week_starts_on: number; preferences: Record<string, boolean>;
+    guided_tour_completed_at: Date | null; google_connected: boolean;
   }>(`SELECT u.id, u.email, u.display_name, u.avatar_url, u.primary_currency, u.locale, u.timezone,
-      u.week_starts_on, u.preferences,
+      u.week_starts_on, u.preferences, u.guided_tour_completed_at,
       EXISTS (SELECT 1 FROM oauth_accounts oa WHERE oa.user_id = u.id AND oa.provider = 'google') AS google_connected
     FROM users u WHERE u.id = $1 AND u.deleted_at IS NULL`, [userId])
   const user = result.rows[0]
@@ -81,6 +83,7 @@ async function userDto(client: DbClient, userId: string) {
     timezone: user.timezone,
     weekStartsOn: user.week_starts_on,
     googleConnected: user.google_connected,
+    guidedTourCompleted: user.guided_tour_completed_at !== null,
     preferences: user.preferences,
   }
 }
@@ -233,4 +236,16 @@ meRouter.patch('/', asyncHandler(async (request, response) => {
     ),
   ])
   response.json({ data: { ...user, progress, levelHistory: history.rows.map((item) => ({ level: item.new_level, flux: item.total_flux, reachedAt: item.created_at.toISOString(), reason: { key: `levelReason.${item.reason}` } })) }, meta: {} })
+}))
+
+meRouter.post('/guided-tour/complete', asyncHandler(async (request, response) => {
+  const userId = (request as AppRequest).userId
+  const updated = await pool.query<{ guided_tour_completed_at: Date }>(`
+    UPDATE users
+       SET guided_tour_completed_at = coalesce(guided_tour_completed_at, now())
+     WHERE id = $1 AND deleted_at IS NULL
+     RETURNING guided_tour_completed_at
+  `, [userId])
+  if (!updated.rows[0]) throw new ApiError(404, 'USER_NOT_FOUND', 'No se ha encontrado el usuario.')
+  response.json({ data: { guidedTourCompleted: true }, meta: {} })
 }))

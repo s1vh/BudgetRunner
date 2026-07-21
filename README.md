@@ -91,6 +91,12 @@ npm run dev:web
 
 Abre `http://127.0.0.1:5173`, cambia el idioma en **Ajustes → Región y moneda** y recorre Dashboard, Gastos, Presupuestos, Gamificación, Perfil y Ajustes. Para volver a probar la autodetección, borra `budget-runner-ui-locale` de `localStorage`, cambia el idioma preferido del navegador y recarga. Los pasos completos están en `I18N.md`.
 
+### Prueba rápida de la ayuda y el tour
+
+Con el mismo modo mock, el primer inicio de sesión abre automáticamente el tour. Se puede abandonar desde cualquier paso; al recargar no debe volver a aparecer. En **Ajustes → Ayuda y tour guiado** se pueden ocultar los iconos informativos y volver a iniciar el recorrido en cualquier momento.
+
+Para simular otra cuenta que todavía no ha visto el tour, elimina `budget-runner.mock.guided-tour-completed` de `localStorage` y vuelve a iniciar sesión. El estado de los iconos se conserva en `budget-runner.mock.help-hints`. Con la API y PostgreSQL, `npm run db:setup` aplica la migración que deja el tour pendiente tanto para las cuentas existentes como para las nuevas.
+
 La vertical persistente actual cubre identidad email/contraseña y Google OAuth, perfil, categorías, transacciones, dashboard, cyberdeck, tienda, compras y reparaciones. Los presupuestos permanecen como datos de demostración hasta implementar scheduler, cierres y recompensas.
 
 Budget Runner © 2026 Mike Fieldins · MIT License

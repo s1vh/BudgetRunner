@@ -85,6 +85,26 @@ describe.sequential('Budget Runner API', () => {
       .send({ locale: 'en-US' })
   })
 
+  test('activa la ayuda por defecto y completa el tour una sola vez', async () => {
+    const initial = await request(app).get('/api/v1/me').set('Authorization', `Bearer ${token}`)
+    expect(initial.status).toBe(200)
+    expect(initial.body.data.preferences.helpHints).toBe(true)
+    expect(initial.body.data.guidedTourCompleted).toBe(false)
+
+    const first = await request(app).post('/api/v1/me/guided-tour/complete').set('Authorization', `Bearer ${token}`)
+    const replay = await request(app).post('/api/v1/me/guided-tour/complete').set('Authorization', `Bearer ${token}`)
+    expect(first.status).toBe(200)
+    expect(replay.status).toBe(200)
+    expect(first.body.data.guidedTourCompleted).toBe(true)
+
+    const completedAt = await pool.query<{ guided_tour_completed_at: Date }>(
+      'SELECT guided_tour_completed_at FROM users WHERE id = $1', [userId],
+    )
+    expect(completedAt.rows[0]?.guided_tour_completed_at).toBeInstanceOf(Date)
+    const profile = await request(app).get('/api/v1/me').set('Authorization', `Bearer ${token}`)
+    expect(profile.body.data.guidedTourCompleted).toBe(true)
+  })
+
   test('vincula Google por email verificado y aprovisiona una cuenta nueva sin duplicados', async () => {
     const linkedSubject = `google-linked-${randomUUID()}`
     const linkedUserId = await withTransaction((client) => findOrCreateGoogleUser(client, {

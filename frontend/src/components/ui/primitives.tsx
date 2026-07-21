@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components -- this module is the shared UI barrel */
 import { X, type LucideIcon } from 'lucide-react'
 import {
+  forwardRef,
   useEffect,
   type ButtonHTMLAttributes,
   type HTMLAttributes,
@@ -10,6 +11,8 @@ import {
   type TextareaHTMLAttributes,
 } from 'react'
 import { useI18n } from '@/i18n/I18nContext'
+import { CardHelp } from '@/components/help/CardHelp'
+import type { TranslationKey } from '@/i18n/messages'
 
 export function cn(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(' ')
@@ -20,11 +23,17 @@ type CardTone = 'default' | 'cyan' | 'magenta' | 'purple' | 'danger'
 interface SynthCardProps extends HTMLAttributes<HTMLDivElement> {
   tone?: CardTone
   interactive?: boolean
+  helpKey?: TranslationKey
 }
 
-export function SynthCard({ className, tone = 'default', interactive, ...props }: SynthCardProps) {
-  return <div className={cn('synth-card', tone !== 'default' && `synth-card--${tone}`, interactive && 'synth-card--interactive', className)} {...props} />
-}
+export const SynthCard = forwardRef<HTMLDivElement, SynthCardProps>(function SynthCard({ className, tone = 'default', interactive, helpKey, children, ...props }, ref) {
+  return (
+    <div ref={ref} className={cn('synth-card', tone !== 'default' && `synth-card--${tone}`, interactive && 'synth-card--interactive', className)} {...props}>
+      {children}
+      {helpKey && <CardHelp messageKey={helpKey} />}
+    </div>
+  )
+})
 
 type ButtonVariant = 'cyan' | 'magenta' | 'purple' | 'ghost'
 

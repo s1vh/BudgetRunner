@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
+  cacheDir: '.vite-cache',
   plugins: [react(), tailwindcss()],
   server: {
     proxy: {

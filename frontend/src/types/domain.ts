@@ -173,6 +173,7 @@ export interface UserProfile {
   googleConnected: boolean
   progress: ProgressSummary
   levelHistory: Array<{ level: number; flux: number; reachedAt: string; reason: LocalizedMessage }>
+  guidedTourCompleted: boolean
   preferences: UserPreferences
 }
 
@@ -182,6 +183,7 @@ export interface UserPreferences {
   audioReactive: boolean
   scanlines: boolean
   compactMode: boolean
+  helpHints: boolean
 }
 
 export interface AppSnapshot {

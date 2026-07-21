@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Accessibility, BellRing, Eye, Globe2, Palette, Save, Settings, Shield, SlidersHorizontal, Trash2 } from 'lucide-react'
+import { Accessibility, BellRing, CircleHelp, Eye, Globe2, Palette, Play, Save, Settings, Shield, SlidersHorizontal, Trash2 } from 'lucide-react'
 import { useAppData } from '@/app/AppDataContext'
 import { CategoryManager } from '@/components/settings/CategoryManager'
 import { Button, Field, Input, PageSkeleton, Select, SynthCard } from '@/components/ui/primitives'
@@ -8,6 +8,7 @@ import { useI18n } from '@/i18n/I18nContext'
 import { localeOptions, resolveLocale, type SupportedLocale } from '@/i18n/locales'
 import { catalogs } from '@/i18n/messages'
 import type { UserPreferences } from '@/types/domain'
+import { useHelpCenter } from '@/components/help/HelpCenterContext'
 
 function Toggle({ checked, onChange, label, description }: { checked: boolean; onChange: (value: boolean) => void; label: string; description: string }) {
   return <label className="flex cursor-pointer items-start justify-between gap-4 border-b border-outline-soft/45 py-4 last:border-0"><span><strong className="block text-sm">{label}</strong><small className="mt-1 block max-w-lg text-xs leading-5 text-text-muted">{description}</small></span><input className="peer sr-only" type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} /><span className="relative mt-1 h-6 w-11 shrink-0 rounded-full border border-outline-soft bg-panel-high transition peer-checked:border-neon-cyan/60 peer-checked:bg-neon-cyan/20 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-tertiary after:absolute after:left-1 after:top-1 after:size-4 after:rounded-full after:bg-text-muted after:transition peer-checked:after:translate-x-5 peer-checked:after:bg-neon-cyan peer-checked:after:shadow-[0_0_8px_#00ffff]" aria-hidden="true" /></label>
@@ -15,6 +16,7 @@ function Toggle({ checked, onChange, label, description }: { checked: boolean; o
 
 export function SettingsPage() {
   const { t, locale, setLocale } = useI18n()
+  const { startTour } = useHelpCenter()
   const { data, loading, updateLocale, updatePreferences } = useAppData()
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -45,7 +47,7 @@ export function SettingsPage() {
 
   return (
     <div className="page-enter grid gap-6">
-      <PageHeader eyebrow={t('settings.eyebrow')} title={t('settings.title')} description={t('settings.description')} icon={Settings} actions={<Button icon={Save} loading={saving} onClick={() => void save()}>{t('settings.saveChanges')}</Button>} />
+      <PageHeader eyebrow={t('settings.eyebrow')} title={t('settings.title')} description={t('settings.description')} icon={Settings} tourId="settings" actions={<Button icon={Save} loading={saving} onClick={() => void save()}>{t('settings.saveChanges')}</Button>} />
       {saved && <div className="rounded-lg border border-success/25 bg-success/5 p-3 text-sm text-success">{t('settings.saved')}</div>}
       <div className="grid gap-4 xl:grid-cols-2">
         <SynthCard className="p-5 sm:p-6">
@@ -71,6 +73,17 @@ export function SettingsPage() {
             <Toggle checked={current.audioReactive} onChange={(value) => change('audioReactive', value)} label={t('settings.audioReactive')} description={t('settings.audioReactiveDesc')} />
             <Toggle checked={current.reducedMotion} onChange={(value) => change('reducedMotion', value)} label={t('settings.reducedMotion')} description={t('settings.reducedMotionDesc')} />
             <Toggle checked={current.compactMode} onChange={(value) => change('compactMode', value)} label={t('settings.compact')} description={t('settings.compactDesc')} />
+          </div>
+        </SynthCard>
+        <SynthCard className="p-5 sm:p-6">
+          <div className="flex items-center gap-2"><CircleHelp className="size-4 text-neon-cyan" /><h2 className="font-display text-sm font-bold uppercase">{t('settings.helpTitle')}</h2></div>
+          <p className="mt-2 text-xs leading-5 text-text-muted">{t('settings.helpDescription')}</p>
+          <div className="mt-2">
+            <Toggle checked={current.helpHints} onChange={(value) => change('helpHints', value)} label={t('settings.helpHints')} description={t('settings.helpHintsDesc')} />
+          </div>
+          <div className="mt-4 rounded-lg border border-neon-cyan/15 bg-neon-cyan/[0.035] p-4">
+            <p className="mb-4 text-xs leading-5 text-text-muted">{t('settings.tourDescription')}</p>
+            <Button icon={Play} variant="cyan" onClick={startTour}>{t('settings.startTour')}</Button>
           </div>
         </SynthCard>
         <CategoryManager />

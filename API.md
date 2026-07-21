@@ -71,7 +71,20 @@ Valida `state`, vincula/crea cuenta y redirige.
 ### `GET /me`
 ### `PATCH /me`
 
-La implementación actual permite actualizar `locale` y/o las preferencias visuales. `locale` usa la misma lista cerrada del registro.
+La implementación actual permite actualizar `locale` y/o las preferencias visuales. `locale` usa la misma lista cerrada del registro. El objeto completo `preferences` incluye `reducedMotion`, `ambientEffects`, `audioReactive`, `scanlines`, `compactMode` y `helpHints`; esta última propiedad controla la visibilidad de los iconos de ayuda y vale `true` por defecto.
+
+### `POST /me/guided-tour/complete`
+
+Marca el tour guiado como visto al terminarlo o abandonarlo. La operación es idempotente: llamadas posteriores conservan la fecha de la primera finalización y responden:
+
+```json
+{
+  "data": { "guidedTourCompleted": true },
+  "meta": {}
+}
+```
+
+`GET /me` expone el booleano `guidedTourCompleted`; la interfaz inicia automáticamente el tour cuando es `false`.
 
 ### `GET /me/progress`
 

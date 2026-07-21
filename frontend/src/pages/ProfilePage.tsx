@@ -21,7 +21,7 @@ export function ProfilePage() {
 
   return (
     <div className="page-enter grid gap-6">
-      <PageHeader eyebrow={t('profile.eyebrow')} title={t('profile.title')} description={t('profile.description')} icon={UserRound} />
+      <PageHeader eyebrow={t('profile.eyebrow')} title={t('profile.title')} description={t('profile.description')} icon={UserRound} tourId="profile" />
       <div className="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
         <SynthCard className="p-6 text-center" tone="cyan">
           <div className="mx-auto grid size-24 place-items-center rounded-full border-2 border-neon-cyan bg-neon-cyan/7 font-display text-2xl font-black text-neon-cyan shadow-[0_0_28px_rgba(0,255,255,.22)]">{initials}</div>

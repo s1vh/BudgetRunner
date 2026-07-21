@@ -117,6 +117,7 @@ export const profile: UserProfile = {
   timezone: 'Europe/Madrid',
   weekStartsOn: 1,
   googleConnected: true,
+  guidedTourCompleted: false,
   progress,
   levelHistory: [
     { level: 24, flux: 4650, reachedAt: '2026-07-08T21:30:10Z', reason: { key: 'levelReason.moduleEquipped', params: { name: 'Void Backplane' } } },
@@ -129,5 +130,6 @@ export const profile: UserProfile = {
     audioReactive: false,
     scanlines: true,
     compactMode: false,
+    helpHints: true,
   },
 }

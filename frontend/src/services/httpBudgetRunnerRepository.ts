@@ -126,6 +126,10 @@ export class HttpBudgetRunnerRepository implements BudgetRunnerRepository {
     return apiClient.request<UserProfile>('/me', { method: 'PATCH', body: JSON.stringify({ locale }) })
   }
 
+  async completeGuidedTour(): Promise<void> {
+    await apiClient.request('/me/guided-tour/complete', { method: 'POST' })
+  }
+
   async purchaseModule(offerId: string): Promise<GameData> {
     const result = await apiClient.request<{ game: ApiGame }>(`/game/store/offers/${offerId}/purchase`, {
       method: 'POST', headers: idempotencyHeaders(),
