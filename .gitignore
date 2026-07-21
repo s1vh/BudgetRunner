@@ -6,6 +6,7 @@ backend/node_modules/
 backend/dist/
 backend/coverage/
 frontend/dist/
+frontend/.vite-cache/
 .firebase/
 firebase-debug.log
 firebase-debug.*.log
