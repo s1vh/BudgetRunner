@@ -48,7 +48,7 @@ export function DashboardPage() {
           <DonutChart data={dashboard.distribution} currency={dashboard.currency} title={t('dashboard.distribution')} />
         </SynthCard>
         <SynthCard className="p-5 pr-14 sm:p-6 sm:pr-16" helpKey="help.dashboard.recent" data-tour="dashboard-recent">
-          <div className="mb-2 flex items-center justify-between"><div className="flex items-center gap-2"><ReceiptText className="size-4 text-neon-magenta" /><h2 className="font-display text-sm font-bold tracking-wider uppercase">{t('dashboard.transmissions')}</h2></div><Link to="/gastos" className="font-mono text-[10px] text-neon-cyan hover:underline">{t('dashboard.viewAll')}</Link></div>
+          <div className="mb-2 flex items-center justify-between"><div className="flex items-center gap-2"><ReceiptText className="size-4 text-neon-magenta" /><h2 className="font-display text-sm font-bold tracking-wider uppercase">{t('dashboard.transmissions')}</h2></div><Link to="/transactions" className="font-mono text-[10px] text-neon-cyan hover:underline">{t('dashboard.viewAll')}</Link></div>
           <TransactionList transactions={dashboard.recentTransactions} categories={data.categories} limit={4} />
         </SynthCard>
       </div>
