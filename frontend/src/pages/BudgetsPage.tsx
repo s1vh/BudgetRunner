@@ -5,14 +5,23 @@ import { BudgetGauge } from '@/components/charts/BudgetGauge'
 import { BudgetForm } from '@/components/forms/BudgetForm'
 import { Badge, Button, Modal, PageSkeleton, SynthCard } from '@/components/ui/primitives'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { useI18n } from '@/i18n/I18nContext'
+import { categoryLabel } from '@/i18n/categoryLabel'
+import type { TranslationKey } from '@/i18n/messages'
 import type { Budget, BudgetStatus } from '@/types/domain'
 import { formatDate, formatMoney } from '@/utils/format'
 
-const statusMeta: Record<BudgetStatus, { label: string; tone: 'cyan' | 'magenta' | 'purple' | 'success' | 'warning' | 'muted' }> = {
-  active: { label: 'Activo', tone: 'cyan' }, scheduled: { label: 'Programado', tone: 'purple' }, paused: { label: 'Pausado', tone: 'warning' }, met: { label: 'Cumplido', tone: 'success' }, exceeded: { label: 'Excedido', tone: 'magenta' }, archived: { label: 'Archivado', tone: 'muted' },
+const statusMeta: Record<BudgetStatus, { labelKey: TranslationKey; tone: 'cyan' | 'magenta' | 'purple' | 'success' | 'warning' | 'muted' }> = {
+  active: { labelKey: 'budget.active', tone: 'cyan' },
+  scheduled: { labelKey: 'budget.scheduled', tone: 'purple' },
+  paused: { labelKey: 'budget.paused', tone: 'warning' },
+  met: { labelKey: 'budget.met', tone: 'success' },
+  exceeded: { labelKey: 'budget.exceeded', tone: 'magenta' },
+  archived: { labelKey: 'budget.archived', tone: 'muted' },
 }
 
 export function BudgetsPage() {
+  const { t, td } = useI18n()
   const { data, loading, createBudget } = useAppData()
   const [formOpen, setFormOpen] = useState(false)
   const [selected, setSelected] = useState<Budget | null>(null)
@@ -22,28 +31,30 @@ export function BudgetsPage() {
 
   return (
     <div className="page-enter grid gap-6">
-      <PageHeader eyebrow="Control de ciclo" title="Presupuestos" description="Límites semanales y mensuales con trazabilidad de cierres, solapamientos y recompensas elegibles." icon={Radar} actions={<Button icon={Plus} onClick={() => setFormOpen(true)}>Nuevo presupuesto</Button>} />
-      <div className="flex flex-wrap gap-2" aria-label="Filtrar presupuestos">
-        {(['all', 'active', 'scheduled', 'met', 'exceeded', 'paused'] as const).map((item) => <button key={item} type="button" onClick={() => setFilter(item)} className={`min-h-10 rounded-lg border px-3 font-mono text-[10px] font-bold uppercase transition ${filter === item ? 'border-neon-cyan/50 bg-neon-cyan/8 text-neon-cyan' : 'border-white/10 text-text-muted hover:text-text-glow'}`}>{item === 'all' ? 'Todos' : statusMeta[item].label}</button>)}
+      <PageHeader eyebrow={t('budgets.eyebrow')} title={t('budgets.title')} description={t('budgets.description')} icon={Radar} tourId="budgets-header" actions={<Button icon={Plus} onClick={() => setFormOpen(true)}>{t('budgets.new')}</Button>} />
+      <div className="flex flex-wrap gap-2" aria-label={t('budgets.filter')} data-tour="budgets-filters">
+        {(['all', 'active', 'scheduled', 'met', 'exceeded', 'paused'] as const).map((item) => <button key={item} type="button" onClick={() => setFilter(item)} className={`min-h-10 rounded-lg border px-3 font-mono text-[10px] font-bold uppercase transition ${filter === item ? 'border-neon-cyan/50 bg-neon-cyan/8 text-neon-cyan' : 'border-white/10 text-text-muted hover:text-text-glow'}`}>{item === 'all' ? t('common.all') : t(statusMeta[item].labelKey)}</button>)}
       </div>
-      <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3" data-tour="budgets-cards">
         {visible.map((budget) => {
           const status = statusMeta[budget.status]
           const over = budget.spendMinor > budget.limitMinor
+          const budgetCategory = budget.categoryId ? data.categories.find((category) => category.id === budget.categoryId) : undefined
+          const categoryName = budgetCategory ? categoryLabel(budgetCategory, td) : budget.categoryName
           return (
             <SynthCard key={budget.id} interactive tone={over ? 'danger' : budget.status === 'met' ? 'cyan' : 'default'} className="flex min-h-72 flex-col p-5">
-              <div className="flex items-start justify-between gap-3"><div><p className="font-mono text-[10px] tracking-wider text-text-muted uppercase">{budget.frequency === 'weekly' ? 'Ciclo semanal' : 'Ciclo mensual'} · {budget.scope === 'global' ? 'Global' : budget.categoryName}</p><h2 className="mt-1 font-heading text-lg font-bold text-text-glow">{budget.name}</h2></div><Badge tone={status.tone}>{status.label}</Badge></div>
+              <div className="flex items-start justify-between gap-3"><div><p className="font-mono text-[10px] tracking-wider text-text-muted uppercase">{budget.frequency === 'weekly' ? t('budget.weeklyCycle') : t('budget.monthlyCycle')} · {budget.scope === 'global' ? t('budget.global') : categoryName}</p><h2 className="mt-1 font-heading text-lg font-bold text-text-glow">{budget.name}</h2></div><Badge tone={status.tone}>{t(status.labelKey)}</Badge></div>
               <div className="my-6"><BudgetGauge spendMinor={budget.spendMinor} limitMinor={budget.limitMinor} currency={budget.currency} /></div>
-              <div className="grid grid-cols-2 gap-3 border-y border-outline-soft/45 py-3 font-mono text-[10px]"><div><span className="block text-text-muted">INICIO</span><strong className="mt-1 block text-text-glow">{formatDate(budget.startsAt)}</strong></div><div><span className="block text-text-muted">CIERRE</span><strong className="mt-1 block text-text-glow">{formatDate(budget.endsAt)}</strong></div></div>
-              <div className="mt-4 flex flex-1 items-end justify-between gap-3"><div className="text-xs text-text-muted">{budget.status === 'met' ? <span className="flex items-center gap-1.5 text-success"><CheckCircle2 className="size-4" />+{budget.synthcoinsAwarded} SC · +{budget.fluxAwarded} Flux</span> : over ? <span className="flex items-center gap-1.5 text-neon-magenta"><ShieldAlert className="size-4" />Riesgo de penalización</span> : <span>Elegible: {formatMoney(budget.eligibleSurplusMinor, budget.currency)}</span>}</div><button type="button" onClick={() => setSelected(budget)} className="min-h-10 rounded-lg px-3 font-mono text-[10px] text-neon-cyan hover:bg-neon-cyan/7">DETALLE</button></div>
+              <div className="grid grid-cols-2 gap-3 border-y border-outline-soft/45 py-3 font-mono text-[10px]"><div><span className="block text-text-muted">{t('budget.start')}</span><strong className="mt-1 block text-text-glow">{formatDate(budget.startsAt)}</strong></div><div><span className="block text-text-muted">{t('budget.close')}</span><strong className="mt-1 block text-text-glow">{formatDate(budget.endsAt)}</strong></div></div>
+              <div className="mt-4 flex flex-1 items-end justify-between gap-3"><div className="text-xs text-text-muted">{budget.status === 'met' ? <span className="flex items-center gap-1.5 text-success"><CheckCircle2 className="size-4" />+{budget.synthcoinsAwarded} SC · +{budget.fluxAwarded} Flux</span> : over ? <span className="flex items-center gap-1.5 text-neon-magenta"><ShieldAlert className="size-4" />{t('budget.penaltyRisk')}</span> : <span>{t('budget.eligible', { amount: formatMoney(budget.eligibleSurplusMinor, budget.currency) })}</span>}</div><button type="button" onClick={() => setSelected(budget)} className="min-h-10 rounded-lg px-3 font-mono text-[10px] text-neon-cyan hover:bg-neon-cyan/7">{t('common.details')}</button></div>
             </SynthCard>
           )
         })}
       </div>
 
-      <Modal open={formOpen} onClose={() => setFormOpen(false)} title="Nuevo presupuesto" description="Configura el ciclo; las reglas de cierre seguirán siendo responsabilidad del backend."><BudgetForm categories={data.categories} onCancel={() => setFormOpen(false)} onSubmit={async (draft) => { await createBudget(draft); setFormOpen(false) }} /></Modal>
-      <Modal open={Boolean(selected)} onClose={() => setSelected(null)} title={selected?.name ?? 'Detalle de presupuesto'} description="Snapshot de periodo y trazabilidad de recompensa.">
-        {selected && <div className="grid gap-5"><BudgetGauge spendMinor={selected.spendMinor} limitMinor={selected.limitMinor} currency={selected.currency} /><div className="grid gap-3 sm:grid-cols-3"><div className="rounded-lg border border-white/8 p-3"><Coins className="mb-2 size-4 text-sunset" /><span className="block font-mono text-[10px] text-text-muted">ELEGIBLE</span><strong className="font-mono text-sm">{formatMoney(selected.eligibleSurplusMinor, selected.currency)}</strong></div><div className="rounded-lg border border-white/8 p-3"><History className="mb-2 size-4 text-tertiary" /><span className="block font-mono text-[10px] text-text-muted">EXCLUIDO</span><strong className="font-mono text-sm">{formatMoney(selected.excludedRewardMinor ?? 0, selected.currency)}</strong></div><div className="rounded-lg border border-white/8 p-3"><CalendarDays className="mb-2 size-4 text-neon-cyan" /><span className="block font-mono text-[10px] text-text-muted">FRECUENCIA</span><strong className="font-mono text-sm">{selected.frequency === 'weekly' ? 'Semanal' : 'Mensual'}</strong></div></div><div className="rounded-lg border border-outline-soft/60 bg-void/40 p-4 text-sm leading-6 text-text-muted">Los gastos ya recompensados continúan apareciendo en el cálculo informativo, pero su porción se excluye del excedente elegible. El ledger del backend conservará cada atribución.</div><div className="flex flex-wrap justify-end gap-3"><Button variant="ghost" icon={CirclePause}>Pausar</Button><Button variant="purple" icon={Pause}>Ver periodos</Button></div></div>}
+      <Modal open={formOpen} onClose={() => setFormOpen(false)} title={t('budgets.new')} description={t('budget.newDescription')}><BudgetForm categories={data.categories} onCancel={() => setFormOpen(false)} onSubmit={async (draft) => { await createBudget(draft); setFormOpen(false) }} /></Modal>
+      <Modal open={Boolean(selected)} onClose={() => setSelected(null)} title={selected?.name ?? t('budget.detailTitle')} description={t('budget.snapshot')}>
+        {selected && <div className="grid gap-5"><BudgetGauge spendMinor={selected.spendMinor} limitMinor={selected.limitMinor} currency={selected.currency} /><div className="grid gap-3 sm:grid-cols-3"><div className="rounded-lg border border-white/8 p-3"><Coins className="mb-2 size-4 text-sunset" /><span className="block font-mono text-[10px] text-text-muted">{t('budget.eligible', { amount: '' })}</span><strong className="font-mono text-sm">{formatMoney(selected.eligibleSurplusMinor, selected.currency)}</strong></div><div className="rounded-lg border border-white/8 p-3"><History className="mb-2 size-4 text-tertiary" /><span className="block font-mono text-[10px] text-text-muted">{t('budget.excluded')}</span><strong className="font-mono text-sm">{formatMoney(selected.excludedRewardMinor ?? 0, selected.currency)}</strong></div><div className="rounded-lg border border-white/8 p-3"><CalendarDays className="mb-2 size-4 text-neon-cyan" /><span className="block font-mono text-[10px] text-text-muted">{t('budget.frequency')}</span><strong className="font-mono text-sm">{selected.frequency === 'weekly' ? t('budget.weekly') : t('budget.monthly')}</strong></div></div><div className="rounded-lg border border-outline-soft/60 bg-void/40 p-4 text-sm leading-6 text-text-muted">{t('budget.rewardNote')}</div><div className="flex flex-wrap justify-end gap-3"><Button variant="ghost" icon={CirclePause}>{t('budget.pause')}</Button><Button variant="purple" icon={Pause}>{t('budget.viewPeriods')}</Button></div></div>}
       </Modal>
     </div>
   )

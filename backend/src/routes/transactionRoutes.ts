@@ -4,6 +4,7 @@ import { type AppRequest, requireAuth } from '../auth.js'
 import { getDashboard, transactionDto } from '../dashboard.js'
 import { pool, type DbClient, withTransaction } from '../db.js'
 import { ApiError, asyncHandler } from '../errors.js'
+import { systemCategoryKey } from '../systemCategories.js'
 
 const transactionSchema = z.object({
   type: z.enum(['expense', 'income']),
@@ -32,10 +33,17 @@ interface CategoryRow {
   name: string
   icon_key: string
   color_token: string
+  is_system_seed: boolean
 }
 
 function categoryDto(row: CategoryRow) {
-  return { id: row.id, name: row.name, icon: row.icon_key, color: row.color_token }
+  return {
+    id: row.id,
+    name: row.name,
+    icon: row.icon_key,
+    color: row.color_token,
+    ...(systemCategoryKey(row.icon_key, row.is_system_seed) ? { systemKey: systemCategoryKey(row.icon_key, row.is_system_seed) } : {}),
+  }
 }
 
 const listSchema = z.object({
@@ -95,7 +103,7 @@ transactionRouter.use(requireAuth)
 transactionRouter.get('/categories', asyncHandler(async (request, response) => {
   const userId = (request as AppRequest).userId
   const result = await pool.query<CategoryRow>(`
-    SELECT id, name, icon_key, color_token FROM categories
+    SELECT id, name, icon_key, color_token, is_system_seed FROM categories
      WHERE user_id = $1 AND is_archived = false ORDER BY is_system_seed DESC, name
   `, [userId])
   response.json({ data: result.rows.map(categoryDto), meta: {} })
@@ -109,7 +117,7 @@ transactionRouter.post('/categories', asyncHandler(async (request, response) => 
     const inserted = await client.query<CategoryRow>(`
       INSERT INTO categories (user_id, name, icon_key, color_token)
       VALUES ($1, $2, $3, $4)
-      RETURNING id, name, icon_key, color_token
+      RETURNING id, name, icon_key, color_token, is_system_seed
     `, [userId, input.name, input.icon, input.color])
     const row = inserted.rows[0]
     if (!row) throw new Error('Category insert failed')
@@ -130,9 +138,12 @@ transactionRouter.patch('/categories/:id', asyncHandler(async (request, response
   const category = await withTransaction(async (client) => {
     const updated = await client.query<CategoryRow>(`
       UPDATE categories
-         SET name = coalesce($3, name), icon_key = coalesce($4, icon_key), color_token = coalesce($5, color_token)
+         SET name = coalesce($3, name),
+             icon_key = coalesce($4, icon_key),
+             color_token = coalesce($5, color_token),
+             is_system_seed = CASE WHEN $3 IS NOT NULL AND $3 IS DISTINCT FROM name THEN false ELSE is_system_seed END
        WHERE id = $1 AND user_id = $2 AND is_archived = false
-       RETURNING id, name, icon_key, color_token
+       RETURNING id, name, icon_key, color_token, is_system_seed
     `, [categoryId, userId, input.name ?? null, input.icon ?? null, input.color ?? null])
     const row = updated.rows[0]
     if (!row) throw new ApiError(404, 'CATEGORY_NOT_FOUND', 'No se ha encontrado la categoría.')

@@ -31,6 +31,7 @@ const registerSchema = z.object({
   displayName: z.string().trim().min(2).max(80),
   currency: z.string().regex(/^[A-Z]{3}$/).default('EUR'),
   timezone: z.string().min(3).max(64).default('Europe/Madrid'),
+  locale: z.enum(['es-ES', 'en-US', 'fr-FR', 'de-DE', 'ru-RU', 'zh-CN', 'ja-JP', 'ko-KR']).default('en-US'),
 })
 
 const loginSchema = z.object({
@@ -45,8 +46,10 @@ const preferencesSchema = z.object({
     audioReactive: z.boolean(),
     scanlines: z.boolean(),
     compactMode: z.boolean(),
-  }),
-})
+    helpHints: z.boolean(),
+  }).optional(),
+  locale: z.enum(['es-ES', 'en-US', 'fr-FR', 'de-DE', 'ru-RU', 'zh-CN', 'ja-JP', 'ko-KR']).optional(),
+}).refine((input) => input.preferences !== undefined || input.locale !== undefined, { message: 'At least one profile field is required.' })
 
 async function createSession(client: DbClient, userId: string, request: Request, rotatedFromId?: string) {
   const sessionId = randomUUID()
@@ -62,9 +65,10 @@ async function createSession(client: DbClient, userId: string, request: Request,
 async function userDto(client: DbClient, userId: string) {
   const result = await client.query<{
     id: string; email: string; display_name: string; avatar_url: string | null; primary_currency: string;
-    locale: string; timezone: string; week_starts_on: number; preferences: Record<string, boolean>; google_connected: boolean;
+    locale: string; timezone: string; week_starts_on: number; preferences: Record<string, boolean>;
+    guided_tour_completed_at: Date | null; google_connected: boolean;
   }>(`SELECT u.id, u.email, u.display_name, u.avatar_url, u.primary_currency, u.locale, u.timezone,
-      u.week_starts_on, u.preferences,
+      u.week_starts_on, u.preferences, u.guided_tour_completed_at,
       EXISTS (SELECT 1 FROM oauth_accounts oa WHERE oa.user_id = u.id AND oa.provider = 'google') AS google_connected
     FROM users u WHERE u.id = $1 AND u.deleted_at IS NULL`, [userId])
   const user = result.rows[0]
@@ -79,6 +83,7 @@ async function userDto(client: DbClient, userId: string) {
     timezone: user.timezone,
     weekStartsOn: user.week_starts_on,
     googleConnected: user.google_connected,
+    guidedTourCompleted: user.guided_tour_completed_at !== null,
     preferences: user.preferences,
   }
 }
@@ -90,9 +95,9 @@ authRouter.post('/register', asyncHandler(async (request, response) => {
   const result = await withTransaction(async (client) => {
     const passwordHash = await bcrypt.hash(input.password, 12)
     const inserted = await client.query<{ id: string }>(`
-      INSERT INTO users (email, password_hash, display_name, primary_currency, timezone)
-      VALUES ($1, $2, $3, $4, $5) RETURNING id
-    `, [input.email, passwordHash, input.displayName, input.currency, input.timezone])
+      INSERT INTO users (email, password_hash, display_name, primary_currency, timezone, locale)
+      VALUES ($1, $2, $3, $4, $5, $6) RETURNING id
+    `, [input.email, passwordHash, input.displayName, input.currency, input.timezone, input.locale])
     const userId = inserted.rows[0]?.id
     if (!userId) throw new Error('User insert failed')
     await provisionNewUser(client, userId)
@@ -109,13 +114,14 @@ function oauthResultUrl(error?: string) {
   return url.toString()
 }
 
-authRouter.get('/google', asyncHandler(async (_request, response) => {
+authRouter.get('/google', asyncHandler(async (request, response) => {
   if (!config.googleOAuthEnabled) {
     response.redirect(oauthResultUrl('google_not_configured'))
     return
   }
   const authorization = createGoogleAuthorizationRequest()
-  response.cookie(googleOAuthCookieName, signGoogleOAuthState(authorization), googleOAuthCookieOptions)
+  const locale = z.enum(['es-ES', 'en-US', 'fr-FR', 'de-DE', 'ru-RU', 'zh-CN', 'ja-JP', 'ko-KR']).catch('en-US').parse(request.query.locale)
+  response.cookie(googleOAuthCookieName, signGoogleOAuthState({ ...authorization, locale }), googleOAuthCookieOptions)
   response.redirect(authorization.url)
 }))
 
@@ -147,7 +153,7 @@ authRouter.get('/google/callback', asyncHandler(async (request, response) => {
   try {
     const identity = await exchangeGoogleCode(code, oauthState.codeVerifier, oauthState.nonce)
     const session = await withTransaction(async (client) => {
-      const userId = await findOrCreateGoogleUser(client, identity)
+      const userId = await findOrCreateGoogleUser(client, identity, oauthState.locale)
       await client.query(`
         INSERT INTO audit_events (user_id, actor_type, action, entity_type, entity_id, request_id, metadata)
         VALUES ($1, 'user', 'auth.google_login', 'user', $1, $2, jsonb_build_object('provider', 'google'))
@@ -213,13 +219,15 @@ meRouter.get('/', asyncHandler(async (request, response) => {
       'SELECT new_level, total_flux, created_at, reason FROM level_history WHERE user_id = $1 ORDER BY created_at DESC LIMIT 20', [userId],
     ),
   ])
-  response.json({ data: { ...user, progress, levelHistory: history.rows.map((item) => ({ level: item.new_level, flux: item.total_flux, reachedAt: item.created_at.toISOString(), reason: item.reason })) }, meta: {} })
+  response.json({ data: { ...user, progress, levelHistory: history.rows.map((item) => ({ level: item.new_level, flux: item.total_flux, reachedAt: item.created_at.toISOString(), reason: { key: `levelReason.${item.reason}` } })) }, meta: {} })
 }))
 
 meRouter.patch('/', asyncHandler(async (request, response) => {
   const userId = (request as AppRequest).userId
   const input = preferencesSchema.parse(request.body)
-  await pool.query('UPDATE users SET preferences = $2 WHERE id = $1 AND deleted_at IS NULL', [userId, input.preferences])
+  await pool.query(`UPDATE users
+    SET preferences = coalesce($2::jsonb, preferences), locale = coalesce($3, locale)
+    WHERE id = $1 AND deleted_at IS NULL`, [userId, input.preferences ? JSON.stringify(input.preferences) : null, input.locale ?? null])
   const [user, progress, history] = await Promise.all([
     userDto(pool, userId),
     getProgressSummary(pool, userId),
@@ -227,5 +235,17 @@ meRouter.patch('/', asyncHandler(async (request, response) => {
       'SELECT new_level, total_flux, created_at, reason FROM level_history WHERE user_id = $1 ORDER BY created_at DESC LIMIT 20', [userId],
     ),
   ])
-  response.json({ data: { ...user, progress, levelHistory: history.rows.map((item) => ({ level: item.new_level, flux: item.total_flux, reachedAt: item.created_at.toISOString(), reason: item.reason })) }, meta: {} })
+  response.json({ data: { ...user, progress, levelHistory: history.rows.map((item) => ({ level: item.new_level, flux: item.total_flux, reachedAt: item.created_at.toISOString(), reason: { key: `levelReason.${item.reason}` } })) }, meta: {} })
+}))
+
+meRouter.post('/guided-tour/complete', asyncHandler(async (request, response) => {
+  const userId = (request as AppRequest).userId
+  const updated = await pool.query<{ guided_tour_completed_at: Date }>(`
+    UPDATE users
+       SET guided_tour_completed_at = coalesce(guided_tour_completed_at, now())
+     WHERE id = $1 AND deleted_at IS NULL
+     RETURNING guided_tour_completed_at
+  `, [userId])
+  if (!updated.rows[0]) throw new ApiError(404, 'USER_NOT_FOUND', 'No se ha encontrado el usuario.')
+  response.json({ data: { guidedTourCompleted: true }, meta: {} })
 }))
