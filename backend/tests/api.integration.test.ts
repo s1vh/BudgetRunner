@@ -65,6 +65,26 @@ describe.sequential('Budget Runner API', () => {
     expect(response.body.error.code).toBe('AUTHENTICATION_REQUIRED')
   })
 
+  test('persiste el idioma del perfil y expone categorías del sistema traducibles', async () => {
+    const categories = await request(app).get('/api/v1/categories').set('Authorization', `Bearer ${token}`)
+    expect(categories.status).toBe(200)
+    expect(categories.body.data).toHaveLength(9)
+    expect(categories.body.data.every((category: { systemKey?: string }) => Boolean(category.systemKey))).toBe(true)
+
+    const updated = await request(app).patch('/api/v1/me')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ locale: 'ko-KR' })
+    expect(updated.status).toBe(200)
+    expect(updated.body.data.locale).toBe('ko-KR')
+
+    const profile = await request(app).get('/api/v1/me').set('Authorization', `Bearer ${token}`)
+    expect(profile.body.data.locale).toBe('ko-KR')
+
+    await request(app).patch('/api/v1/me')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ locale: 'en-US' })
+  })
+
   test('vincula Google por email verificado y aprovisiona una cuenta nueva sin duplicados', async () => {
     const linkedSubject = `google-linked-${randomUUID()}`
     const linkedUserId = await withTransaction((client) => findOrCreateGoogleUser(client, {

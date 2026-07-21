@@ -9,6 +9,7 @@ import {
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from 'react'
+import { useI18n } from '@/i18n/I18nContext'
 
 export function cn(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(' ')
@@ -117,6 +118,7 @@ interface ModalProps {
 }
 
 export function Modal({ open, title, description, onClose, children }: ModalProps) {
+  const { t } = useI18n()
   useEffect(() => {
     if (!open) return
     const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }
@@ -130,11 +132,11 @@ export function Modal({ open, title, description, onClose, children }: ModalProp
       <SynthCard className="dialog-panel p-5 sm:p-7" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <p className="mb-1 font-mono text-[10px] tracking-[0.16em] text-neon-cyan uppercase">Terminal segura</p>
+            <p className="mb-1 font-mono text-[10px] tracking-[0.16em] text-neon-cyan uppercase">{t('common.secureTerminal')}</p>
             <h2 id="dialog-title" className="font-display text-xl font-bold text-text-glow sm:text-2xl">{title}</h2>
             {description && <p className="mt-2 max-w-xl text-sm text-text-muted">{description}</p>}
           </div>
-          <button type="button" onClick={onClose} className="grid min-h-11 min-w-11 place-items-center rounded-lg border border-white/10 text-text-muted transition hover:border-neon-magenta/40 hover:text-neon-magenta" aria-label="Cerrar diálogo"><X className="size-5" /></button>
+          <button type="button" onClick={onClose} className="grid min-h-11 min-w-11 place-items-center rounded-lg border border-white/10 text-text-muted transition hover:border-neon-magenta/40 hover:text-neon-magenta" aria-label={t('common.closeDialog')}><X className="size-5" /></button>
         </div>
         {children}
       </SynthCard>

@@ -40,7 +40,7 @@
 | display_name | VARCHAR(80) | |
 | avatar_url | TEXT NULL | |
 | primary_currency | CHAR(3) | ISO 4217 |
-| locale | VARCHAR(10) | `es-ES` |
+| locale | VARCHAR(10) | uno de `es-ES`, `en-US`, `fr-FR`, `de-DE`, `ru-RU`, `zh-CN`, `ja-JP`, `ko-KR`; por defecto `en-US` |
 | timezone | VARCHAR(64) | IANA |
 | week_starts_on | SMALLINT | 1–7 |
 | email_verified_at | TIMESTAMPTZ NULL | |

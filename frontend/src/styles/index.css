@@ -17,15 +17,15 @@
   --color-outline-soft: #663a52;
   --color-tertiary: #a69dff;
   --color-success: #63e063;
-  --font-display: "Orbitron", "Space Grotesk", sans-serif;
-  --font-heading: "Space Grotesk", sans-serif;
-  --font-body: "Arimo", sans-serif;
-  --font-mono: "Courier Prime", monospace;
+  --font-display: "Orbitron", "Space Grotesk", "Noto Sans", "Microsoft YaHei", "Yu Gothic UI", "Malgun Gothic", sans-serif;
+  --font-heading: "Space Grotesk", "Noto Sans", "Microsoft YaHei", "Yu Gothic UI", "Malgun Gothic", sans-serif;
+  --font-body: "Arimo", "Noto Sans", "Microsoft YaHei", "Yu Gothic UI", "Malgun Gothic", sans-serif;
+  --font-mono: "Courier Prime", "Noto Sans Mono", "Microsoft YaHei UI", "Yu Gothic UI", "Malgun Gothic", monospace;
 }
 
 :root {
   color-scheme: dark;
-  font-family: "Arimo", sans-serif;
+  font-family: "Arimo", "Noto Sans", "Microsoft YaHei", "Yu Gothic UI", "Malgun Gothic", sans-serif;
   color: #f4f4f9;
   background: #0b0c10;
   font-synthesis: none;
@@ -48,9 +48,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 ::-webkit-scrollbar-thumb { border: 2px solid #0b0c10; border-radius: 99px; background: #663a52; }
 ::-webkit-scrollbar-thumb:hover { background: #00ffff; }
 
-.font-display { font-family: "Orbitron", "Space Grotesk", sans-serif; }
-.font-heading { font-family: "Space Grotesk", sans-serif; }
-.font-mono { font-family: "Courier Prime", monospace; }
+.font-display { font-family: "Orbitron", "Space Grotesk", "Noto Sans", "Microsoft YaHei", "Yu Gothic UI", "Malgun Gothic", sans-serif; }
+.font-heading { font-family: "Space Grotesk", "Noto Sans", "Microsoft YaHei", "Yu Gothic UI", "Malgun Gothic", sans-serif; }
+.font-mono { font-family: "Courier Prime", "Noto Sans Mono", "Microsoft YaHei UI", "Yu Gothic UI", "Malgun Gothic", monospace; }
 .tabular { font-variant-numeric: tabular-nums; }
 
 .app-background {

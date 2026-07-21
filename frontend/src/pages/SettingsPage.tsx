@@ -4,6 +4,7 @@ import { useAppData } from '@/app/AppDataContext'
 import { CategoryManager } from '@/components/settings/CategoryManager'
 import { Button, Field, Input, PageSkeleton, Select, SynthCard } from '@/components/ui/primitives'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { useI18n } from '@/i18n/I18nContext'
 import type { UserPreferences } from '@/types/domain'
 
 function Toggle({ checked, onChange, label, description }: { checked: boolean; onChange: (value: boolean) => void; label: string; description: string }) {
@@ -11,6 +12,7 @@ function Toggle({ checked, onChange, label, description }: { checked: boolean; o
 }
 
 export function SettingsPage() {
+  const { t } = useI18n()
   const { data, loading, updatePreferences } = useAppData()
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -22,15 +24,32 @@ export function SettingsPage() {
 
   return (
     <div className="page-enter grid gap-6">
-      <PageHeader eyebrow="Configuración del sistema" title="Ajustes" description="Preferencias regionales, visuales, categorías y controles de privacidad." icon={Settings} actions={<Button icon={Save} loading={saving} onClick={() => void save()}>Guardar cambios</Button>} />
-      {saved && <div className="rounded-lg border border-success/25 bg-success/5 p-3 text-sm text-success">Preferencias sincronizadas correctamente.</div>}
+      <PageHeader eyebrow={t('settings.eyebrow')} title={t('settings.title')} description={t('settings.description')} icon={Settings} actions={<Button icon={Save} loading={saving} onClick={() => void save()}>{t('settings.saveChanges')}</Button>} />
+      {saved && <div className="rounded-lg border border-success/25 bg-success/5 p-3 text-sm text-success">{t('settings.saved')}</div>}
       <div className="grid gap-4 xl:grid-cols-2">
-        <SynthCard className="p-5 sm:p-6"><div className="mb-4 flex items-center gap-2"><Globe2 className="size-4 text-neon-cyan" /><h2 className="font-display text-sm font-bold uppercase">Región & moneda</h2></div><div className="grid gap-4 sm:grid-cols-2"><Field label="Moneda principal" htmlFor="settings-currency"><Select id="settings-currency" defaultValue={data.profile.primaryCurrency}><option>EUR</option><option>USD</option><option>GBP</option></Select></Field><Field label="Formato regional" htmlFor="settings-locale"><Select id="settings-locale" defaultValue={data.profile.locale}><option value="es-ES">Español · España</option><option value="en-US">English · US</option></Select></Field><Field label="Zona horaria" htmlFor="settings-timezone"><Select id="settings-timezone" defaultValue={data.profile.timezone}><option>Europe/Madrid</option><option>UTC</option><option>America/New_York</option></Select></Field><Field label="Inicio de semana" htmlFor="settings-week"><Select id="settings-week" defaultValue="1"><option value="1">Lunes</option><option value="7">Domingo</option></Select></Field></div><p className="mt-4 rounded-lg border border-sunset/20 bg-sunset/5 p-3 text-xs leading-5 text-text-muted">Cambiar la moneda principal no convertirá datos históricos. Los periodos conservan la zona horaria de su creación.</p></SynthCard>
-        <SynthCard className="p-5 sm:p-6"><div className="flex items-center gap-2"><Palette className="size-4 text-neon-magenta" /><h2 className="font-display text-sm font-bold uppercase">Experiencia Ultrawave</h2></div><div className="mt-2"><Toggle checked={current.ambientEffects} onChange={(value) => change('ambientEffects', value)} label="Efectos ambientales" description="Nebulosa, horizonte, rejilla y brillos de baja intensidad." /><Toggle checked={current.scanlines} onChange={(value) => change('scanlines', value)} label="Scanlines CRT" description="Textura analógica sutil sobre la interfaz." /><Toggle checked={current.audioReactive} onChange={(value) => change('audioReactive', value)} label="Pulso audio-reactive simulado" description="No reproduce audio; modifica únicamente decoración ambiental." /><Toggle checked={current.reducedMotion} onChange={(value) => change('reducedMotion', value)} label="Reducir movimiento" description="Desactiva glitch, pulsos y transiciones no esenciales." /><Toggle checked={current.compactMode} onChange={(value) => change('compactMode', value)} label="Modo compacto" description="Limita el ancho de contenido para una lectura más densa." /></div></SynthCard>
+        <SynthCard className="p-5 sm:p-6">
+          <div className="mb-4 flex items-center gap-2"><Globe2 className="size-4 text-neon-cyan" /><h2 className="font-display text-sm font-bold uppercase">{t('settings.region')}</h2></div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label={t('settings.primaryCurrency')} htmlFor="settings-currency"><Select id="settings-currency" defaultValue={data.profile.primaryCurrency}><option>EUR</option><option>USD</option><option>GBP</option></Select></Field>
+            <Field label={t('profile.timezone')} htmlFor="settings-timezone"><Select id="settings-timezone" defaultValue={data.profile.timezone}><option>Europe/Madrid</option><option>UTC</option><option>America/New_York</option></Select></Field>
+            <Field label={t('settings.weekStart')} htmlFor="settings-week"><Select id="settings-week" defaultValue={String(data.profile.weekStartsOn)}><option value="1">{t('profile.monday')}</option><option value="7">{t('profile.sunday')}</option></Select></Field>
+          </div>
+          <p className="mt-4 rounded-lg border border-sunset/20 bg-sunset/5 p-3 text-xs leading-5 text-text-muted">{t('settings.currencyWarning')}</p>
+        </SynthCard>
+        <SynthCard className="p-5 sm:p-6">
+          <div className="flex items-center gap-2"><Palette className="size-4 text-neon-magenta" /><h2 className="font-display text-sm font-bold uppercase">{t('settings.experience')}</h2></div>
+          <div className="mt-2">
+            <Toggle checked={current.ambientEffects} onChange={(value) => change('ambientEffects', value)} label={t('settings.ambient')} description={t('settings.ambientDesc')} />
+            <Toggle checked={current.scanlines} onChange={(value) => change('scanlines', value)} label={t('settings.scanlines')} description={t('settings.scanlinesDesc')} />
+            <Toggle checked={current.audioReactive} onChange={(value) => change('audioReactive', value)} label={t('settings.audioReactive')} description={t('settings.audioReactiveDesc')} />
+            <Toggle checked={current.reducedMotion} onChange={(value) => change('reducedMotion', value)} label={t('settings.reducedMotion')} description={t('settings.reducedMotionDesc')} />
+            <Toggle checked={current.compactMode} onChange={(value) => change('compactMode', value)} label={t('settings.compact')} description={t('settings.compactDesc')} />
+          </div>
+        </SynthCard>
         <CategoryManager />
         <div className="grid gap-4">
-          <SynthCard className="p-5 sm:p-6"><div className="mb-4 flex items-center gap-2"><Accessibility className="size-4 text-success" /><h2 className="font-display text-sm font-bold uppercase">Accesibilidad</h2></div><ul className="grid gap-3 text-sm text-text-muted"><li className="flex gap-2"><Eye className="mt-0.5 size-4 shrink-0 text-neon-cyan" />Contraste verificado sobre las capas ambientales.</li><li className="flex gap-2"><SlidersHorizontal className="mt-0.5 size-4 shrink-0 text-tertiary" />Todos los controles admiten navegación por teclado.</li><li className="flex gap-2"><BellRing className="mt-0.5 size-4 shrink-0 text-sunset" />Los estados importantes incluyen texto e icono, no solo color.</li></ul></SynthCard>
-          <SynthCard className="p-5 sm:p-6" tone="danger"><div className="mb-3 flex items-center gap-2"><Shield className="size-4 text-neon-magenta" /><h2 className="font-display text-sm font-bold uppercase">Privacidad & cuenta</h2></div><p className="text-sm leading-6 text-text-muted">La eliminación requerirá reautenticación y confirmación explícita cuando exista backend.</p><div className="mt-4 flex gap-3"><Field label="Confirmación" htmlFor="delete-account"><Input id="delete-account" placeholder="Escribe ELIMINAR" /></Field><Button className="self-end" variant="magenta" icon={Trash2} disabled>Eliminar</Button></div></SynthCard>
+          <SynthCard className="p-5 sm:p-6"><div className="mb-4 flex items-center gap-2"><Accessibility className="size-4 text-success" /><h2 className="font-display text-sm font-bold uppercase">{t('settings.accessibility')}</h2></div><ul className="grid gap-3 text-sm text-text-muted"><li className="flex gap-2"><Eye className="mt-0.5 size-4 shrink-0 text-neon-cyan" />{t('settings.contrast')}</li><li className="flex gap-2"><SlidersHorizontal className="mt-0.5 size-4 shrink-0 text-tertiary" />{t('settings.keyboard')}</li><li className="flex gap-2"><BellRing className="mt-0.5 size-4 shrink-0 text-sunset" />{t('settings.stateText')}</li></ul></SynthCard>
+          <SynthCard className="p-5 sm:p-6" tone="danger"><div className="mb-3 flex items-center gap-2"><Shield className="size-4 text-neon-magenta" /><h2 className="font-display text-sm font-bold uppercase">{t('settings.privacy')}</h2></div><p className="text-sm leading-6 text-text-muted">{t('settings.deleteDesc')}</p><div className="mt-4 flex gap-3"><Field label={t('auth.confirmation')} htmlFor="delete-account"><Input id="delete-account" placeholder={t('settings.deletePlaceholder')} /></Field><Button className="self-end" variant="magenta" icon={Trash2} disabled>{t('common.delete')}</Button></div></SynthCard>
         </div>
       </div>
     </div>

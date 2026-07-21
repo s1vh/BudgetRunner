@@ -2,9 +2,11 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router'
 import { apiClient } from '@/services/apiClient'
+import { useI18n } from '@/i18n/I18nContext'
+import type { SupportedLocale } from '@/i18n/locales'
 
 interface AuthUser { id: string; email: string; displayName: string }
-interface RegisterInput { email: string; password: string; displayName: string; currency: string; timezone: string }
+interface RegisterInput { email: string; password: string; displayName: string; currency: string; timezone: string; locale: SupportedLocale }
 interface AuthValue {
   user: AuthUser | null
   loading: boolean
@@ -18,6 +20,7 @@ const AuthContext = createContext<AuthValue | null>(null)
 const usesApi = import.meta.env.VITE_DATA_SOURCE === 'api'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const { t } = useI18n()
   const [user, setUser] = useState<AuthUser | null>(usesApi ? null : { id: 'mock-user', email: 'mock@local', displayName: 'Nómada' })
   const [loading, setLoading] = useState(usesApi)
 
@@ -56,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     async completeGoogleLogin() {
       if (!usesApi) { setUser({ id: 'mock-google-user', email: 'google@local', displayName: 'Nómada Google' }); return }
-      if (!await apiClient.refresh()) throw new Error('No se ha podido crear la sesión de Google.')
+      if (!await apiClient.refresh()) throw new Error(t('auth.google.failed'))
       const current = await apiClient.request<AuthUser>('/me')
       setUser(current)
     },
@@ -65,21 +68,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       apiClient.setAccessToken(null)
       setUser(null)
     },
-  }), [loading, user])
+  }), [loading, t, user])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {
   const context = useContext(AuthContext)
-  if (!context) throw new Error('useAuth debe utilizarse dentro de AuthProvider.')
+  if (!context) throw new Error('useAuth must be used within AuthProvider.')
   return context
 }
 
 export function RequireAuth({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
+  const { t } = useI18n()
   const location = useLocation()
-  if (loading) return <div className="grid min-h-screen place-items-center font-mono text-neon-cyan">SINCRONIZANDO IDENTIDAD…</div>
+  if (loading) return <div className="grid min-h-screen place-items-center font-mono text-neon-cyan">{t('loading.identity')}</div>
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />
   return children
 }

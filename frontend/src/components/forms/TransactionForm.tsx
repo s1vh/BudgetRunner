@@ -2,6 +2,8 @@ import { useMemo, useState, type FormEvent } from 'react'
 import { Save } from 'lucide-react'
 import { Button, Field, Input, Select, Textarea } from '@/components/ui/primitives'
 import type { Category, FinancialTransaction, TransactionDraft, TransactionStatus, TransactionType } from '@/types/domain'
+import { useI18n } from '@/i18n/I18nContext'
+import { categoryLabel } from '@/i18n/categoryLabel'
 
 interface TransactionFormProps {
   categories: Category[]
@@ -11,6 +13,7 @@ interface TransactionFormProps {
 }
 
 export function TransactionForm({ categories, initial, onSubmit, onCancel }: TransactionFormProps) {
+  const { t, td } = useI18n()
   const initialDate = useMemo(() => initial?.occurredAt.slice(0, 10) ?? new Date().toISOString().slice(0, 10), [initial])
   const [type, setType] = useState<TransactionType>(initial?.type ?? 'expense')
   const [concept, setConcept] = useState(initial?.concept ?? '')
@@ -27,10 +30,10 @@ export function TransactionForm({ categories, initial, onSubmit, onCancel }: Tra
     event.preventDefault()
     const nextErrors: Record<string, string> = {}
     const numericAmount = Number(amount.replace(',', '.'))
-    if (concept.trim().length < 2) nextErrors.concept = 'Escribe un concepto de al menos 2 caracteres.'
-    if (!Number.isFinite(numericAmount) || numericAmount <= 0) nextErrors.amount = 'El importe debe ser mayor que cero.'
-    if (!categoryId) nextErrors.categoryId = 'Selecciona una categoría.'
-    if (!occurredAt) nextErrors.occurredAt = 'Selecciona una fecha.'
+    if (concept.trim().length < 2) nextErrors.concept = t('form.conceptError')
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) nextErrors.amount = t('form.amountError')
+    if (!categoryId) nextErrors.categoryId = t('form.selectCategory')
+    if (!occurredAt) nextErrors.occurredAt = t('form.selectDate')
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length > 0) return
 
@@ -48,7 +51,7 @@ export function TransactionForm({ categories, initial, onSubmit, onCancel }: Tra
         status,
       })
     } catch (error) {
-      setErrors((current) => ({ ...current, form: error instanceof Error ? error.message : 'No se pudo registrar la operación.' }))
+      setErrors((current) => ({ ...current, form: error instanceof Error ? error.message : t('form.transactionFailed') }))
     } finally {
       setSubmitting(false)
     }
@@ -57,46 +60,46 @@ export function TransactionForm({ categories, initial, onSubmit, onCancel }: Tra
   return (
     <form onSubmit={submit} className="grid gap-5" noValidate>
       {errors.form && <div role="alert" className="rounded-lg border border-neon-magenta/30 bg-neon-magenta/7 p-3 text-sm text-neon-magenta">{errors.form}</div>}
-      {initial?.lockedByReward && <div className="rounded-lg border border-sunset/30 bg-sunset/7 p-3 text-sm text-sunset">Esta transacción está incluida en un cierre recompensado. El backend bloqueará su edición y propondrá un ajuste compensatorio.</div>}
+      {initial?.lockedByReward && <div className="rounded-lg border border-sunset/30 bg-sunset/7 p-3 text-sm text-sunset">{t('form.rewardWarning')}</div>}
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Tipo" htmlFor="transaction-type" required>
+        <Field label={t('form.type')} htmlFor="transaction-type" required>
           <Select id="transaction-type" value={type} onChange={(event) => setType(event.target.value as TransactionType)}>
-            <option value="expense">Gasto</option><option value="income">Ingreso</option>
+            <option value="expense">{t('transactions.expense')}</option><option value="income">{t('transactions.income')}</option>
           </Select>
         </Field>
-        <Field label="Estado" htmlFor="transaction-status" required>
+        <Field label={t('transactions.status')} htmlFor="transaction-status" required>
           <Select id="transaction-status" value={status} onChange={(event) => setStatus(event.target.value as TransactionStatus)}>
-            <option value="posted">Contabilizada</option><option value="scheduled">Programada</option>
+            <option value="posted">{t('transactions.posted')}</option><option value="scheduled">{t('transactions.scheduled')}</option>
           </Select>
         </Field>
       </div>
-      <Field label="Concepto" htmlFor="transaction-concept" error={errors.concept} required>
-        <Input id="transaction-concept" value={concept} onChange={(event) => setConcept(event.target.value)} placeholder="Ej. Raciones del mercado nocturno" maxLength={160} aria-invalid={Boolean(errors.concept)} />
+      <Field label={t('transactions.concept')} htmlFor="transaction-concept" error={errors.concept} required>
+        <Input id="transaction-concept" value={concept} onChange={(event) => setConcept(event.target.value)} placeholder={t('form.exampleConcept')} maxLength={160} aria-invalid={Boolean(errors.concept)} />
       </Field>
       <div className="grid gap-4 sm:grid-cols-[1fr_140px]">
-        <Field label="Importe" htmlFor="transaction-amount" error={errors.amount} hint="Se convertirá a unidades menores antes de enviarse." required>
+        <Field label={t('transactions.amount')} htmlFor="transaction-amount" error={errors.amount} hint={t('form.minorUnitsHint')} required>
           <Input id="transaction-amount" inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="0,00" aria-invalid={Boolean(errors.amount)} />
         </Field>
-        <Field label="Moneda" htmlFor="transaction-currency" required>
+        <Field label={t('auth.currency')} htmlFor="transaction-currency" required>
           <Select id="transaction-currency" value={currency} onChange={(event) => setCurrency(event.target.value)}><option value="EUR">EUR</option><option value="USD">USD</option><option value="GBP">GBP</option></Select>
         </Field>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Categoría" htmlFor="transaction-category" error={errors.categoryId} required>
+        <Field label={t('transactions.category')} htmlFor="transaction-category" error={errors.categoryId} required>
           <Select id="transaction-category" value={categoryId} onChange={(event) => setCategoryId(event.target.value)} aria-invalid={Boolean(errors.categoryId)}>
-            {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+            {categories.map((category) => <option key={category.id} value={category.id}>{categoryLabel(category, td)}</option>)}
           </Select>
         </Field>
-        <Field label="Fecha" htmlFor="transaction-date" error={errors.occurredAt} required>
+        <Field label={t('transactions.date')} htmlFor="transaction-date" error={errors.occurredAt} required>
           <Input id="transaction-date" type="date" value={occurredAt} onChange={(event) => setOccurredAt(event.target.value)} aria-invalid={Boolean(errors.occurredAt)} />
         </Field>
       </div>
-      <Field label="Notas" htmlFor="transaction-notes" hint="Opcional. No incluyas información sensible.">
-        <Textarea id="transaction-notes" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Contexto adicional de la operación…" />
+      <Field label={t('form.notes')} htmlFor="transaction-notes" hint={t('form.notesHint')}>
+        <Textarea id="transaction-notes" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder={t('form.notesPlaceholder')} />
       </Field>
       <div className="flex flex-col-reverse gap-3 border-t border-outline-soft/60 pt-5 sm:flex-row sm:justify-end">
-        <Button type="button" variant="ghost" onClick={onCancel}>Cancelar</Button>
-        <Button type="submit" icon={Save} loading={submitting}>{initial ? 'Guardar cambios' : 'Registrar operación'}</Button>
+        <Button type="button" variant="ghost" onClick={onCancel}>{t('common.cancel')}</Button>
+        <Button type="submit" icon={Save} loading={submitting}>{initial ? t('form.saveChanges') : t('form.recordTransaction')}</Button>
       </div>
     </form>
   )

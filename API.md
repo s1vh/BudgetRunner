@@ -33,7 +33,9 @@ Error:
 
 ### `POST /auth/register`
 
-Body: `email`, `password`, `displayName`, `currency`, `timezone`.
+Body: `email`, `password`, `displayName`, `currency`, `timezone`, `locale`.
+
+`locale` admite `es-ES`, `en-US`, `fr-FR`, `de-DE`, `ru-RU`, `zh-CN`, `ja-JP` y `ko-KR`; si falta, se usa `en-US`.
 
 ### `POST /auth/login`
 
@@ -69,7 +71,7 @@ Valida `state`, vincula/crea cuenta y redirige.
 ### `GET /me`
 ### `PATCH /me`
 
-Campos editables: `displayName`, `primaryCurrency`, `locale`, `timezone`, `weekStartsOn`, preferencias visuales.
+La implementación actual permite actualizar `locale` y/o las preferencias visuales. `locale` usa la misma lista cerrada del registro.
 
 ### `GET /me/progress`
 

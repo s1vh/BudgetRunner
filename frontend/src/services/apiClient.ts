@@ -1,3 +1,7 @@
+import { apiErrorMessage } from '@/i18n/apiErrors'
+import { catalogs } from '@/i18n/messages'
+import { getRuntimeLocale } from '@/i18n/locales'
+
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? '/api/v1'
 const tokenKey = 'budget-runner-access-token'
 
@@ -25,9 +29,7 @@ async function readPayload<T>(response: Response): Promise<ApiPayload<T> | null>
     throw new ApiClientError(
       response.status,
       'INVALID_API_RESPONSE',
-      response.ok
-        ? 'La API ha devuelto una respuesta que no se puede interpretar.'
-        : `La API ha devuelto una respuesta no válida (HTTP ${response.status}).`,
+      `${catalogs[getRuntimeLocale()]['error.invalidResponse']} (HTTP ${response.status})`,
     )
   }
 }
@@ -36,9 +38,7 @@ function unreachableError() {
   return new ApiClientError(
     0,
     'API_UNREACHABLE',
-    import.meta.env.DEV
-      ? 'No se puede conectar con la API. Arranca el backend con «npm run dev:api».'
-      : 'No se puede conectar con el servicio. Inténtalo de nuevo en unos instantes.',
+    catalogs[getRuntimeLocale()][import.meta.env.DEV ? 'error.apiUnavailableDev' : 'error.apiUnavailable'],
   )
 }
 
@@ -87,10 +87,11 @@ class ApiClient {
     const payload = await readPayload<T>(response)
     if (!payload) {
       if (response.ok) return undefined as T
-      throw new ApiClientError(response.status, 'EMPTY_API_RESPONSE', `La API no ha devuelto información (HTTP ${response.status}).`)
+      throw new ApiClientError(response.status, 'EMPTY_API_RESPONSE', `${apiErrorMessage('EMPTY_API_RESPONSE')} (HTTP ${response.status})`)
     }
     if (!response.ok || payload.error) {
-      throw new ApiClientError(response.status, payload.error?.code ?? 'HTTP_ERROR', payload.error?.message ?? 'No se pudo completar la petición.', payload.error?.details)
+      const code = payload.error?.code ?? 'HTTP_ERROR'
+      throw new ApiClientError(response.status, code, apiErrorMessage(code), payload.error?.details)
     }
     return payload.data as T
   }

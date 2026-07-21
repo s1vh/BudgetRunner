@@ -7,14 +7,21 @@ export type ModuleFamily = 'retrowave' | 'synthwave' | 'vaporwave' | 'hifi_tech'
 export type ModuleRarity = 'common' | 'rare' | 'epic' | 'legendary' | 'mythic'
 export type ModuleState = 'equipped' | 'destroyed' | 'empty'
 
+export interface LocalizedMessage {
+  key: string
+  params?: Record<string, string | number>
+  fallback?: string
+}
+
 export interface Category {
   id: string
   name: string
   icon: string
   color: string
+  systemKey?: string
 }
 
-export type CategoryDraft = Omit<Category, 'id'>
+export type CategoryDraft = Pick<Category, 'name' | 'icon' | 'color'>
 
 export interface FinancialTransaction {
   id: string
@@ -78,6 +85,7 @@ export interface CashflowPoint {
 
 export interface CategoryDistribution {
   category: string
+  systemKey?: string
   amountMinor: number
   percentage: number
   color: string
@@ -107,7 +115,7 @@ export interface DashboardData {
   cashflow: CashflowPoint[]
   recentTransactions: FinancialTransaction[]
   progress: ProgressSummary
-  alerts: Array<{ id: string; tone: 'info' | 'warning' | 'critical'; message: string }>
+  alerts: Array<{ id: string; tone: 'info' | 'warning' | 'critical'; message: LocalizedMessage }>
 }
 
 export interface CyberModule {
@@ -124,6 +132,7 @@ export interface CyberModule {
   priceCoins: number
   repairCost?: number
   description: string
+  descriptionKey?: string
 }
 
 export interface StoreOffer {
@@ -138,8 +147,8 @@ export interface StoreOffer {
 export interface GameEvent {
   id: string
   type: 'reward' | 'purchase' | 'repair' | 'damage' | 'level'
-  title: string
-  detail: string
+  title: LocalizedMessage
+  detail: LocalizedMessage
   amount?: number
   occurredAt: string
 }
@@ -163,7 +172,7 @@ export interface UserProfile {
   weekStartsOn: number
   googleConnected: boolean
   progress: ProgressSummary
-  levelHistory: Array<{ level: number; flux: number; reachedAt: string; reason: string }>
+  levelHistory: Array<{ level: number; flux: number; reachedAt: string; reason: LocalizedMessage }>
   preferences: UserPreferences
 }
 
