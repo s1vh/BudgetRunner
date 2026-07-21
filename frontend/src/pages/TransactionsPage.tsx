@@ -60,16 +60,16 @@ export function TransactionsPage() {
 
   return (
     <div className="page-enter grid gap-6">
-      <PageHeader eyebrow={t('transactions.eyebrow')} title={t('transactions.title')} description={t('transactions.description')} icon={WalletCards} tourId="transactions" actions={<Button icon={Plus} onClick={() => setEditing('new')}>{t('transactions.new')}</Button>} />
+      <PageHeader eyebrow={t('transactions.eyebrow')} title={t('transactions.title')} description={t('transactions.description')} icon={WalletCards} tourId="transactions-header" actions={<Button icon={Plus} onClick={() => setEditing('new')}>{t('transactions.new')}</Button>} />
       {feedback && <button type="button" onClick={() => setFeedback(null)} className="flex items-center justify-between rounded-lg border border-neon-cyan/25 bg-neon-cyan/5 p-3 text-left text-sm text-neon-cyan"><span>{feedback}</span><span className="font-mono text-[10px]">{t('common.close')}</span></button>}
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-3" data-tour="transactions-summary">
         <SynthCard className="p-4 pr-14" tone="magenta" helpKey="help.transactions.expense"><p className="font-mono text-[10px] text-text-muted uppercase">{t('transactions.filteredExpense')}</p><strong className="mt-2 block font-display text-xl text-neon-magenta tabular">{formatMoney(expenses, data.profile.primaryCurrency)}</strong></SynthCard>
         <SynthCard className="p-4 pr-14" tone="cyan" helpKey="help.transactions.income"><p className="font-mono text-[10px] text-text-muted uppercase">{t('transactions.filteredIncome')}</p><strong className="mt-2 block font-display text-xl text-neon-cyan tabular">{formatMoney(income, data.profile.primaryCurrency)}</strong></SynthCard>
         <SynthCard className="p-4 pr-14" tone="purple" helpKey="help.transactions.balance"><p className="font-mono text-[10px] text-text-muted uppercase">{t('transactions.visibleBalance')}</p><strong className="mt-2 block font-display text-xl text-tertiary tabular">{formatMoney(income - expenses, data.profile.primaryCurrency)}</strong></SynthCard>
       </div>
 
-      <SynthCard className="p-4 pr-14 sm:p-5 sm:pr-16" helpKey="help.transactions.filters">
+      <SynthCard className="p-4 pr-14 sm:p-5 sm:pr-16" helpKey="help.transactions.filters" data-tour="transactions-filters">
         <div className="grid gap-3 md:grid-cols-[minmax(240px,1fr)_repeat(3,minmax(150px,auto))]">
           <label className="relative"><span className="sr-only">{t('transactions.search')}</span><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-text-muted" /><Input className="pl-10" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t('transactions.search')} /></label>
           <Select value={type} onChange={(event) => setType(event.target.value)} aria-label={t('transactions.filterType')}><option value="all">{t('transactions.allTypes')}</option><option value="expense">{t('chart.expenses')}</option><option value="income">{t('chart.income')}</option></Select>
@@ -78,7 +78,7 @@ export function TransactionsPage() {
         </div>
       </SynthCard>
 
-      <SynthCard className="overflow-hidden" helpKey="help.transactions.list">
+      <SynthCard className="overflow-hidden" helpKey="help.transactions.list" data-tour="transactions-list">
         <div className="flex items-center justify-between border-b border-outline-soft/60 py-3 pl-4 pr-14 sm:pl-5 sm:pr-16"><span className="flex items-center gap-2 font-mono text-[11px] tracking-wider text-text-muted uppercase"><Filter className="size-4" />{t('transactions.count', { count: filtered.length })}</span><span className="font-mono text-[10px] text-tertiary">{t('transactions.page')}</span></div>
         <div className="overflow-x-auto">
           <table className="data-table">

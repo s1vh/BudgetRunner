@@ -340,11 +340,15 @@ Todas las cuentas existentes tras la migración y todas las cuentas nuevas ven e
 
 ### T-099 Recorrido no destructivo
 
-El tour visita Dashboard, Gastos, Presupuestos, Gamificación, Perfil y Ajustes sin crear ni configurar datos. Atrás, siguiente, salir y Escape funcionan en todos los pasos; el foco queda contenido en el diálogo mientras está abierto.
+El tour resalta las secciones relevantes de Dashboard, Gastos, Presupuestos, Gamificación, Perfil y Ajustes sin crear ni configurar datos. Cambia automáticamente entre Resumen, Cyberdeck, Tienda, Reparaciones e Historial. Atrás, siguiente, salir y Escape funcionan en todos los pasos; el foco queda contenido en el diálogo mientras está abierto.
 
 ### T-100 Repetición y localización
 
 El tour puede reiniciarse desde Ajustes incluso después de completarlo. Tooltips, controles y pasos usan inmediatamente cualquiera de los ocho idiomas, caen a inglés ante un locale incompatible y conservan Budget Runner, Flux, SynthCoins, Power, Cyberdeck y los nombres de mejoras.
+
+### T-101 Destino al cerrar
+
+Finalizar el último paso cierra el tour, vuelve al Dashboard y sitúa la página al inicio. Salir, pulsar Escape o cerrar desde el fondo conserva la página y sección del paso actual. Ambos caminos marcan el tour como visto y permiten repetirlo desde Ajustes.
 
 ## 14. Seguridad básica
 
