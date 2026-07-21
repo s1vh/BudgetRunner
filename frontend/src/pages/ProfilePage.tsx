@@ -1,42 +1,23 @@
-import { useState } from 'react'
-import { CalendarCheck, Coins, Flame, Gauge, Globe2, KeyRound, Link2, ShieldCheck, Sparkles, UserRound, Zap } from 'lucide-react'
+import { CalendarCheck, Coins, Flame, Gauge, KeyRound, Link2, ShieldCheck, Sparkles, UserRound, Zap } from 'lucide-react'
 import { useNavigate } from 'react-router'
 import { useAppData } from '@/app/AppDataContext'
-import { Badge, Button, PageSkeleton, Progress, Select, SynthCard } from '@/components/ui/primitives'
+import { Badge, Button, PageSkeleton, Progress, SynthCard } from '@/components/ui/primitives'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { useI18n } from '@/i18n/I18nContext'
-import { localeOptions, resolveLocale, type SupportedLocale } from '@/i18n/locales'
-import { catalogs } from '@/i18n/messages'
+import { localeOptions, resolveLocale } from '@/i18n/locales'
 import { formatDate } from '@/utils/format'
 
 export function ProfilePage() {
-  const { t, td, locale, setLocale } = useI18n()
+  const { t, td } = useI18n()
   const navigate = useNavigate()
-  const { data, loading, updateLocale } = useAppData()
-  const [languageBusy, setLanguageBusy] = useState(false)
-  const [languageNotice, setLanguageNotice] = useState<string | null>(null)
+  const { data, loading } = useAppData()
 
   if (loading || !data) return <PageSkeleton />
   const { profile } = data
   const initials = profile.displayName.split(' ').map((part) => part[0]).slice(0, 2).join('')
   const progressValue = profile.progress.totalFlux - profile.progress.currentLevelFlux
   const progressMax = profile.progress.nextLevelFlux - profile.progress.currentLevelFlux
-
-  async function changeLanguage(next: SupportedLocale) {
-    setLanguageBusy(true)
-    setLanguageNotice(null)
-    setLocale(next)
-    try {
-      await updateLocale(next)
-      setLanguageNotice(catalogs[next]['profile.languageSaved'])
-    } catch {
-      const previous = resolveLocale(profile.locale)
-      setLocale(previous)
-      setLanguageNotice(catalogs[previous]['profile.languageFailed'])
-    } finally {
-      setLanguageBusy(false)
-    }
-  }
+  const languageLabel = localeOptions.find((option) => option.value === resolveLocale(profile.locale))?.label ?? profile.locale
 
   return (
     <div className="page-enter grid gap-6">
@@ -65,26 +46,16 @@ export function ProfilePage() {
           <div className="flex items-center gap-2 border-b border-outline-soft/60 p-5"><Gauge className="size-4 text-tertiary" /><h2 className="font-display text-sm font-bold uppercase">{t('profile.levelHistory')}</h2></div>
           <ol className="divide-y divide-outline-soft/45">{profile.levelHistory.map((entry) => <li key={`${entry.level}-${entry.reachedAt}`} className="grid grid-cols-[auto_1fr_auto] items-center gap-4 p-5"><span className="grid size-10 place-items-center rounded-lg border border-tertiary/25 bg-tertiary/7 font-display text-sm text-tertiary">{entry.level}</span><span><strong className="block text-sm">{td(entry.reason)}</strong><small className="text-text-muted">{formatDate(entry.reachedAt)}</small></span><span className="font-mono text-xs text-text-muted">{entry.flux} Flux</span></li>)}</ol>
         </SynthCard>
-        <div className="grid gap-4">
-          <SynthCard className="p-5" tone="cyan">
-            <div className="flex items-center gap-2"><Globe2 className="size-4 text-neon-cyan" /><h2 className="font-display text-sm font-bold uppercase">{t('profile.language')}</h2></div>
-            <p className="mt-3 text-xs leading-5 text-text-muted">{t('profile.languageHint')}</p>
-            <Select className="mt-4" value={locale} disabled={languageBusy} onChange={(event) => void changeLanguage(event.target.value as SupportedLocale)} aria-label={t('profile.language')}>
-              {localeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </Select>
-            {languageNotice && <p className="mt-3 text-xs text-success" aria-live="polite">{languageNotice}</p>}
-          </SynthCard>
-          <SynthCard className="p-5">
-            <div className="flex items-center gap-2"><ShieldCheck className="size-4 text-success" /><h2 className="font-display text-sm font-bold uppercase">{t('profile.regionalContext')}</h2></div>
-            <dl className="mt-5 grid gap-4 text-sm">
-              <div className="flex justify-between gap-3 border-b border-outline-soft/45 pb-3"><dt className="text-text-muted">{t('profile.currency')}</dt><dd className="font-mono">{profile.primaryCurrency}</dd></div>
-              <div className="flex justify-between gap-3 border-b border-outline-soft/45 pb-3"><dt className="text-text-muted">{t('profile.timezone')}</dt><dd className="font-mono text-xs">{profile.timezone}</dd></div>
-              <div className="flex justify-between gap-3 border-b border-outline-soft/45 pb-3"><dt className="text-text-muted">{t('profile.locale')}</dt><dd className="font-mono">{profile.locale}</dd></div>
-              <div className="flex justify-between gap-3"><dt className="text-text-muted">{t('profile.weekStart')}</dt><dd className="font-mono">{profile.weekStartsOn === 7 ? t('profile.sunday') : t('profile.monday')}</dd></div>
-            </dl>
-            <Button className="mt-6 w-full" variant="ghost" icon={Zap} onClick={() => navigate('/ajustes')}>{t('profile.editSettings')}</Button>
-          </SynthCard>
-        </div>
+        <SynthCard className="p-5">
+          <div className="flex items-center gap-2"><ShieldCheck className="size-4 text-success" /><h2 className="font-display text-sm font-bold uppercase">{t('profile.regionalContext')}</h2></div>
+          <dl className="mt-5 grid gap-4 text-sm">
+            <div className="flex justify-between gap-3 border-b border-outline-soft/45 pb-3"><dt className="text-text-muted">{t('profile.language')}</dt><dd className="text-right font-mono text-xs">{languageLabel}</dd></div>
+            <div className="flex justify-between gap-3 border-b border-outline-soft/45 pb-3"><dt className="text-text-muted">{t('profile.currency')}</dt><dd className="font-mono">{profile.primaryCurrency}</dd></div>
+            <div className="flex justify-between gap-3 border-b border-outline-soft/45 pb-3"><dt className="text-text-muted">{t('profile.timezone')}</dt><dd className="font-mono text-xs">{profile.timezone}</dd></div>
+            <div className="flex justify-between gap-3"><dt className="text-text-muted">{t('profile.weekStart')}</dt><dd className="font-mono">{profile.weekStartsOn === 7 ? t('profile.sunday') : t('profile.monday')}</dd></div>
+          </dl>
+          <Button className="mt-6 w-full" variant="ghost" icon={Zap} onClick={() => navigate('/ajustes')}>{t('profile.editSettings')}</Button>
+        </SynthCard>
       </div>
     </div>
   )

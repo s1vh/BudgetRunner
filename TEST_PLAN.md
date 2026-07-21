@@ -226,7 +226,7 @@ Detecta los ocho locales admitidos desde las preferencias del sistema. Un locale
 
 ### T-071 Persistencia
 
-El cambio desde Perfil es inmediato, se guarda en la cuenta y se mantiene tras cerrar sesión y volver a entrar.
+El cambio desde Ajustes → Región y moneda es inmediato, se refleja en el resumen Contexto regional del Perfil, se guarda en la cuenta y se mantiene tras cerrar sesión y volver a entrar.
 
 ### T-072 Cobertura
 
