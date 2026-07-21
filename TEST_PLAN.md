@@ -350,6 +350,10 @@ El tour puede reiniciarse desde Ajustes incluso después de completarlo. Tooltip
 
 Finalizar el último paso cierra el tour, vuelve al Dashboard y sitúa la página al inicio. Salir, pulsar Escape o cerrar desde el fondo conserva la página y sección del paso actual. Ambos caminos marcan el tour como visto y permiten repetirlo desde Ajustes.
 
+### T-102 Gamificación y arranque manual
+
+Iniciar el tour desde Ajustes abre el Dashboard ya en el primer paso, sin añadir pasos al recorrido. Los pasos existentes de Flux y Cyberdeck explican en los ocho idiomas los umbrales de nivel, Flux base, Power, bonus, Shield × 10, Energy, destrucción, reparación, familia y rareza, manteniendo literales todos esos términos protegidos.
+
 ## 14. Seguridad básica
 
 - JWT inválido/expirado.
