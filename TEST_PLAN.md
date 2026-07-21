@@ -326,6 +326,26 @@ Texto legible y navegación completa con teclado.
 
 MIT, Mike Fieldins y enlace seguro a LinkedIn.
 
+### T-096 Iconos de ayuda
+
+Todas las tarjetas de Dashboard, Gastos y Gamificación muestran el icono cuando `helpHints` está activo, sin solapar títulos, indicadores, filtros, tablas o acciones. Desactivarlo en Ajustes oculta todos los iconos y la elección persiste tras volver a entrar.
+
+### T-097 Interacción de ayuda
+
+El tooltip se abre con hover y foco, permanece visible mientras corresponda y se cierra al salir, perder el foco, pulsar Escape o tocar fuera. Es usable con ratón, teclado y táctil, no queda recortado por la tarjeta y se adapta al viewport móvil.
+
+### T-098 Primer login y persistencia
+
+Todas las cuentas existentes tras la migración y todas las cuentas nuevas ven el tour una vez. Terminarlo o abandonarlo desde cualquier paso impide que vuelva a abrirse automáticamente; repetir la petición al backend no altera la fecha inicial.
+
+### T-099 Recorrido no destructivo
+
+El tour visita Dashboard, Gastos, Presupuestos, Gamificación, Perfil y Ajustes sin crear ni configurar datos. Atrás, siguiente, salir y Escape funcionan en todos los pasos; el foco queda contenido en el diálogo mientras está abierto.
+
+### T-100 Repetición y localización
+
+El tour puede reiniciarse desde Ajustes incluso después de completarlo. Tooltips, controles y pasos usan inmediatamente cualquiera de los ocho idiomas, caen a inglés ante un locale incompatible y conservan Budget Runner, Flux, SynthCoins, Power, Cyberdeck y los nombres de mejoras.
+
 ## 14. Seguridad básica
 
 - JWT inválido/expirado.

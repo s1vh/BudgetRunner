@@ -28,6 +28,7 @@ interface AppDataValue {
   createBudget: (draft: BudgetDraft) => Promise<void>
   updatePreferences: (preferences: UserPreferences) => Promise<void>
   updateLocale: (locale: SupportedLocale) => Promise<void>
+  completeGuidedTour: () => Promise<void>
   purchaseModule: (offerId: string) => Promise<void>
   repairModule: (instanceId: string) => Promise<void>
 }
@@ -102,6 +103,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     createBudget: (draft) => mutate(() => repository.createBudget(draft)),
     updatePreferences: (preferences) => mutate(() => repository.updatePreferences(preferences)),
     updateLocale: (locale) => mutate(() => repository.updateLocale(locale)),
+    completeGuidedTour: () => mutate(() => repository.completeGuidedTour()),
     purchaseModule: (offerId) => mutate(() => repository.purchaseModule(offerId)),
     repairModule: (instanceId) => mutate(() => repository.repairModule(instanceId)),
   }), [data, error, loading, mutate, refresh])

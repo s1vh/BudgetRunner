@@ -12,11 +12,12 @@ import { TransactionsPage } from '@/pages/TransactionsPage'
 import { ErrorPage, ForgotPasswordPage, LoginPage, OAuthCallbackPage, RegisterPage, ResetPasswordPage } from '@/pages/AuthPages'
 import { LicensePage, PrivacyPage } from '@/pages/LegalPages'
 import { NotFoundPage } from '@/pages/NotFoundPage'
+import { HelpCenterProvider } from '@/components/help/HelpCenterContext'
 
 export function App() {
   return (
     <Routes>
-      <Route element={<RequireAuth><AppDataProvider><AppShell /></AppDataProvider></RequireAuth>}>
+      <Route element={<RequireAuth><AppDataProvider><HelpCenterProvider><AppShell /></HelpCenterProvider></AppDataProvider></RequireAuth>}>
         <Route index element={<DashboardPage />} />
         <Route path="gastos" element={<TransactionsPage />} />
         <Route path="presupuestos" element={<BudgetsPage />} />

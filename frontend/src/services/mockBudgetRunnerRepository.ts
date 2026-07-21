@@ -21,7 +21,15 @@ export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
   private transactions = [...initialTransactions]
   private budgets = [...initialBudgets]
   private categories = structuredClone(initialCategories)
-  private currentProfile = { ...structuredClone(profile), locale: readStoredLocale() ?? detectSystemLocale() }
+  private currentProfile = {
+    ...structuredClone(profile),
+    locale: readStoredLocale() ?? detectSystemLocale(),
+    guidedTourCompleted: window.localStorage.getItem('budget-runner.mock.guided-tour-completed') === 'true',
+    preferences: {
+      ...structuredClone(profile.preferences),
+      helpHints: window.localStorage.getItem('budget-runner.mock.help-hints') !== 'false',
+    },
+  }
 
   private categoryName(categoryId: string) {
     return this.categories.find((category) => category.id === categoryId)?.name ?? 'Otros'
@@ -172,6 +180,7 @@ export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
 
   async updatePreferences(input: UserPreferences): Promise<UserProfile> {
     await wait(180)
+    window.localStorage.setItem('budget-runner.mock.help-hints', String(input.helpHints))
     this.currentProfile = { ...this.currentProfile, preferences: input }
     return structuredClone(this.currentProfile)
   }
@@ -180,6 +189,12 @@ export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
     await wait(120)
     this.currentProfile = { ...this.currentProfile, locale }
     return structuredClone(this.currentProfile)
+  }
+
+  async completeGuidedTour(): Promise<void> {
+    await wait(120)
+    window.localStorage.setItem('budget-runner.mock.guided-tour-completed', 'true')
+    this.currentProfile = { ...this.currentProfile, guidedTourCompleted: true }
   }
 
   async purchaseModule(): Promise<AppSnapshot['game']> {

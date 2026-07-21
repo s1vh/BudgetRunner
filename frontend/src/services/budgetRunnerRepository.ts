@@ -23,6 +23,7 @@ export interface BudgetRunnerRepository {
   createBudget(input: BudgetDraft): Promise<Budget>
   updatePreferences(input: UserPreferences): Promise<UserProfile>
   updateLocale(locale: SupportedLocale): Promise<UserProfile>
+  completeGuidedTour(): Promise<void>
   purchaseModule(offerId: string): Promise<GameData>
   repairModule(instanceId: string): Promise<GameData>
 }

@@ -26,6 +26,10 @@ describe('internationalization contracts', () => {
       expect(catalogs[locale]['profile.totalFlux']).toContain('Flux')
       expect(catalogs[locale]['error.insufficientCoins']).toContain('SynthCoins')
       expect(catalogs[locale]['game.tab.deck']).toContain('Cyberdeck')
+      expect(catalogs[locale]['help.game.totalFlux']).toContain('Flux')
+      expect(catalogs[locale]['help.game.totalFlux']).toContain('Power')
+      expect(catalogs[locale]['help.game.synthcoins']).toContain('SynthCoins')
+      expect(catalogs[locale]['help.game.cyberdeck']).toContain('Cyberdeck')
     }
   })
 

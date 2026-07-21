@@ -31,7 +31,7 @@ export function BudgetsPage() {
 
   return (
     <div className="page-enter grid gap-6">
-      <PageHeader eyebrow={t('budgets.eyebrow')} title={t('budgets.title')} description={t('budgets.description')} icon={Radar} actions={<Button icon={Plus} onClick={() => setFormOpen(true)}>{t('budgets.new')}</Button>} />
+      <PageHeader eyebrow={t('budgets.eyebrow')} title={t('budgets.title')} description={t('budgets.description')} icon={Radar} tourId="budgets" actions={<Button icon={Plus} onClick={() => setFormOpen(true)}>{t('budgets.new')}</Button>} />
       <div className="flex flex-wrap gap-2" aria-label={t('budgets.filter')}>
         {(['all', 'active', 'scheduled', 'met', 'exceeded', 'paused'] as const).map((item) => <button key={item} type="button" onClick={() => setFilter(item)} className={`min-h-10 rounded-lg border px-3 font-mono text-[10px] font-bold uppercase transition ${filter === item ? 'border-neon-cyan/50 bg-neon-cyan/8 text-neon-cyan' : 'border-white/10 text-text-muted hover:text-text-glow'}`}>{item === 'all' ? t('common.all') : t(statusMeta[item].labelKey)}</button>)}
       </div>
