@@ -54,7 +54,7 @@ export function ProfilePage() {
             <div className="flex justify-between gap-3 border-b border-outline-soft/45 pb-3"><dt className="text-text-muted">{t('profile.timezone')}</dt><dd className="font-mono text-xs">{profile.timezone}</dd></div>
             <div className="flex justify-between gap-3"><dt className="text-text-muted">{t('profile.weekStart')}</dt><dd className="font-mono">{profile.weekStartsOn === 7 ? t('profile.sunday') : t('profile.monday')}</dd></div>
           </dl>
-          <Button className="mt-6 w-full" variant="ghost" icon={Zap} onClick={() => navigate('/ajustes')}>{t('profile.editSettings')}</Button>
+          <Button className="mt-6 w-full" variant="ghost" icon={Zap} onClick={() => navigate('/settings')}>{t('profile.editSettings')}</Button>
         </SynthCard>
       </div>
     </div>

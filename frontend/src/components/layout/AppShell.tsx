@@ -21,11 +21,11 @@ import type { TranslationKey } from '@/i18n/messages'
 interface NavItem { to: string; labelKey: TranslationKey; icon: LucideIcon; end?: boolean }
 const navItems: NavItem[] = [
   { to: '/', labelKey: 'nav.dashboard', icon: Gauge, end: true },
-  { to: '/gastos', labelKey: 'nav.transactions', icon: WalletCards },
-  { to: '/presupuestos', labelKey: 'nav.budgets', icon: Radar },
-  { to: '/gamificacion', labelKey: 'nav.game', icon: Gamepad2 },
-  { to: '/perfil', labelKey: 'nav.profile', icon: UserRound },
-  { to: '/ajustes', labelKey: 'nav.settings', icon: Settings },
+  { to: '/transactions', labelKey: 'nav.transactions', icon: WalletCards },
+  { to: '/budgets', labelKey: 'nav.budgets', icon: Radar },
+  { to: '/gamification', labelKey: 'nav.game', icon: Gamepad2 },
+  { to: '/profile', labelKey: 'nav.profile', icon: UserRound },
+  { to: '/settings', labelKey: 'nav.settings', icon: Settings },
 ]
 
 function DesktopNav() {
@@ -42,7 +42,11 @@ function DesktopNav() {
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-outline-soft/70 bg-space-black/88 px-3 py-4 shadow-[5px_0_30px_rgba(139,0,255,0.12)] backdrop-blur-xl md:flex">
       <NavLink to="/" className="flex items-center gap-3 border-b border-outline-soft/60 px-2 pb-5">
         <span className="grid size-11 place-items-center rounded-full border-2 border-neon-cyan text-neon-cyan shadow-[0_0_14px_rgba(0,255,255,.35)]"><CircleDollarSign className="size-6" /></span>
-        <span><strong className="block font-display text-sm font-black tracking-[0.08em] text-text-glow uppercase">Vibe to Live</strong><small className="font-mono text-[10px] text-tertiary">Budget Runner</small></span>
+        <img
+          src="/media/BudgetRunner_logo.svg"
+          alt="Budget Runner"
+          className="h-auto max-h-14 w-[150px] object-contain object-left"
+        />
       </NavLink>
       <nav className="mt-5 flex flex-1 flex-col gap-1.5" aria-label={t('nav.main')}>
         {navItems.map(({ to, labelKey, icon: Icon, end }) => (
@@ -52,7 +56,7 @@ function DesktopNav() {
         ))}
       </nav>
       <div className="grid gap-3 border-t border-outline-soft/60 pt-4">
-        <button type="button" onClick={() => navigate('/perfil')} className="flex items-center gap-3 rounded-lg p-2 text-left transition hover:bg-white/4">
+        <button type="button" onClick={() => navigate('/profile')} className="flex items-center gap-3 rounded-lg p-2 text-left transition hover:bg-white/4">
           <span className="grid size-10 place-items-center rounded-full border border-neon-magenta/55 bg-neon-magenta/10 font-display text-xs font-bold text-neon-magenta">{initials}</span>
           <span className="min-w-0 flex-1"><strong className="block truncate text-sm">{profile?.displayName ?? t('nav.nomad')}</strong><small className="font-mono text-[10px] text-text-muted">{t('common.level', { level: profile?.progress.level ?? '--' })} · {profile?.progress.synthcoins ?? 0} SC</small></span>
         </button>
