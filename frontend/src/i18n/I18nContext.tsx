@@ -47,7 +47,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     setRuntimeLocale(locale)
     document.documentElement.lang = locale
     document.documentElement.dataset.locale = locale
-    document.title = 'Budget Runner · Vibe to Live'
+    document.title = 'Budget Runner'
     document.querySelector('meta[name="description"]')?.setAttribute('content', catalogs[locale]['app.description'])
   }, [locale])
 
