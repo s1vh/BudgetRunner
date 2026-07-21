@@ -5,6 +5,8 @@ import { CategoryManager } from '@/components/settings/CategoryManager'
 import { Button, Field, Input, PageSkeleton, Select, SynthCard } from '@/components/ui/primitives'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { useI18n } from '@/i18n/I18nContext'
+import { localeOptions, resolveLocale, type SupportedLocale } from '@/i18n/locales'
+import { catalogs } from '@/i18n/messages'
 import type { UserPreferences } from '@/types/domain'
 
 function Toggle({ checked, onChange, label, description }: { checked: boolean; onChange: (value: boolean) => void; label: string; description: string }) {
@@ -12,15 +14,34 @@ function Toggle({ checked, onChange, label, description }: { checked: boolean; o
 }
 
 export function SettingsPage() {
-  const { t } = useI18n()
-  const { data, loading, updatePreferences } = useAppData()
+  const { t, locale, setLocale } = useI18n()
+  const { data, loading, updateLocale, updatePreferences } = useAppData()
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [preferences, setPreferences] = useState<UserPreferences | null>(null)
+  const [languageBusy, setLanguageBusy] = useState(false)
+  const [languageNotice, setLanguageNotice] = useState<{ message: string; failed: boolean } | null>(null)
   if (loading || !data) return <PageSkeleton />
-  const current = preferences ?? data.profile.preferences
+  const profile = data.profile
+  const current = preferences ?? profile.preferences
   const change = (key: keyof UserPreferences, value: boolean) => { setPreferences({ ...current, [key]: value }); setSaved(false) }
   async function save() { setSaving(true); try { await updatePreferences(current); setPreferences(null); setSaved(true) } finally { setSaving(false) } }
+
+  async function changeLanguage(next: SupportedLocale) {
+    const previous = resolveLocale(profile.locale)
+    setLanguageBusy(true)
+    setLanguageNotice(null)
+    setLocale(next)
+    try {
+      await updateLocale(next)
+      setLanguageNotice({ message: catalogs[next]['profile.languageSaved'], failed: false })
+    } catch {
+      setLocale(previous)
+      setLanguageNotice({ message: catalogs[previous]['profile.languageFailed'], failed: true })
+    } finally {
+      setLanguageBusy(false)
+    }
+  }
 
   return (
     <div className="page-enter grid gap-6">
@@ -30,10 +51,16 @@ export function SettingsPage() {
         <SynthCard className="p-5 sm:p-6">
           <div className="mb-4 flex items-center gap-2"><Globe2 className="size-4 text-neon-cyan" /><h2 className="font-display text-sm font-bold uppercase">{t('settings.region')}</h2></div>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={t('settings.primaryCurrency')} htmlFor="settings-currency"><Select id="settings-currency" defaultValue={data.profile.primaryCurrency}><option>EUR</option><option>USD</option><option>GBP</option></Select></Field>
-            <Field label={t('profile.timezone')} htmlFor="settings-timezone"><Select id="settings-timezone" defaultValue={data.profile.timezone}><option>Europe/Madrid</option><option>UTC</option><option>America/New_York</option></Select></Field>
-            <Field label={t('settings.weekStart')} htmlFor="settings-week"><Select id="settings-week" defaultValue={String(data.profile.weekStartsOn)}><option value="1">{t('profile.monday')}</option><option value="7">{t('profile.sunday')}</option></Select></Field>
+            <Field label={t('profile.language')} htmlFor="settings-language" hint={t('profile.languageHint')}>
+              <Select id="settings-language" value={locale} disabled={languageBusy} onChange={(event) => void changeLanguage(event.target.value as SupportedLocale)}>
+                {localeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </Select>
+            </Field>
+            <Field label={t('settings.primaryCurrency')} htmlFor="settings-currency"><Select id="settings-currency" defaultValue={profile.primaryCurrency}><option>EUR</option><option>USD</option><option>GBP</option></Select></Field>
+            <Field label={t('profile.timezone')} htmlFor="settings-timezone"><Select id="settings-timezone" defaultValue={profile.timezone}><option>Europe/Madrid</option><option>UTC</option><option>America/New_York</option></Select></Field>
+            <Field label={t('settings.weekStart')} htmlFor="settings-week"><Select id="settings-week" defaultValue={String(profile.weekStartsOn)}><option value="1">{t('profile.monday')}</option><option value="7">{t('profile.sunday')}</option></Select></Field>
           </div>
+          {languageNotice && <p className={`mt-4 rounded-lg border p-3 text-xs ${languageNotice.failed ? 'border-neon-magenta/25 bg-neon-magenta/5 text-neon-magenta' : 'border-success/25 bg-success/5 text-success'}`} role={languageNotice.failed ? 'alert' : 'status'} aria-live="polite">{languageNotice.message}</p>}
           <p className="mt-4 rounded-lg border border-sunset/20 bg-sunset/5 p-3 text-xs leading-5 text-text-muted">{t('settings.currencyWarning')}</p>
         </SynthCard>
         <SynthCard className="p-5 sm:p-6">

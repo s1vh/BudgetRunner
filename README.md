@@ -89,7 +89,7 @@ $env:VITE_DATA_SOURCE='mock'
 npm run dev:web
 ```
 
-Abre `http://127.0.0.1:5173`, cambia el idioma en **Perfil** y recorre Dashboard, Gastos, Presupuestos, Gamificación, Perfil y Ajustes. Para volver a probar la autodetección, borra `budget-runner-ui-locale` de `localStorage`, cambia el idioma preferido del navegador y recarga. Los pasos completos están en `I18N.md`.
+Abre `http://127.0.0.1:5173`, cambia el idioma en **Ajustes → Región y moneda** y recorre Dashboard, Gastos, Presupuestos, Gamificación, Perfil y Ajustes. Para volver a probar la autodetección, borra `budget-runner-ui-locale` de `localStorage`, cambia el idioma preferido del navegador y recarga. Los pasos completos están en `I18N.md`.
 
 La vertical persistente actual cubre identidad email/contraseña y Google OAuth, perfil, categorías, transacciones, dashboard, cyberdeck, tienda, compras y reparaciones. Los presupuestos permanecen como datos de demostración hasta implementar scheduler, cierres y recompensas.
 
