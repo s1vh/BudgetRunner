@@ -1,8 +1,7 @@
-import { initialBudgets } from '@/data/mockData'
 import { apiClient, idempotencyHeaders } from './apiClient'
 import type { BudgetRunnerRepository } from './budgetRunnerRepository'
 import type {
-  AppSnapshot, Budget, Category, CategoryDraft, CyberModule, DashboardData, FinancialTransaction,
+  AppSnapshot, Budget, BudgetPeriod, Category, CategoryDraft, CyberModule, DashboardData, FinancialTransaction,
   GameData, GameEvent, ProgressSummary, StoreOffer, TransactionDraft, UserPreferences, UserProfile,
 } from '@/types/domain'
 import type { SupportedLocale } from '@/i18n/locales'
@@ -63,6 +62,8 @@ function normalizeGame(game: ApiGame): GameData {
 
 export class HttpBudgetRunnerRepository implements BudgetRunnerRepository {
   async getSnapshot(): Promise<AppSnapshot> {
+    // Reading budgets first performs the server-side lazy closure fallback before the dependent game projections.
+    const budgets = await apiClient.request<Budget[]>('/budgets')
     const [dashboard, transactions, categories, progress, slots, offers, history, familyBonuses, profile] = await Promise.all([
       apiClient.request<DashboardData>('/dashboard?period=month'),
       apiClient.request<FinancialTransaction[]>('/transactions?page=1&pageSize=100'),
@@ -77,7 +78,7 @@ export class HttpBudgetRunnerRepository implements BudgetRunnerRepository {
     return {
       dashboard,
       transactions,
-      budgets: initialBudgets,
+      budgets,
       game: normalizeGame({ progress, slots, offers, history, familyBonuses }),
       profile,
       categories,
@@ -114,8 +115,24 @@ export class HttpBudgetRunnerRepository implements BudgetRunnerRepository {
     await apiClient.request(`/transactions/${id}`, { method: 'DELETE', headers: idempotencyHeaders() })
   }
 
-  createBudget(): Promise<Budget> {
-    return Promise.reject(new Error('La persistencia de presupuestos se implementará en la siguiente vertical del backend.'))
+  createBudget(input: import('@/types/domain').BudgetDraft): Promise<Budget> {
+    return apiClient.request<Budget>('/budgets', { method: 'POST', body: JSON.stringify(input) })
+  }
+
+  pauseBudget(id: string): Promise<Budget> {
+    return apiClient.request<Budget>(`/budgets/${id}/pause`, { method: 'POST' })
+  }
+
+  resumeBudget(id: string): Promise<Budget> {
+    return apiClient.request<Budget>(`/budgets/${id}/resume`, { method: 'POST' })
+  }
+
+  async archiveBudget(id: string): Promise<void> {
+    await apiClient.request(`/budgets/${id}`, { method: 'DELETE' })
+  }
+
+  getBudgetPeriods(id: string): Promise<BudgetPeriod[]> {
+    return apiClient.request<BudgetPeriod[]>(`/budgets/${id}/periods`)
   }
 
   async updatePreferences(input: UserPreferences): Promise<UserProfile> {

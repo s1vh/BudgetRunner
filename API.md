@@ -4,7 +4,7 @@
 
 Base: `/api/v1`  
 Formato: JSON UTF-8  
-Autenticación: `Authorization: Bearer <access_token>`  
+Autenticación: `Authorization: Bearer <access_token>`; en `prod` es un Firebase ID token.
 Importes: unidades menores enteras y código ISO 4217.  
 Fechas: ISO 8601 UTC.  
 Paginación: `page`, `pageSize`, máximo 100.  
@@ -30,6 +30,12 @@ Error:
 ```
 
 ## 2. Auth
+
+En producción, Firebase Authentication gestiona email/contraseña, Google, recuperación y revocación. La primera petición protegida vincula de forma idempotente el `firebase_uid` con el UUID interno. Las rutas JWT/OAuth descritas debajo se conservan solo para desarrollo y regresión cuando `FIREBASE_AUTH_ENABLED=false`.
+
+### `POST /auth/bootstrap`
+
+Ruta protegida utilizada tras el registro Firebase. Persiste `displayName`, `currency`, `timezone` y `locale` en el perfil interno.
 
 ### `POST /auth/register`
 

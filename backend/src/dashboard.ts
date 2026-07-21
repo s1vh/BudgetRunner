@@ -19,7 +19,7 @@ function transactionDto(row: Record<string, unknown>) {
 }
 
 export async function getDashboard(client: DbClient, userId: string) {
-  const [userResult, totalsResult, distributionResult, cashflowResult, recentResult, progress, criticalResult, offerResult] = await Promise.all([
+  const [userResult, totalsResult, distributionResult, cashflowResult, recentResult, progress, criticalResult, offerResult, budgetResult] = await Promise.all([
     client.query<{ display_name: string; primary_currency: string }>(
       'SELECT display_name, primary_currency FROM users WHERE id = $1 AND deleted_at IS NULL', [userId],
     ),
@@ -77,6 +77,24 @@ export async function getDashboard(client: DbClient, userId: string) {
       JOIN store_rotations r ON r.id = o.rotation_id
       WHERE r.user_id = $1 AND r.status = 'active' AND o.purchased_at IS NULL AND o.expires_at > now()
     `, [userId]),
+    client.query<{ remaining_minor: string }>(`
+      SELECT coalesce(sum(greatest(0, p.limit_minor_snapshot - coalesce(live.spend_minor, 0))), 0)::text AS remaining_minor
+        FROM budgets b
+        JOIN users u ON u.id = b.user_id
+        JOIN LATERAL (
+          SELECT bp.* FROM budget_periods bp
+           WHERE bp.budget_id = b.id AND bp.status = 'open' AND bp.starts_at <= now() AND bp.ends_at > now()
+           ORDER BY bp.starts_at DESC LIMIT 1
+        ) p ON true
+        LEFT JOIN LATERAL (
+          SELECT coalesce(sum(t.amount_minor), 0)::bigint AS spend_minor
+            FROM financial_transactions t
+           WHERE t.user_id = b.user_id AND t.type = 'expense' AND t.status = 'posted'
+             AND t.currency = p.currency_snapshot AND t.occurred_at >= p.starts_at AND t.occurred_at < p.ends_at
+             AND (b.scope = 'global' OR t.category_id = b.category_id)
+        ) live ON true
+       WHERE b.user_id = $1 AND b.status = 'active' AND p.currency_snapshot = u.primary_currency
+    `, [userId]),
   ])
 
   const user = userResult.rows[0]
@@ -96,7 +114,7 @@ export async function getDashboard(client: DbClient, userId: string) {
     displayName: user.display_name,
     systemStatus: 'dashboard.systemOnline',
     balanceMinor: Number(totals.income) - Number(totals.expenses),
-    budgetRemainingMinor: 0,
+    budgetRemainingMinor: Number(budgetResult.rows[0]?.remaining_minor ?? 0),
     currency: user.primary_currency,
     distribution: distributionResult.rows.map((row) => ({
       category: row.category,

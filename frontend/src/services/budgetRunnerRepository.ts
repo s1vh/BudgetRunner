@@ -2,6 +2,7 @@ import type {
   AppSnapshot,
   Budget,
   BudgetDraft,
+  BudgetPeriod,
   Category,
   CategoryDraft,
   FinancialTransaction,
@@ -21,6 +22,10 @@ export interface BudgetRunnerRepository {
   updateTransaction(id: string, input: TransactionDraft): Promise<FinancialTransaction>
   deleteTransaction(id: string): Promise<void>
   createBudget(input: BudgetDraft): Promise<Budget>
+  pauseBudget(id: string): Promise<Budget>
+  resumeBudget(id: string): Promise<Budget>
+  archiveBudget(id: string): Promise<void>
+  getBudgetPeriods(id: string): Promise<BudgetPeriod[]>
   updatePreferences(input: UserPreferences): Promise<UserProfile>
   updateLocale(locale: SupportedLocale): Promise<UserProfile>
   completeGuidedTour(): Promise<void>

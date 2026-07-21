@@ -35,6 +35,7 @@
 | Campo | Tipo | Regla |
 |---|---|---|
 | id | UUID PK | |
+| firebase_uid | VARCHAR(128) UNIQUE NULL | identidad externa en `prod`; nulo en cuentas locales heredadas |
 | email | CITEXT UNIQUE | normalizado |
 | password_hash | TEXT NULL | nulo en cuenta solo Google |
 | display_name | VARCHAR(80) | |

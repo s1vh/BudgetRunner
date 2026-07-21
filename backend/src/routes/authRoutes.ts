@@ -51,6 +51,13 @@ const preferencesSchema = z.object({
   locale: z.enum(['es-ES', 'en-US', 'fr-FR', 'de-DE', 'ru-RU', 'zh-CN', 'ja-JP', 'ko-KR']).optional(),
 }).refine((input) => input.preferences !== undefined || input.locale !== undefined, { message: 'At least one profile field is required.' })
 
+const bootstrapSchema = z.object({
+  displayName: z.string().trim().min(2).max(80),
+  currency: z.string().regex(/^[A-Z]{3}$/).default('EUR'),
+  timezone: z.string().min(3).max(64).default('Europe/Madrid'),
+  locale: z.enum(['es-ES', 'en-US', 'fr-FR', 'de-DE', 'ru-RU', 'zh-CN', 'ja-JP', 'ko-KR']).default('en-US'),
+})
+
 async function createSession(client: DbClient, userId: string, request: Request, rotatedFromId?: string) {
   const sessionId = randomUUID()
   const refreshToken = signRefreshToken(userId, sessionId)
@@ -89,6 +96,19 @@ async function userDto(client: DbClient, userId: string) {
 }
 
 export const authRouter = Router()
+
+authRouter.post('/bootstrap', requireAuth, asyncHandler(async (request, response) => {
+  const input = bootstrapSchema.parse(request.body)
+  const userId = (request as AppRequest).userId
+  await pool.query(`UPDATE users SET display_name = $2, primary_currency = $3, timezone = $4, locale = $5
+    WHERE id = $1 AND deleted_at IS NULL`, [userId, input.displayName, input.currency, input.timezone, input.locale])
+  response.json({ data: { user: await userDto(pool, userId) }, meta: {} })
+}))
+
+authRouter.use((_request, _response, next) => {
+  if (config.firebaseAuthEnabled) next(new ApiError(410, 'LEGACY_AUTH_DISABLED', 'La autenticación se gestiona mediante Firebase.'))
+  else next()
+})
 
 authRouter.post('/register', asyncHandler(async (request, response) => {
   const input = registerSchema.parse(request.body)

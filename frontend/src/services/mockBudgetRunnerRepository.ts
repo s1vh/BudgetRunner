@@ -4,6 +4,7 @@ import type {
   AppSnapshot,
   Budget,
   BudgetDraft,
+  BudgetPeriod,
   Category,
   CategoryDraft,
   CategoryDistribution,
@@ -176,6 +177,42 @@ export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
     }
     this.budgets = [budget, ...this.budgets]
     return structuredClone(budget)
+  }
+
+  async pauseBudget(id: string): Promise<Budget> {
+    await wait(120)
+    const budget = this.budgets.find((item) => item.id === id)
+    if (!budget) throw new Error('BUDGET_NOT_FOUND')
+    budget.status = 'paused'
+    return structuredClone(budget)
+  }
+
+  async resumeBudget(id: string): Promise<Budget> {
+    await wait(120)
+    const budget = this.budgets.find((item) => item.id === id)
+    if (!budget) throw new Error('BUDGET_NOT_FOUND')
+    budget.status = new Date(budget.startsAt).getTime() > Date.now() ? 'scheduled' : 'active'
+    return structuredClone(budget)
+  }
+
+  async archiveBudget(id: string): Promise<void> {
+    await wait(120)
+    const budget = this.budgets.find((item) => item.id === id)
+    if (!budget) throw new Error('BUDGET_NOT_FOUND')
+    budget.status = 'archived'
+  }
+
+  async getBudgetPeriods(id: string): Promise<BudgetPeriod[]> {
+    await wait(120)
+    const budget = this.budgets.find((item) => item.id === id)
+    if (!budget) throw new Error('BUDGET_NOT_FOUND')
+    return [{
+      id: `period-${budget.id}`, status: budget.status === 'met' || budget.status === 'exceeded' ? budget.status : 'open',
+      startsAt: budget.startsAt, endsAt: budget.endsAt, spendMinor: budget.spendMinor,
+      surplusMinor: Math.max(0, budget.limitMinor - budget.spendMinor), eligibleSurplusMinor: budget.eligibleSurplusMinor,
+      excludedRewardMinor: budget.excludedRewardMinor ?? 0, synthcoinsAwarded: budget.synthcoinsAwarded ?? 0,
+      fluxAwarded: budget.fluxAwarded ?? 0, excess_percent_bp: 0, base_damage: 0, evaluatedAt: null,
+    }]
   }
 
   async updatePreferences(input: UserPreferences): Promise<UserProfile> {

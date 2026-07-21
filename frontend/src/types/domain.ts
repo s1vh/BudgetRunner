@@ -77,6 +77,22 @@ export interface BudgetDraft {
   startsOn: string
 }
 
+export interface BudgetPeriod {
+  id: string
+  status: 'open' | 'processing' | 'met' | 'exceeded' | 'closed' | 'cancelled'
+  startsAt: string
+  endsAt: string
+  spendMinor: number
+  surplusMinor: number
+  eligibleSurplusMinor: number
+  excludedRewardMinor: number
+  synthcoinsAwarded: number
+  fluxAwarded: number
+  excess_percent_bp: number
+  base_damage: number
+  evaluatedAt: string | null
+}
+
 export interface CashflowPoint {
   label: string
   incomeMinor: number

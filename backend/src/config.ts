@@ -5,9 +5,10 @@ const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3001),
   DATABASE_URL: z.string().min(1),
+  DB_POOL_MAX: z.coerce.number().int().min(1).max(20).default(4),
   FRONTEND_ORIGINS: z.string().default('http://127.0.0.1:5173,http://localhost:5173'),
-  ACCESS_TOKEN_SECRET: z.string().min(32),
-  REFRESH_TOKEN_SECRET: z.string().min(32),
+  ACCESS_TOKEN_SECRET: z.string().min(32).default('local-access-token-secret-change-me'),
+  REFRESH_TOKEN_SECRET: z.string().min(32).default('local-refresh-token-secret-change-me'),
   ACCESS_TOKEN_TTL: z.string().default('15m'),
   REFRESH_TOKEN_DAYS: z.coerce.number().int().positive().default(30),
   COOKIE_SECURE: z.enum(['true', 'false']).default('false'),
@@ -16,6 +17,20 @@ const schema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().trim().default(''),
   GOOGLE_REDIRECT_URI: z.string().trim().default(''),
   GOOGLE_OAUTH_STATE_SECRET: z.string().trim().default(''),
+  FIREBASE_AUTH_ENABLED: z.enum(['true', 'false']).default('false'),
+  FIREBASE_PROJECT_ID: z.string().trim().default(''),
+  FIREBASE_CLIENT_EMAIL: z.string().trim().default(''),
+  FIREBASE_PRIVATE_KEY: z.string().trim().default(''),
+  CRON_SECRET: z.string().trim().default(''),
+}).superRefine((env, context) => {
+  if (env.FIREBASE_AUTH_ENABLED === 'true') {
+    for (const key of ['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY'] as const) {
+      if (!env[key]) context.addIssue({ code: 'custom', path: [key], message: `${key} is required when Firebase Auth is enabled.` })
+    }
+  }
+  if (env.NODE_ENV === 'production' && env.CRON_SECRET.length < 20) {
+    context.addIssue({ code: 'custom', path: ['CRON_SECRET'], message: 'CRON_SECRET must contain at least 20 characters in production.' })
+  }
 })
 
 const env = schema.parse(process.env)
@@ -24,6 +39,7 @@ export const config = {
   nodeEnv: env.NODE_ENV,
   port: env.PORT,
   databaseUrl: env.DATABASE_URL,
+  dbPoolMax: env.DB_POOL_MAX,
   frontendOrigins: env.FRONTEND_ORIGINS.split(',').map((origin) => origin.trim()),
   accessTokenSecret: env.ACCESS_TOKEN_SECRET,
   refreshTokenSecret: env.REFRESH_TOKEN_SECRET,
@@ -36,4 +52,9 @@ export const config = {
   googleRedirectUri: env.GOOGLE_REDIRECT_URI,
   googleOAuthStateSecret: env.GOOGLE_OAUTH_STATE_SECRET || env.REFRESH_TOKEN_SECRET,
   googleOAuthEnabled: Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_REDIRECT_URI),
+  firebaseAuthEnabled: env.FIREBASE_AUTH_ENABLED === 'true',
+  firebaseProjectId: env.FIREBASE_PROJECT_ID,
+  firebaseClientEmail: env.FIREBASE_CLIENT_EMAIL,
+  firebasePrivateKey: env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  cronSecret: env.CRON_SECRET,
 } as const

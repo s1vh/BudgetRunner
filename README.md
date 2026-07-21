@@ -12,6 +12,7 @@ Aplicación web responsive de finanzas personales y gamificación cyberdeck. El 
 - `TEST_PLAN.md`: escenarios funcionales, económicos y responsive.
 - `I18N.md`: arquitectura multilingüe y guía de prueba local de idiomas.
 - `ROADMAP.md`: fases del MVP.
+- `DEPLOYMENT_FREE_TIER.md`: despliegue `prod` en Firebase, Vercel y Neon.
 
 ## Arranque local
 
@@ -44,7 +45,7 @@ NeonRunner!2026
 
 Las credenciales y secretos de `.env` son exclusivamente locales. Producción debe proporcionar valores distintos mediante variables seguras.
 
-### Google OAuth
+### Autenticación local heredada
 
 El flujo Google OAuth/OIDC está implementado en la API. Para activarlo en local, crea un cliente OAuth de tipo **Aplicación web** en Google Cloud y registra exactamente esta URI de redirección:
 
@@ -68,7 +69,7 @@ Y habilita el punto de entrada en `frontend/.env` cuando quieras mostrarlo:
 VITE_GOOGLE_OAUTH_ENABLED=true
 ```
 
-Para el MVP esta bandera permanece en `false`: los botones están desactivados, pero la implementación OAuth continúa disponible por detrás.
+Este flujo permanece disponible para desarrollo y para las pruebas de regresión. El despliegue `prod` utiliza Firebase Authentication y desactiva estas rutas heredadas.
 
 Reinicia la API después de cambiar estas variables. El callback intercambia el código en el servidor y entrega al frontend únicamente la sesión segura; ningún token de Google se incluye en la URL.
 
@@ -97,6 +98,6 @@ Con el mismo modo mock, el primer inicio de sesión abre automáticamente el tou
 
 Para simular otra cuenta que todavía no ha visto el tour, elimina `budget-runner.mock.guided-tour-completed` de `localStorage` y vuelve a iniciar sesión. El estado de los iconos se conserva en `budget-runner.mock.help-hints`. Con la API y PostgreSQL, `npm run db:setup` aplica la migración que deja el tour pendiente tanto para las cuentas existentes como para las nuevas.
 
-La vertical persistente actual cubre identidad email/contraseña y Google OAuth, perfil, categorías, transacciones, dashboard, cyberdeck, tienda, compras y reparaciones. Los presupuestos permanecen como datos de demostración hasta implementar scheduler, cierres y recompensas.
+La vertical persistente cubre identidad, perfil, categorías, transacciones, dashboard, presupuestos, periodos, cierres idempotentes, deduplicación de recompensas, SynthCoins, Flux, rachas, penalizaciones, daño, cyberdeck, tienda rotatoria, compras y reparaciones. En `prod`, Firebase autentica y PostgreSQL conserva el UUID interno y todo el estado de producto.
 
 Budget Runner © 2026 Mike Fieldins · MIT License
