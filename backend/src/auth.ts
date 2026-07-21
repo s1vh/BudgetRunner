@@ -15,6 +15,7 @@ interface GoogleOAuthStateToken extends JwtPayload {
   state: string
   nonce: string
   codeVerifier: string
+  locale?: string
 }
 
 export interface AppRequest extends Request {
@@ -72,7 +73,7 @@ export function verifyRefreshToken(token: string): BudgetRunnerToken {
   return payload
 }
 
-export function signGoogleOAuthState(input: Pick<GoogleOAuthStateToken, 'state' | 'nonce' | 'codeVerifier'>) {
+export function signGoogleOAuthState(input: Pick<GoogleOAuthStateToken, 'state' | 'nonce' | 'codeVerifier' | 'locale'>) {
   return jwt.sign(
     { ...input, type: 'google_oauth_state' },
     config.googleOAuthStateSecret as Secret,

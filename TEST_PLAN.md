@@ -218,6 +218,32 @@ Energy llega a 0, módulo destruido, Power 0, slot disponible para compra.
 
 Cada cierre aplica daño una vez; dos cierres distintos se aplican en orden.
 
+## 11. Internacionalización
+
+### T-070 Autodetección
+
+Detecta los ocho locales admitidos desde las preferencias del sistema. Un locale no compatible usa `en-US`.
+
+### T-071 Persistencia
+
+El cambio desde Ajustes → Región y moneda es inmediato, se refleja en el resumen Contexto regional del Perfil, se guarda en la cuenta y se mantiene tras cerrar sesión y volver a entrar.
+
+### T-072 Cobertura
+
+Acceso, registro, navegación, dashboard, transacciones, presupuestos, gamificación, perfil, ajustes, privacidad, licencia, 404, modales, errores, gráficas y SVG no muestran textos de interfaz en otro idioma.
+
+### T-073 Contenido protegido
+
+Budget Runner, Flux, SynthCoins, Power, los nombres de las mejoras y todo nombre/concepto/nota creado por el usuario permanecen literales al cambiar de idioma.
+
+### T-074 Categorías
+
+Las categorías iniciales se traducen. Una categoría creada o renombrada por el usuario conserva literalmente su nombre en todos los locales.
+
+### T-075 Formatos y tipografía
+
+Fechas, meses, cifras y moneda usan el locale activo; cirílico, chino simplificado, japonés y coreano se renderizan sin glifos ausentes ni desbordes críticos en los viewports mínimos.
+
 ### T-066 Reintento
 
 Reprocesar el mismo cierre no daña de nuevo.
@@ -299,6 +325,34 @@ Texto legible y navegación completa con teclado.
 ### T-095 Footer
 
 MIT, Mike Fieldins y enlace seguro a LinkedIn.
+
+### T-096 Iconos de ayuda
+
+Todas las tarjetas de Dashboard, Gastos y Gamificación muestran el icono cuando `helpHints` está activo, sin solapar títulos, indicadores, filtros, tablas o acciones. Desactivarlo en Ajustes oculta todos los iconos y la elección persiste tras volver a entrar.
+
+### T-097 Interacción de ayuda
+
+El tooltip se abre con hover y foco, permanece visible mientras corresponda y se cierra al salir, perder el foco, pulsar Escape o tocar fuera. Es usable con ratón, teclado y táctil, no queda recortado por la tarjeta y se adapta al viewport móvil.
+
+### T-098 Primer login y persistencia
+
+Todas las cuentas existentes tras la migración y todas las cuentas nuevas ven el tour una vez. Terminarlo o abandonarlo desde cualquier paso impide que vuelva a abrirse automáticamente; repetir la petición al backend no altera la fecha inicial.
+
+### T-099 Recorrido no destructivo
+
+El tour resalta las secciones relevantes de Dashboard, Gastos, Presupuestos, Gamificación, Perfil y Ajustes sin crear ni configurar datos. Cambia automáticamente entre Resumen, Cyberdeck, Tienda, Reparaciones e Historial. Atrás, siguiente, salir y Escape funcionan en todos los pasos; el foco queda contenido en el diálogo mientras está abierto.
+
+### T-100 Repetición y localización
+
+El tour puede reiniciarse desde Ajustes incluso después de completarlo. Tooltips, controles y pasos usan inmediatamente cualquiera de los ocho idiomas, caen a inglés ante un locale incompatible y conservan Budget Runner, Flux, SynthCoins, Power, Cyberdeck y los nombres de mejoras.
+
+### T-101 Destino al cerrar
+
+Finalizar el último paso cierra el tour, vuelve al Dashboard y sitúa la página al inicio. Salir, pulsar Escape o cerrar desde el fondo conserva la página y sección del paso actual. Ambos caminos marcan el tour como visto y permiten repetirlo desde Ajustes.
+
+### T-102 Gamificación y arranque manual
+
+Iniciar el tour desde Ajustes abre el Dashboard ya en el primer paso, sin añadir pasos al recorrido. Los pasos existentes de Flux y Cyberdeck explican en los ocho idiomas los umbrales de nivel, Flux base, Power, bonus, Shield × 10, Energy, destrucción, reparación, familia y rareza, manteniendo literales todos esos términos protegidos.
 
 ## 14. Seguridad básica
 

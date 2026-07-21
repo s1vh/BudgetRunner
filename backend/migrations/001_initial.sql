@@ -16,7 +16,7 @@ CREATE TABLE users (
   display_name VARCHAR(80) NOT NULL,
   avatar_url TEXT,
   primary_currency CHAR(3) NOT NULL DEFAULT 'EUR',
-  locale VARCHAR(10) NOT NULL DEFAULT 'es-ES',
+  locale VARCHAR(10) NOT NULL DEFAULT 'en-US',
   timezone VARCHAR(64) NOT NULL DEFAULT 'Europe/Madrid',
   week_starts_on SMALLINT NOT NULL DEFAULT 1 CHECK (week_starts_on BETWEEN 1 AND 7),
   preferences JSONB NOT NULL DEFAULT '{"reducedMotion":false,"ambientEffects":true,"audioReactive":true,"scanlines":true,"compactMode":false}'::jsonb,

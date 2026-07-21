@@ -5,6 +5,7 @@ import type {
   AppSnapshot, Budget, Category, CategoryDraft, CyberModule, DashboardData, FinancialTransaction,
   GameData, GameEvent, ProgressSummary, StoreOffer, TransactionDraft, UserPreferences, UserProfile,
 } from '@/types/domain'
+import type { SupportedLocale } from '@/i18n/locales'
 
 interface ApiSlot {
   slot: string
@@ -49,6 +50,7 @@ function normalizeGame(game: ApiGame): GameData {
       state: 'empty',
       priceCoins: 0,
       description: 'Slot disponible para una futura adquisición.',
+      descriptionKey: 'game.emptySlotDescription',
     }),
     offers: game.offers.map((offer): StoreOffer => ({
       ...offer,
@@ -118,6 +120,14 @@ export class HttpBudgetRunnerRepository implements BudgetRunnerRepository {
 
   async updatePreferences(input: UserPreferences): Promise<UserProfile> {
     return apiClient.request<UserProfile>('/me', { method: 'PATCH', body: JSON.stringify({ preferences: input }) })
+  }
+
+  async updateLocale(locale: SupportedLocale): Promise<UserProfile> {
+    return apiClient.request<UserProfile>('/me', { method: 'PATCH', body: JSON.stringify({ locale }) })
+  }
+
+  async completeGuidedTour(): Promise<void> {
+    await apiClient.request('/me/guided-tour/complete', { method: 'POST' })
   }
 
   async purchaseModule(offerId: string): Promise<GameData> {

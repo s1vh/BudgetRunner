@@ -60,7 +60,7 @@ export async function exchangeGoogleCode(code: string, codeVerifier: string, exp
   }
 }
 
-export async function findOrCreateGoogleUser(client: DbClient, identity: GoogleIdentity) {
+export async function findOrCreateGoogleUser(client: DbClient, identity: GoogleIdentity, locale = 'en-US') {
   await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`google:${identity.subject}`])
   const linked = await client.query<{ user_id: string }>(`
     SELECT oa.user_id FROM oauth_accounts oa
@@ -90,9 +90,9 @@ export async function findOrCreateGoogleUser(client: DbClient, identity: GoogleI
     `, [userId, identity.avatarUrl ?? null])
   } else {
     const created = await client.query<{ id: string }>(`
-      INSERT INTO users (email, password_hash, display_name, avatar_url, email_verified_at)
-      VALUES ($1, null, $2, $3, now()) RETURNING id
-    `, [identity.email, identity.displayName, identity.avatarUrl ?? null])
+      INSERT INTO users (email, password_hash, display_name, avatar_url, email_verified_at, locale)
+      VALUES ($1, null, $2, $3, now(), $4) RETURNING id
+    `, [identity.email, identity.displayName, identity.avatarUrl ?? null, locale])
     userId = created.rows[0]?.id
     if (!userId) throw new Error('Google user insert failed')
     await provisionNewUser(client, userId)
