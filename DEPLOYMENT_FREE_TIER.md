@@ -17,7 +17,8 @@ En el proyecto existente `budget-runner-cyberdeck`:
 2. Activa **Google** y selecciona el email de soporte.
 3. Añade a **Authorized domains** el dominio `web.app`, `firebaseapp.com`, `localhost` y cualquier dominio personalizado.
 4. Registra una aplicación web y conserva su configuración pública.
-5. En **Project settings → Service accounts**, genera una clave privada para Firebase Admin. No la guardes en Git.
+5. El backend solo verifica tokens de identidad, por lo que no necesita una clave privada de Firebase Admin.
+6. Para usar la pantalla de recuperación propia, configura la **Action URL** de la plantilla de restablecimiento como `https://budget-runner-cyberdeck.web.app/restablecer`.
 
 Variables públicas necesarias para compilar el frontend:
 
@@ -69,8 +70,6 @@ DB_POOL_MAX=4
 FRONTEND_ORIGINS=https://budget-runner-cyberdeck.web.app,https://budget-runner-cyberdeck.firebaseapp.com
 FIREBASE_AUTH_ENABLED=true
 FIREBASE_PROJECT_ID=...
-FIREBASE_CLIENT_EMAIL=...
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
 CRON_SECRET=secreto-aleatorio-de-32-o-mas-caracteres
 ```
 
@@ -93,7 +92,7 @@ npm --prefix frontend run build
 firebase deploy --only hosting
 ```
 
-Antes de desplegar, verifica que `frontend/dist` se ha compilado con la URL real de Vercel. La configuración pública de Firebase puede aparecer en el bundle; la clave privada de Firebase Admin y `CRON_SECRET` nunca deben estar en variables `VITE_*`.
+Antes de desplegar, verifica que `frontend/dist` se ha compilado con la URL real de Vercel. La configuración pública de Firebase puede aparecer en el bundle; `CRON_SECRET` nunca debe estar en variables `VITE_*`.
 
 ## 5. Smoke test
 

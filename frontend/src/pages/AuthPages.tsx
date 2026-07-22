@@ -11,6 +11,7 @@ function AuthCard({ eyebrow, title, description, children, footer }: { eyebrow: 
 }
 
 const googleOAuthEnabled = import.meta.env.VITE_GOOGLE_OAUTH_ENABLED === 'true'
+const usesApi = import.meta.env.VITE_DATA_SOURCE === 'api'
 
 const oauthErrorKeys: Record<string, TranslationKey> = {
   google_not_configured: 'auth.google.notConfigured',
@@ -25,8 +26,8 @@ export function LoginPage() {
   const { t } = useI18n()
   const navigate = useNavigate()
   const { login, loginWithGoogle } = useAuth()
-  const [email, setEmail] = useState('nomada@budgetrunner.local')
-  const [password, setPassword] = useState('NeonRunner!2026')
+  const [email, setEmail] = useState(usesApi ? '' : 'nomada@budgetrunner.local')
+  const [password, setPassword] = useState(usesApi ? '' : 'NeonRunner!2026')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -124,13 +125,43 @@ export function ForgotPasswordPage() {
     catch (caught) { setError(caught instanceof Error ? caught.message : t('auth.syncFailed')) }
     finally { setBusy(false) }
   }
-  return <AuthCard eyebrow={t('auth.recovery.eyebrow')} title={t('auth.recovery.title')} description={t('auth.recovery.description')} footer={<Link to="/login" className="text-neon-cyan hover:underline">{t('auth.backToLogin')}</Link>}>{sent ? <div className="rounded-lg border border-success/25 bg-success/5 p-5 text-center"><Mail className="mx-auto mb-3 size-6 text-success" /><strong className="block text-success">{t('auth.requestRecorded')}</strong><p className="mt-2 text-sm text-text-muted">{t('auth.mailUnavailable')}</p></div> : <form className="grid gap-5" onSubmit={submit}>{error && <div role="alert" className="rounded-lg border border-neon-magenta/30 bg-neon-magenta/7 p-3 text-sm text-neon-magenta">{error}</div>}<Field label={t('auth.email')} htmlFor="forgot-email" required><Input id="forgot-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="nomad@nexus.local" required /></Field><Button icon={Mail} className="w-full" loading={busy}>{t('auth.requestLink')}</Button></form>}</AuthCard>
+  return <AuthCard eyebrow={t('auth.recovery.eyebrow')} title={t('auth.recovery.title')} description={t('auth.recovery.activeDescription')} footer={<Link to="/login" className="text-neon-cyan hover:underline">{t('auth.backToLogin')}</Link>}>{sent ? <div className="rounded-lg border border-success/25 bg-success/5 p-5 text-center"><Mail className="mx-auto mb-3 size-6 text-success" /><strong className="block text-success">{t('auth.requestRecorded')}</strong><p className="mt-2 text-sm text-text-muted">{t('auth.mailUnavailable')}</p></div> : <form className="grid gap-5" onSubmit={submit}>{error && <div role="alert" className="rounded-lg border border-neon-magenta/30 bg-neon-magenta/7 p-3 text-sm text-neon-magenta">{error}</div>}<Field label={t('auth.email')} htmlFor="forgot-email" required><Input id="forgot-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="nomad@nexus.local" required /></Field><Button icon={Mail} className="w-full" loading={busy}>{t('auth.requestLink')}</Button></form>}</AuthCard>
 }
 
 export function ResetPasswordPage() {
   const { t } = useI18n()
   const navigate = useNavigate()
-  return <AuthCard eyebrow={t('auth.reset.eyebrow')} title={t('auth.reset.title')} description={t('auth.reset.description')}><form className="grid gap-5" onSubmit={(event) => { event.preventDefault(); navigate('/login') }}><Field label={t('auth.newPassword')} htmlFor="reset-password" required><Input id="reset-password" type="password" autoComplete="new-password" /></Field><Field label={t('auth.confirmation')} htmlFor="reset-confirm" required><Input id="reset-confirm" type="password" autoComplete="new-password" /></Field><Button className="w-full" icon={KeyRound}>{t('auth.backToLogin')}</Button></form></AuthCard>
+  const location = useLocation()
+  const { verifyPasswordReset, confirmPasswordReset } = useAuth()
+  const code = new URLSearchParams(location.search).get('oobCode') ?? ''
+  const [email, setEmail] = useState('')
+  const [checking, setChecking] = useState(Boolean(code))
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(code ? null : t('auth.reset.invalid'))
+
+  useEffect(() => {
+    let active = true
+    if (!code) return
+    verifyPasswordReset(code)
+      .then((verifiedEmail) => { if (active) setEmail(verifiedEmail) })
+      .catch(() => { if (active) setError(t('auth.reset.invalid')) })
+      .finally(() => { if (active) setChecking(false) })
+    return () => { active = false }
+  }, [code, t, verifyPasswordReset])
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const form = new FormData(event.currentTarget)
+    const password = String(form.get('password') ?? '')
+    const confirmation = String(form.get('confirmation') ?? '')
+    if (password !== confirmation) { setError(t('auth.reset.mismatch')); return }
+    setBusy(true); setError(null)
+    try { await confirmPasswordReset(code, password); navigate('/login', { replace: true }) }
+    catch { setError(t('auth.reset.invalid')) }
+    finally { setBusy(false) }
+  }
+
+  return <AuthCard eyebrow={t('auth.reset.eyebrow')} title={t('auth.reset.title')} description={email ? t('auth.reset.activeDescription', { email }) : t('auth.reset.activeDescription', { email: '' })}>{checking ? <div className="py-6 text-center font-mono text-sm text-neon-cyan">{t('loading.identity')}</div> : error && !email ? <div className="grid gap-5"><div role="alert" className="rounded-lg border border-neon-magenta/30 bg-neon-magenta/7 p-3 text-sm text-neon-magenta">{error}</div><Button className="w-full" variant="ghost" onClick={() => navigate('/recuperar')}>{t('auth.requestLink')}</Button></div> : <form className="grid gap-5" onSubmit={submit}>{error && <div role="alert" className="rounded-lg border border-neon-magenta/30 bg-neon-magenta/7 p-3 text-sm text-neon-magenta">{error}</div>}<Field label={t('auth.newPassword')} htmlFor="reset-password" hint={t('auth.passwordHint')} required><Input id="reset-password" name="password" type="password" minLength={10} autoComplete="new-password" required /></Field><Field label={t('auth.confirmation')} htmlFor="reset-confirm" required><Input id="reset-confirm" name="confirmation" type="password" minLength={10} autoComplete="new-password" required /></Field><Button className="w-full" icon={KeyRound} loading={busy}>{t('auth.reset.submit')}</Button></form>}</AuthCard>
 }
 
 export function OAuthCallbackPage() {

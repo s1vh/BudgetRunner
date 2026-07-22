@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components -- provider and hook share one module intentionally */
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router'
-import { createUserWithEmailAndPassword, GoogleAuthProvider, onAuthStateChanged, sendPasswordResetEmail, signInWithEmailAndPassword, signInWithPopup, signOut, updateProfile } from 'firebase/auth'
+import { confirmPasswordReset as confirmFirebasePasswordReset, createUserWithEmailAndPassword, GoogleAuthProvider, onAuthStateChanged, sendPasswordResetEmail, signInWithEmailAndPassword, signInWithPopup, signOut, updateProfile, verifyPasswordResetCode as verifyFirebasePasswordResetCode } from 'firebase/auth'
 import { apiClient } from '@/services/apiClient'
 import { firebaseAuth } from '@/firebase'
 import { useI18n } from '@/i18n/I18nContext'
@@ -17,6 +17,8 @@ interface AuthValue {
   loginWithGoogle: () => Promise<void>
   completeGoogleLogin: () => Promise<void>
   requestPasswordReset: (email: string) => Promise<void>
+  verifyPasswordReset: (code: string) => Promise<string>
+  confirmPasswordReset: (code: string, newPassword: string) => Promise<void>
   logout: () => Promise<void>
 }
 
@@ -76,6 +78,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async requestPasswordReset(email) {
       if (!usesApi) return
       await sendPasswordResetEmail(firebaseAuth(), email, { url: `${window.location.origin}/login` })
+    },
+    async verifyPasswordReset(code) {
+      if (!usesApi) return 'nomada@budgetrunner.local'
+      return verifyFirebasePasswordResetCode(firebaseAuth(), code)
+    },
+    async confirmPasswordReset(code, newPassword) {
+      if (!usesApi) return
+      await confirmFirebasePasswordReset(firebaseAuth(), code, newPassword)
     },
     async logout() {
       if (usesApi) await signOut(firebaseAuth())

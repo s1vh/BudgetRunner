@@ -19,14 +19,10 @@ const schema = z.object({
   GOOGLE_OAUTH_STATE_SECRET: z.string().trim().default(''),
   FIREBASE_AUTH_ENABLED: z.enum(['true', 'false']).default('false'),
   FIREBASE_PROJECT_ID: z.string().trim().default(''),
-  FIREBASE_CLIENT_EMAIL: z.string().trim().default(''),
-  FIREBASE_PRIVATE_KEY: z.string().trim().default(''),
   CRON_SECRET: z.string().trim().default(''),
 }).superRefine((env, context) => {
-  if (env.FIREBASE_AUTH_ENABLED === 'true') {
-    for (const key of ['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY'] as const) {
-      if (!env[key]) context.addIssue({ code: 'custom', path: [key], message: `${key} is required when Firebase Auth is enabled.` })
-    }
+  if (env.FIREBASE_AUTH_ENABLED === 'true' && !env.FIREBASE_PROJECT_ID) {
+    context.addIssue({ code: 'custom', path: ['FIREBASE_PROJECT_ID'], message: 'FIREBASE_PROJECT_ID is required when Firebase Auth is enabled.' })
   }
   if (env.NODE_ENV === 'production' && env.CRON_SECRET.length < 20) {
     context.addIssue({ code: 'custom', path: ['CRON_SECRET'], message: 'CRON_SECRET must contain at least 20 characters in production.' })
@@ -54,7 +50,5 @@ export const config = {
   googleOAuthEnabled: Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_REDIRECT_URI),
   firebaseAuthEnabled: env.FIREBASE_AUTH_ENABLED === 'true',
   firebaseProjectId: env.FIREBASE_PROJECT_ID,
-  firebaseClientEmail: env.FIREBASE_CLIENT_EMAIL,
-  firebasePrivateKey: env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
   cronSecret: env.CRON_SECRET,
 } as const

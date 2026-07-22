@@ -1,4 +1,4 @@
-import { cert, getApps, initializeApp } from 'firebase-admin/app'
+import { getApps, initializeApp } from 'firebase-admin/app'
 import { getAuth, type DecodedIdToken } from 'firebase-admin/auth'
 import { config } from './config.js'
 import type { DbClient } from './db.js'
@@ -6,16 +6,13 @@ import { ApiError } from './errors.js'
 import { provisionNewUser } from './userProvisioning.js'
 
 function firebaseAuth() {
-  if (!config.firebaseProjectId || !config.firebaseClientEmail || !config.firebasePrivateKey) {
-    throw new Error('Firebase Admin credentials are not configured.')
+  if (!config.firebaseProjectId) {
+    throw new Error('Firebase project ID is not configured.')
   }
-  const app = getApps()[0] ?? initializeApp({
-    credential: cert({
-      projectId: config.firebaseProjectId,
-      clientEmail: config.firebaseClientEmail,
-      privateKey: config.firebasePrivateKey,
-    }),
-  })
+  // ID-token verification only needs the Firebase project ID and Google's
+  // public signing keys. Keeping a service-account private key in Vercel is
+  // unnecessary for this API because it does not call privileged Firebase APIs.
+  const app = getApps()[0] ?? initializeApp({ projectId: config.firebaseProjectId })
   return getAuth(app)
 }
 
