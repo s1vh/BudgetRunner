@@ -8,6 +8,7 @@ backend/coverage/
 frontend/dist/
 frontend/.vite-cache/
 .firebase/
+.vercel/
 firebase-debug.log
 firebase-debug.*.log
 frontend/.vite.*.log
