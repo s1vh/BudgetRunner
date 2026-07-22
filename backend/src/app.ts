@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
-import express, { type NextFunction, type Request, type Response } from 'express'
-import * as helmet from 'helmet'
+import express, { type NextFunction, type Request, type RequestHandler, type Response } from 'express'
+import helmet from 'helmet'
 import { config } from './config.js'
 import { pool } from './db.js'
 import { errorHandler, notFoundHandler } from './errors.js'
@@ -11,10 +11,12 @@ import { budgetInternalRouter, budgetRouter } from './routes/budgetRoutes.js'
 import { gameRouter } from './routes/gameRoutes.js'
 import { transactionRouter } from './routes/transactionRoutes.js'
 
+const createHelmetMiddleware = helmet as unknown as () => RequestHandler
+
 export function createApp() {
   const app = express()
   app.disable('x-powered-by')
-  app.use(helmet.default())
+  app.use(createHelmetMiddleware())
   app.use(cors({
     credentials: true,
     origin(origin, callback) {
