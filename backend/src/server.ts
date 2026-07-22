@@ -1,8 +1,8 @@
-import { createApp } from './app.js'
+import app from './app.js'
 import { config } from './config.js'
 import { closeDatabase } from './db.js'
 
-const server = createApp().listen(config.port, '127.0.0.1', () => {
+const server = app.listen(config.port, '127.0.0.1', () => {
   console.log(`Budget Runner API listening on http://127.0.0.1:${config.port}`)
 })
 
