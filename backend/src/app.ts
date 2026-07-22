@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import express, { type NextFunction, type Request, type Response } from 'express'
-import helmet from 'helmet'
+import * as helmet from 'helmet'
 import { config } from './config.js'
 import { pool } from './db.js'
 import { errorHandler, notFoundHandler } from './errors.js'
@@ -14,7 +14,7 @@ import { transactionRouter } from './routes/transactionRoutes.js'
 export function createApp() {
   const app = express()
   app.disable('x-powered-by')
-  app.use(helmet())
+  app.use(helmet.default())
   app.use(cors({
     credentials: true,
     origin(origin, callback) {
