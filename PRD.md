@@ -13,7 +13,7 @@ Budget Runner es una aplicación web responsive de finanzas personales que combi
 
 El excedente positivo de un presupuesto cumplido se transforma en **SynthCoins** a razón de 1:1 respecto a la moneda configurada. Los SynthCoins permiten comprar y reparar módulos de un cyberdeck virtual. Los módulos aportan **Power**, pueden recibir daño por incumplir presupuestos y se organizan en cuatro familias estéticas: Retrowave, Synthwave, Vaporwave y Hi‑Fi Tech. Los puntos de progreso del usuario se denominan **Flux**.
 
-El producto debe respetar el mockup generado en Stitch UI y el sistema visual Ultrawave: modo nocturno único, composición synthwave con matices vaporwave y retrowave, alto contraste, rejillas de perspectiva, scanlines, brillos de neón moderados y componentes legibles. El backend se construirá con Node.js, Express y PostgreSQL; el frontend con React y Tailwind CSS; la autenticación con JWT y Google OAuth; las pruebas end-to-end se realizarán con Browser Agent de Antigravity; el despliegue se hará en Firebase.
+El producto debe respetar el mockup generado en Stitch UI y el sistema visual Ultrawave: modo nocturno único, composición synthwave con matices vaporwave y retrowave, alto contraste, rejillas de perspectiva, scanlines, brillos de neón moderados y componentes legibles. El backend se construye con Node.js, Express y PostgreSQL; el frontend con React y Tailwind CSS. En `prod`, Firebase Authentication gestiona email/contraseña, Google y recuperación; la API valida Firebase ID tokens y conserva en PostgreSQL el UUID interno y el estado de producto. Las rutas JWT y Google OAuth propias se mantienen únicamente para desarrollo y regresión. Las pruebas end-to-end se realizan con automatización de navegador. El despliegue híbrido utiliza Firebase Hosting, Vercel y Neon.
 
 ## 2. Visión del producto
 
@@ -183,12 +183,13 @@ Cada slot admite como máximo un módulo. No existe inventario. Un módulo reemp
 
 - Registro con email y contraseña.
 - Email único, normalizado y no sensible a mayúsculas.
-- Inicio de sesión mediante JWT.
-- Recuperación de contraseña mediante token de un solo uso enviado por email.
-- Google OAuth.
-- Revocación de sesiones y refresh tokens.
-- Contraseñas almacenadas únicamente como hash robusto.
+- En `prod`, inicio de sesión mediante Firebase Authentication y autorización de la API con Firebase ID token.
+- Recuperación de contraseña mediante el enlace de un solo uso de Firebase.
+- Inicio de sesión con Google mediante Firebase Authentication.
+- Revocación de sesiones Firebase; en modo heredado, refresh tokens rotatorios y revocables.
+- Las contraseñas de producción no se almacenan en PostgreSQL. Las cuentas locales heredadas conservan únicamente hashes robustos.
 - Rutas privadas protegidas por middleware.
+- Vinculación idempotente entre Firebase UID y UUID interno, sin duplicar cuentas por email verificado.
 
 ### RF-02 — Aislamiento multiusuario
 
@@ -437,8 +438,8 @@ En todas las páginas públicas y autenticadas:
 ### Seguridad
 
 - HTTPS obligatorio en producción.
-- JWT de acceso corto y refresh token rotatorio.
-- Rate limiting en autenticación y recuperación.
+- Firebase ID token validado en cada petición protegida de `prod`; JWT corto y refresh rotatorio solo en el modo local heredado.
+- Protecciones antiabuso de Firebase para autenticación y recuperación. Las rutas heredadas permanecen deshabilitadas en `prod` y deben tener rate limiting si se habilitan fuera de un entorno local aislado.
 - Validación y sanitización en servidor.
 - Consultas parametrizadas.
 - Protección CSRF cuando corresponda al mecanismo de refresh.
@@ -482,7 +483,7 @@ En todas las páginas públicas y autenticadas:
 - Cero saldos negativos.
 - 100 % de compras y reparaciones con ledger correspondiente.
 - Flujo crítico usable en 360 px de ancho.
-- Sin errores graves del Browser Agent en las rutas críticas.
+- Sin errores graves de la automatización de navegador en las rutas críticas.
 
 ## 13. Riesgos y mitigaciones
 
@@ -512,8 +513,8 @@ El MVP se considera completo cuando:
 9. Todos los movimientos relevantes quedan auditados.
 10. La interfaz coincide visualmente con el mockup y DESIGN.md.
 11. Los flujos principales funcionan en escritorio y smartphone.
-12. Browser Agent completa el plan de pruebas crítico.
-13. La app se despliega en Firebase y muestra licencia MIT y enlace de autor.
+12. La automatización de navegador completa el plan de pruebas crítico.
+13. La app se despliega desde `prod` con el frontend en Firebase Hosting, la API en Vercel y PostgreSQL en Neon; muestra licencia MIT y enlace de autor.
 
 ## 15. Future Expansions
 
