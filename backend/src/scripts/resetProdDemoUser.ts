@@ -107,8 +107,8 @@ function usage(email = PROD_DEMO_EMAIL) {
   return [
     'Reset manual de la identidad y los datos del usuario demo de producción.',
     '',
-    `Vista previa: npm run prod:demo:reset -- --dry-run`,
-    `Aplicar:       npm run prod:demo:reset -- --confirm ${email}`,
+    `Vista previa: npm run prod:demo:reset`,
+    `Aplicar:       npm run prod:demo:reset -- confirm ${email}`,
     '',
     `Credenciales demo: testuser.nfo`,
     `PostgreSQL: .\\.secrets\\prod-demo-database-url.txt (override: ${DATABASE_URL_ENV})`,
@@ -120,7 +120,11 @@ function usage(email = PROD_DEMO_EMAIL) {
 export function parseResetArgs(args: string[], expectedEmail = PROD_DEMO_EMAIL): ResetOptions {
   if (args.length === 1 && (args[0] === '--help' || args[0] === '-h')) return { mode: 'help' }
   if (args.length === 1 && args[0] === '--dry-run') return { mode: 'dry-run' }
-  if (args.length === 2 && args[0] === '--confirm' && args[1] === expectedEmail) return { mode: 'apply' }
+  if (
+    args.length === 2
+    && (args[0] === 'confirm' || args[0] === '--confirm')
+    && args[1] === expectedEmail
+  ) return { mode: 'apply' }
   throw new Error(`Argumentos no válidos.\n\n${usage(expectedEmail)}`)
 }
 
