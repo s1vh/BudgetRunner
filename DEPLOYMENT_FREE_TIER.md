@@ -122,9 +122,9 @@ La rama `prod` incluye un script de mantenimiento local para restaurar la identi
 El procedimiento completo, las salvaguardas y las diferencias normalizadas respecto al mock original están documentados en `PROD_DEMO_RESET.md`. Ejecuta siempre primero el modo de solo lectura:
 
 ```powershell
-# Preparación única, siguiendo PROD_DEMO_RESET.md:
-# .\.secrets\prod-demo-database-url.txt
-# .\.secrets\firebase-admin.json
+# Preparación única e interactiva:
+npm run prod:demo:setup
+# Vista previa:
 npm run prod:demo:reset
 ```
 

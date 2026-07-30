@@ -108,49 +108,27 @@ La generación y custodia del JSON están descritas también en la [documentaci�
 
 `PROD_DEMO_FIREBASE_PROJECT_ID` ya no es necesario: el script fija y valida internamente `budget-runner-cyberdeck`.
 
-## 2. Guardarlos en rutas relativas
+## 2. Prepararlos con el asistente local
 
-Desde la raíz del repositorio, crea la carpeta ignorada:
-
-```powershell
-New-Item -ItemType Directory -Force -Path '.\.secrets'
-```
-
-Este comando solo crea la carpeta; no descarga ni genera los secretos. Antes de ejecutar el reset deben existir dentro los dos archivos siguientes.
-
-Guarda la URL direct, sin comillas ni líneas adicionales:
+No copies literalmente ejemplos como `<URL_DIRECT_DE_NEON>` o `<RUTA_AL_JSON>`: son marcadores, no valores válidos. Utiliza el asistente para evitar guardarlos por error:
 
 ```powershell
-Set-Content -LiteralPath '.\.secrets\prod-demo-database-url.txt' `
-  -Value 'postgresql://USUARIO:PASSWORD@HOST/BASE?sslmode=require' `
-  -NoNewline
+npm run prod:demo:setup
 ```
 
-Copia y renombra el JSON descargado:
+El asistente solicita:
 
-```powershell
-Copy-Item -LiteralPath '<RUTA_AL_JSON_DESCARGADO>' `
-  -Destination '.\.secrets\firebase-admin.json'
-```
+1. La URL direct real de Neon. La entrada permanece oculta y se rechazan URLs locales, incompletas o pooled.
+2. La ruta real del JSON descargado de Firebase. Puedes escribirla o arrastrar el archivo a PowerShell; se valida el JSON y que pertenezca a `budget-runner-cyberdeck`.
 
-Comprueba únicamente los nombres —no muestres su contenido en una captura o log—:
+Solo después de validar ambos valores crea o reemplaza:
 
-```powershell
-Get-ChildItem -LiteralPath '.\.secrets' | Select-Object Name,Length
-```
+- `.\.secrets\prod-demo-database-url.txt`;
+- `.\.secrets\firebase-admin.json`.
 
-La salida debe contener `prod-demo-database-url.txt` y `firebase-admin.json`, ambos con un tamaño mayor que cero.
+Al terminar muestra únicamente sus nombres y tamaños, nunca su contenido. Esto también reemplaza de forma segura un `prod-demo-database-url.txt` que contenga por error un marcador.
 
-El script resuelve ambas rutas desde la raíz del repositorio, independientemente de la unidad o carpeta donde esté clonado.
-
-Las variables de entorno siguen disponibles como overrides opcionales:
-
-```powershell
-$env:PROD_DEMO_DATABASE_URL='postgresql://URL-DIRECT'
-$env:GOOGLE_APPLICATION_CREDENTIALS='.\otra-ruta-relativa\firebase-admin.json'
-```
-
-Una ruta relativa en `GOOGLE_APPLICATION_CREDENTIALS` también se interpreta desde la raíz del repositorio.
+El script resuelve ambas rutas desde la raíz del repositorio, independientemente de la unidad o carpeta donde esté clonado. `PROD_DEMO_DATABASE_URL` y `GOOGLE_APPLICATION_CREDENTIALS` siguen disponibles como overrides avanzados, pero no son necesarios para el procedimiento normal.
 
 ## 3. Vista previa
 
