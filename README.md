@@ -15,6 +15,7 @@ A responsive personal finance and cyberdeck gamification web application. The fr
 - `I18N.md`: multilingual architecture and local language-testing guide.
 - `ROADMAP.md`: MVP implementation phases.
 - `DEPLOYMENT_FREE_TIER.md`: `prod` deployment on Firebase, Vercel, and Neon.
+- `PROD_DEMO_RESET.md`: safe local procedure for restoring the live demo user.
 - `CONTRIBUTING.md`: branch roles, promotion flow, and release-readiness checklist.
 
 ## Branch strategy
