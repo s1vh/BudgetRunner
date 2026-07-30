@@ -90,7 +90,7 @@ Firebase y PostgreSQL no comparten una transacción distribuida. Al aplicar, Fir
 - Un JSON de cuenta de servicio de Firebase con permisos para administrar usuarios de Authentication.
 - `testuser.nfo` revisado y correcto.
 
-La carpeta local `.\.secrets\` está ignorada por Git. No fuerces nunca su inclusión en un commit ni compartas su contenido. La URL pooled puede funcionar, pero para este mantenimiento se recomienda la URL direct.
+La carpeta local `.\.secrets\` está ignorada por Git. Eso evita que Git la incluya por defecto, pero **no cifra sus archivos ni la convierte en un almacén seguro**. No fuerces nunca su inclusión en un commit, tampoco cuando el repositorio o la rama sean privados. Para sincronizar secretos entre equipos utiliza un gestor de secretos o una bóveda cifrada. La URL pooled puede funcionar, pero para este mantenimiento se recomienda la URL direct.
 
 ## 1. Obtener los dos secretos
 
@@ -142,6 +142,8 @@ El comando raíz sin argumentos ejecuta siempre esta vista previa. Se evita así
 
 Revisa especialmente que la base mostrada sea live, que el UUID/UID sean los esperados y que el origen de identidad sea `checkpoint` o `database`.
 
+Antes de consultar usuarios o Firebase, el preflight comprueba que PostgreSQL contenga `_migrations`, las siete migraciones esperadas y todas las tablas necesarias. Una conexión válida a una base vacía ya no produce un error SQL ambiguo.
+
 ## 4. Aplicar
 
 Usa el email exacto que figure en `testuser.nfo`:
@@ -173,6 +175,8 @@ Después:
 ## Errores seguros
 
 - **Credenciales inválidas:** corrige `testuser.nfo`; no se conecta a ningún servicio.
+- **Base vacía:** la URL conecta, pero apunta a una rama/base sin el esquema de Budget Runner. Compara el host y el nombre de base con `DATABASE_URL` de producción en Vercel. No ejecutes migraciones hasta confirmar el destino.
+- **Migraciones o tablas pendientes:** aplica el procedimiento de migración/seed únicamente después de verificar que es la misma rama/base usada por producción.
 - **Cuenta Firebase ausente:** se recrea con el UID guardado.
 - **Fila PostgreSQL ausente:** se recrea con el UUID guardado.
 - **No existe checkpoint ni historial:** proporciona `PROD_DEMO_INTERNAL_UUID`; el script no improvisa otro.

@@ -25,6 +25,30 @@ const LOCAL_SERVICE_ACCOUNT_FILE = resolve(PROJECT_ROOT, '.secrets', 'firebase-a
 const CHECKPOINT_ACTION = 'prod_demo.identity_checkpoint'
 const FALLBACK_FIREBASE_UID = 'budget-runner-demo-user'
 const EXPECTED_FIREBASE_PROJECT_ID = 'budget-runner-cyberdeck'
+const EXPECTED_MIGRATIONS = [
+  '001_initial.sql',
+  '002_google_oauth.sql',
+  '003_supported_locales.sql',
+  '004_help_and_guided_tour.sql',
+  '005_firebase_and_budgets.sql',
+  '006_budget_transaction_cascade.sql',
+  '007_module_damage_cascade.sql',
+]
+const REQUIRED_TABLES = [
+  'audit_events',
+  'budget_periods',
+  'budgets',
+  'categories',
+  'family_bonus_rules',
+  'financial_transactions',
+  'level_thresholds',
+  'module_definitions',
+  'store_offers',
+  'store_rotations',
+  'user_module_instances',
+  'user_progress',
+  'users',
+]
 
 interface SqlClient {
   query<Row extends QueryResultRow = QueryResultRow>(text: string, values?: unknown[]): Promise<QueryResult<Row>>
@@ -63,6 +87,13 @@ interface FirebaseIdentityPlan {
 
 export interface ResetOptions {
   mode: 'dry-run' | 'apply' | 'help'
+}
+
+export interface DatabasePreflight {
+  database: string
+  schema: string
+  tables: string[]
+  migrations: string[]
 }
 
 export interface UserState {
@@ -172,6 +203,64 @@ function safeDatabaseLabel(connectionString: string) {
   return {
     label: `${username}@${parsed.hostname}/${database}`,
     pooled: parsed.hostname.includes('pooler'),
+  }
+}
+
+export function normalizePostgresConnectionString(connectionString: string) {
+  const parsed = new URL(connectionString)
+  const aliases = new Set(['prefer', 'require', 'verify-ca'])
+  if (
+    parsed.hostname.endsWith('.neon.tech')
+    && (!parsed.searchParams.has('sslmode') || aliases.has(parsed.searchParams.get('sslmode') ?? ''))
+  ) {
+    parsed.searchParams.set('sslmode', 'verify-full')
+  }
+  return parsed.toString()
+}
+
+export function validateDatabasePreflight(preflight: DatabasePreflight) {
+  if (preflight.tables.length === 0) {
+    throw new Error(
+      `La base "${preflight.database}" (schema "${preflight.schema}") está vacía: no contiene tablas ni migraciones. `
+      + 'Comprueba que la URL direct corresponde a la misma rama/base configurada como DATABASE_URL en Vercel. '
+      + 'No ejecutes el reset ni apliques migraciones hasta confirmar el destino.',
+    )
+  }
+  if (!preflight.tables.includes('_migrations')) {
+    throw new Error(
+      `La base "${preflight.database}" no contiene _migrations. El esquema no fue preparado con las migraciones de Budget Runner.`,
+    )
+  }
+  const missingTables = REQUIRED_TABLES.filter((table) => !preflight.tables.includes(table))
+  if (missingTables.length) {
+    throw new Error(`La base no tiene todas las tablas requeridas por el reset: ${missingTables.join(', ')}.`)
+  }
+  const pendingMigrations = EXPECTED_MIGRATIONS.filter((migration) => !preflight.migrations.includes(migration))
+  if (pendingMigrations.length) {
+    throw new Error(`La base tiene migraciones pendientes: ${pendingMigrations.join(', ')}.`)
+  }
+}
+
+async function inspectDatabasePreflight(client: SqlClient): Promise<DatabasePreflight> {
+  const context = (await client.query<{ database: string; schema: string }>(`
+    SELECT current_database() AS database, current_schema() AS schema
+  `)).rows[0]
+  if (!context) throw new Error('No se pudo identificar la base PostgreSQL de destino.')
+  const tables = (await client.query<{ table_name: string }>(`
+    SELECT table_name
+      FROM information_schema.tables
+     WHERE table_schema = current_schema()
+       AND table_type = 'BASE TABLE'
+     ORDER BY table_name
+  `)).rows.map((row) => row.table_name)
+  const migrations = tables.includes('_migrations')
+    ? (await client.query<{ name: string }>('SELECT name FROM _migrations ORDER BY name')).rows.map((row) => row.name)
+    : []
+  return {
+    database: context.database,
+    schema: context.schema,
+    tables,
+    migrations,
   }
 }
 
@@ -948,7 +1037,7 @@ async function main() {
   if (target.pooled) console.warn('Aviso: se recomienda la URL direct de Neon para esta operación de mantenimiento.')
 
   const client = new Client({
-    connectionString,
+    connectionString: normalizePostgresConnectionString(connectionString),
     application_name: 'budget-runner-prod-demo-reset',
     connectionTimeoutMillis: 10_000,
   })
@@ -959,6 +1048,8 @@ async function main() {
     await client.query("SET lock_timeout = '10s'")
     await client.query("SET statement_timeout = '60s'")
     await client.query("SET idle_in_transaction_session_timeout = '60s'")
+    const databasePreflight = await inspectDatabasePreflight(client)
+    validateDatabasePreflight(databasePreflight)
     const firebase = await initializeFirebaseAdmin()
     firebaseApp = firebase.app
     const canonical = await resolveCanonicalIdentity(client, credentials.email)
@@ -971,6 +1062,7 @@ async function main() {
       )
       await loadProgressRules(client)
       console.log(`Email canónico: ${credentials.email}`)
+      console.log(`Esquema PostgreSQL: ${databasePreflight.schema}; migraciones ${databasePreflight.migrations.length}/${EXPECTED_MIGRATIONS.length}`)
       console.log(`Proyecto Firebase: ${firebase.projectId}`)
       console.log(`UUID interno canónico: ${canonical.internalUserId} (origen: ${canonical.source})`)
       console.log(`Fila PostgreSQL actual: ${canonical.existingDatabaseUser?.id ?? 'ausente; se recreará'}`)
