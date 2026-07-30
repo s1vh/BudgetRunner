@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import { randomUUID } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { isAbsolute, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { cert, deleteApp, initializeApp, type App } from 'firebase-admin/app'
 import { getAuth, type Auth } from 'firebase-admin/auth'
@@ -18,7 +18,10 @@ const DATABASE_URL_ENV = 'PROD_DEMO_DATABASE_URL'
 const FIREBASE_PROJECT_ID_ENV = 'PROD_DEMO_FIREBASE_PROJECT_ID'
 const SERVICE_ACCOUNT_PATH_ENV = 'GOOGLE_APPLICATION_CREDENTIALS'
 const INTERNAL_UUID_FALLBACK_ENV = 'PROD_DEMO_INTERNAL_UUID'
-const TEST_USER_FILE = fileURLToPath(new URL('../../../testuser.nfo', import.meta.url))
+const PROJECT_ROOT = fileURLToPath(new URL('../../../', import.meta.url))
+const TEST_USER_FILE = resolve(PROJECT_ROOT, 'testuser.nfo')
+const LOCAL_DATABASE_URL_FILE = resolve(PROJECT_ROOT, '.secrets', 'prod-demo-database-url.txt')
+const LOCAL_SERVICE_ACCOUNT_FILE = resolve(PROJECT_ROOT, '.secrets', 'firebase-admin.json')
 const CHECKPOINT_ACTION = 'prod_demo.identity_checkpoint'
 const FALLBACK_FIREBASE_UID = 'budget-runner-demo-user'
 const EXPECTED_FIREBASE_PROJECT_ID = 'budget-runner-cyberdeck'
@@ -108,8 +111,9 @@ function usage(email = PROD_DEMO_EMAIL) {
     `Aplicar:       npm run prod:demo:reset -- --confirm ${email}`,
     '',
     `Credenciales demo: testuser.nfo`,
-    `PostgreSQL: ${DATABASE_URL_ENV}`,
-    `Firebase: ${FIREBASE_PROJECT_ID_ENV} + ${SERVICE_ACCOUNT_PATH_ENV}`,
+    `PostgreSQL: .\\.secrets\\prod-demo-database-url.txt (override: ${DATABASE_URL_ENV})`,
+    `Firebase project: ${EXPECTED_FIREBASE_PROJECT_ID}`,
+    `Firebase Admin: .\\.secrets\\firebase-admin.json (override: ${SERVICE_ACCOUNT_PATH_ENV})`,
   ].join('\n')
 }
 
@@ -131,6 +135,26 @@ export function parseTestUserNfo(contents: string): TestCredentials {
 
 async function readTestCredentials() {
   return parseTestUserNfo(await readFile(TEST_USER_FILE, 'utf8'))
+}
+
+async function readDatabaseConnectionString() {
+  const fromEnvironment = process.env[DATABASE_URL_ENV]?.trim()
+  if (fromEnvironment) return fromEnvironment
+  try {
+    const fromFile = (await readFile(LOCAL_DATABASE_URL_FILE, 'utf8')).trim()
+    if (fromFile) return fromFile
+  } catch {
+    // The error below explains both supported sources without exposing a secret.
+  }
+  throw new Error(
+    `Falta la URL live. Guárdala en .\\.secrets\\prod-demo-database-url.txt o define ${DATABASE_URL_ENV}.`,
+  )
+}
+
+function resolveServiceAccountPath() {
+  const configuredPath = process.env[SERVICE_ACCOUNT_PATH_ENV]?.trim()
+  if (!configuredPath) return LOCAL_SERVICE_ACCOUNT_FILE
+  return isAbsolute(configuredPath) ? configuredPath : resolve(PROJECT_ROOT, configuredPath)
 }
 
 function safeDatabaseLabel(connectionString: string) {
@@ -241,18 +265,19 @@ async function initializeFirebaseAdmin() {
   if (process.env.FIREBASE_AUTH_EMULATOR_HOST) {
     throw new Error('FIREBASE_AUTH_EMULATOR_HOST debe estar vacío: este mantenimiento solo admite el proyecto live confirmado.')
   }
-  const projectId = process.env[FIREBASE_PROJECT_ID_ENV]?.trim()
-  const serviceAccountPath = process.env[SERVICE_ACCOUNT_PATH_ENV]?.trim()
-  if (!projectId) throw new Error(`Falta ${FIREBASE_PROJECT_ID_ENV}.`)
-  if (!serviceAccountPath) throw new Error(`Falta ${SERVICE_ACCOUNT_PATH_ENV}.`)
-  if (projectId !== EXPECTED_FIREBASE_PROJECT_ID) {
+  const configuredProjectId = process.env[FIREBASE_PROJECT_ID_ENV]?.trim()
+  if (configuredProjectId && configuredProjectId !== EXPECTED_FIREBASE_PROJECT_ID) {
     throw new Error(`${FIREBASE_PROJECT_ID_ENV} debe ser ${EXPECTED_FIREBASE_PROJECT_ID}.`)
   }
+  const projectId = EXPECTED_FIREBASE_PROJECT_ID
+  const serviceAccountPath = resolveServiceAccountPath()
   let serviceAccount: ServiceAccountFile
   try {
-    serviceAccount = JSON.parse(await readFile(resolve(serviceAccountPath), 'utf8')) as ServiceAccountFile
+    serviceAccount = JSON.parse(await readFile(serviceAccountPath, 'utf8')) as ServiceAccountFile
   } catch {
-    throw new Error(`No se puede leer el JSON indicado por ${SERVICE_ACCOUNT_PATH_ENV}.`)
+    throw new Error(
+      `No se puede leer la cuenta de servicio. Guárdala en .\\.secrets\\firebase-admin.json o define ${SERVICE_ACCOUNT_PATH_ENV}.`,
+    )
   }
   if (serviceAccount.project_id !== projectId) {
     throw new Error(`La cuenta de servicio pertenece a otro proyecto; se esperaba ${projectId}.`)
@@ -897,9 +922,11 @@ async function main() {
     return
   }
 
-  const connectionString = process.env[DATABASE_URL_ENV]?.trim()
-  if (!connectionString) {
-    console.error(`Falta ${DATABASE_URL_ENV}.\n\n${usage(credentials.email)}`)
+  let connectionString: string
+  try {
+    connectionString = await readDatabaseConnectionString()
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : error)
     process.exitCode = 1
     return
   }
