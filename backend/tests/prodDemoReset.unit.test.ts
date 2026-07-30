@@ -1,6 +1,11 @@
 import { describe, expect, test } from 'vitest'
 import { buildProdDemoFixture, PROD_DEMO_EMAIL } from '../src/scripts/prodDemoFixture.js'
-import { parseResetArgs, parseTestUserNfo } from '../src/scripts/resetProdDemoUser.js'
+import {
+  normalizePostgresConnectionString,
+  parseResetArgs,
+  parseTestUserNfo,
+  validateDatabasePreflight,
+} from '../src/scripts/resetProdDemoUser.js'
 
 describe('production demo reset safety', () => {
   test('only accepts dry-run or the exact demo-user confirmation', () => {
@@ -30,6 +35,71 @@ describe('production demo reset safety', () => {
     expect(() => parseTestUserNfo('not-an-email\nNeonRunner!2026')).toThrow('email válido')
     expect(() => parseTestUserNfo('nomada@budgetrunner.local\nshort')).toThrow('contraseña Firebase válida')
     expect(() => parseTestUserNfo('')).toThrow('email válido')
+  })
+})
+
+describe('production database preflight', () => {
+  const tables = [
+    '_migrations',
+    'audit_events',
+    'budget_periods',
+    'budgets',
+    'categories',
+    'family_bonus_rules',
+    'financial_transactions',
+    'level_thresholds',
+    'module_definitions',
+    'store_offers',
+    'store_rotations',
+    'user_module_instances',
+    'user_progress',
+    'users',
+  ]
+  const migrations = [
+    '001_initial.sql',
+    '002_google_oauth.sql',
+    '003_supported_locales.sql',
+    '004_help_and_guided_tour.sql',
+    '005_firebase_and_budgets.sql',
+    '006_budget_transaction_cascade.sql',
+    '007_module_damage_cascade.sql',
+  ]
+
+  test('rejects an empty but reachable PostgreSQL database with a useful error', () => {
+    expect(() => validateDatabasePreflight({
+      database: 'neondb',
+      schema: 'public',
+      tables: [],
+      migrations: [],
+    })).toThrow('está vacía')
+  })
+
+  test('rejects schema drift and pending migrations', () => {
+    expect(() => validateDatabasePreflight({
+      database: 'neondb',
+      schema: 'public',
+      tables: tables.filter((table) => table !== 'audit_events'),
+      migrations,
+    })).toThrow('audit_events')
+    expect(() => validateDatabasePreflight({
+      database: 'neondb',
+      schema: 'public',
+      tables,
+      migrations: migrations.slice(0, -1),
+    })).toThrow('007_module_damage_cascade.sql')
+  })
+
+  test('accepts the complete schema and upgrades Neon SSL aliases to verify-full', () => {
+    expect(() => validateDatabasePreflight({
+      database: 'neondb',
+      schema: 'public',
+      tables,
+      migrations,
+    })).not.toThrow()
+    const normalized = new URL(normalizePostgresConnectionString(
+      'postgresql://user:password@example.eu-central-1.aws.neon.tech/neondb?sslmode=require',
+    ))
+    expect(normalized.searchParams.get('sslmode')).toBe('verify-full')
   })
 })
 
