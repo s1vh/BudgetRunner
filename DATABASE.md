@@ -64,6 +64,8 @@
 
 `id`, `user_id`, `token_hash`, `expires_at`, `used_at`, `created_at`.
 
+En `prod`, Firebase Authentication es la fuente de verdad de credenciales, proveedores y recuperación. `refresh_sessions`, `password_reset_tokens`, `password_hash` y las identidades OAuth propias se conservan para el modo local heredado y las pruebas de regresión; no almacenan la contraseña Firebase.
+
 ## 4. Finanzas
 
 ### `categories`

@@ -53,9 +53,16 @@ NeonRunner!2026
 
 Las credenciales y secretos de `.env` son exclusivamente locales. Producción debe proporcionar valores distintos mediante variables seguras.
 
-### Autenticación local heredada
+### Modos de autenticación
 
-El flujo Google OAuth/OIDC está implementado en la API. Para activarlo en local, crea un cliente OAuth de tipo **Aplicación web** en Google Cloud y registra exactamente esta URI de redirección:
+El frontend desplegado desde `prod` utiliza Firebase Authentication. Para reproducir ese flujo en local con `VITE_DATA_SOURCE=api`, proporciona la configuración pública de la aplicación web Firebase en `frontend/.env.local`, utiliza `VITE_GOOGLE_OAUTH_ENABLED=true` cuando pruebes Google y configura la API con:
+
+```text
+FIREBASE_AUTH_ENABLED=true
+FIREBASE_PROJECT_ID=budget-runner-cyberdeck
+```
+
+La API conserva además sus propias rutas JWT y Google OAuth/OIDC para pruebas directas de regresión cuando `FIREBASE_AUTH_ENABLED=false`. El frontend desplegado no las utiliza. Para probar el callback heredado con un cliente API, crea un cliente OAuth de tipo **Aplicación web** en Google Cloud y registra exactamente esta URI de redirección:
 
 ```text
 http://localhost:5173/api/v1/auth/google/callback
@@ -71,15 +78,7 @@ GOOGLE_REDIRECT_URI=http://localhost:5173/api/v1/auth/google/callback
 GOOGLE_OAUTH_STATE_SECRET=un-secreto-aleatorio-de-al-menos-32-caracteres
 ```
 
-Y habilita el punto de entrada en `frontend/.env` cuando quieras mostrarlo:
-
-```text
-VITE_GOOGLE_OAUTH_ENABLED=true
-```
-
-Este flujo permanece disponible para desarrollo y para las pruebas de regresión. El despliegue `prod` utiliza Firebase Authentication y desactiva estas rutas heredadas.
-
-Reinicia la API después de cambiar estas variables. El callback intercambia el código en el servidor y entrega al frontend únicamente la sesión segura; ningún token de Google se incluye en la URL.
+Reinicia la API después de cambiar estas variables. En modo heredado, el callback intercambia el código en el servidor y nunca incluye un token de Google en la URL. `VITE_GOOGLE_OAUTH_ENABLED` controla el botón Google de Firebase del frontend actual; no cambia ese frontend a las rutas OAuth heredadas.
 
 ## Verificación
 

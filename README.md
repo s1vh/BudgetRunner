@@ -53,9 +53,16 @@ NeonRunner!2026
 
 The credentials and secrets in `.env` are exclusively for local development. Production must provide different values through secure environment variables.
 
-### Legacy local authentication
+### Authentication modes
 
-The Google OAuth/OIDC flow is implemented in the API. To enable it locally, create an OAuth client of type **Web application** in Google Cloud and register this exact redirect URI:
+The deployed `prod` frontend uses Firebase Authentication. To reproduce that path locally with `VITE_DATA_SOURCE=api`, provide the public Firebase web configuration in `frontend/.env.local`, set `VITE_GOOGLE_OAUTH_ENABLED=true` when testing Google, and configure the API with:
+
+```text
+FIREBASE_AUTH_ENABLED=true
+FIREBASE_PROJECT_ID=budget-runner-cyberdeck
+```
+
+The API also retains its own JWT and Google OAuth/OIDC routes for direct API regression tests when `FIREBASE_AUTH_ENABLED=false`. They are not used by the deployed frontend. To exercise the legacy Google callback with an API client, create an OAuth client of type **Web application** in Google Cloud and register this exact redirect URI:
 
 ```text
 http://localhost:5173/api/v1/auth/google/callback
@@ -71,15 +78,7 @@ GOOGLE_REDIRECT_URI=http://localhost:5173/api/v1/auth/google/callback
 GOOGLE_OAUTH_STATE_SECRET=a-random-secret-with-at-least-32-characters
 ```
 
-Enable the frontend entry point in `frontend/.env` when you want to display it:
-
-```text
-VITE_GOOGLE_OAUTH_ENABLED=true
-```
-
-This flow remains available for development and regression testing. The `prod` deployment uses Firebase Authentication and disables these legacy routes.
-
-Restart the API after changing these variables. The callback exchanges the code on the server and only delivers the secure session to the frontend; no Google token is included in the URL.
+Restart the API after changing these variables. In legacy mode, the callback exchanges the code on the server and never includes a Google token in the URL. `VITE_GOOGLE_OAUTH_ENABLED` controls the current frontend's Firebase Google button; it does not switch that frontend to the legacy OAuth routes.
 
 ## Verification
 

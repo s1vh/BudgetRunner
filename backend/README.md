@@ -30,7 +30,7 @@ npm run build
 
 - UUID y tiempos UTC.
 - Dinero en unidades menores enteras.
-- `user_id` obtenido exclusivamente del JWT.
+- `user_id` resuelto exclusivamente desde el token autenticado: Firebase ID token en `prod` o JWT en el modo local heredado; nunca desde el body.
 - Consultas parametrizadas y referencias de categoría del mismo propietario.
 - Una mejora equipada por usuario y slot.
 - Saldo SynthCoin no negativo.
@@ -39,11 +39,18 @@ npm run build
 - Google OAuth con `state`, `nonce`, PKCE, email verificado y callback sin tokens en URL.
 - Respuestas y errores con el formato de `API.md` y request ID.
 
+## Autenticación por entorno
+
+Con `FIREBASE_AUTH_ENABLED=true`, la API verifica Firebase ID tokens usando el proyecto indicado por `FIREBASE_PROJECT_ID`. La verificación normal no requiere desplegar una clave privada de Firebase Admin. La primera petición protegida vincula de forma idempotente el Firebase UID con el UUID interno de PostgreSQL.
+
+Las rutas propias de registro, login, refresh, recuperación y Google OAuth/OIDC permanecen disponibles cuando `FIREBASE_AUTH_ENABLED=false` para desarrollo y regresión. No son el mecanismo utilizado por el frontend desplegado.
+
 ## Endpoints principales
 
 ```text
 POST /api/v1/auth/register
 POST /api/v1/auth/login
+POST /api/v1/auth/bootstrap
 GET /api/v1/auth/google
 GET /api/v1/auth/google/callback
 POST /api/v1/auth/refresh

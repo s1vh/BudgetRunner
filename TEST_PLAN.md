@@ -1,4 +1,4 @@
-# Budget Runner — Plan de pruebas para Browser Agent
+# Budget Runner — Plan de pruebas end-to-end
 
 ## 1. Objetivo
 
@@ -6,7 +6,8 @@ Validar de extremo a extremo la funcionalidad, reglas económicas, seguridad bá
 
 ## 2. Entornos
 
-- Local: frontend + API + PostgreSQL.
+- Local mock: frontend aislado, sin servicios externos.
+- Local persistente: frontend + API + PostgreSQL; Firebase Authentication cuando se reproduce el flujo de `prod`, o rutas JWT heredadas para regresión de la API.
 - Staging: configuración equivalente a producción.
 - Producción: smoke tests sin operaciones destructivas.
 - Viewports mínimos:
@@ -28,7 +29,7 @@ Validar de extremo a extremo la funcionalidad, reglas económicas, seguridad bá
 
 ### T-001 Registro
 
-Dado un email nuevo, al registrarse se crea usuario, categorías seed, progreso nivel 1 y saldo 0.
+Dado un email nuevo, Firebase crea la identidad y `POST /auth/bootstrap` vincula un único UUID interno, categorías seed, progreso nivel 1 y saldo 0.
 
 ### T-002 Email duplicado
 
@@ -40,11 +41,11 @@ No crea sesión y muestra error neutro.
 
 ### T-004 Recuperación
 
-El token funciona una vez, expira y permite nueva contraseña.
+El enlace/código de Firebase funciona una vez, expira y permite establecer una contraseña nueva.
 
 ### T-005 Google OAuth
 
-Crea o vincula la cuenta correcta y evita duplicado por email verificado.
+Firebase Google crea o vincula la cuenta correcta y la API evita duplicados por Firebase UID o email verificado.
 
 ### T-006 Aislamiento
 
@@ -356,9 +357,9 @@ Iniciar el tour desde Ajustes abre el Dashboard ya en el primer paso, sin añadi
 
 ## 14. Seguridad básica
 
-- JWT inválido/expirado.
-- Refresh revocado.
-- Rate limit de login y recuperación.
+- Firebase ID token ausente, inválido o expirado en `prod`; revocar los refresh tokens debe impedir renovarlo cuando venza el token ya emitido.
+- JWT inválido/expirado y refresh revocado cuando `FIREBASE_AUTH_ENABLED=false`.
+- Protecciones antiabuso de Firebase y confirmación de que las rutas de autenticación heredadas están deshabilitadas en `prod`; si se habilitan fuera de local, verificar también su rate limit.
 - Inyección SQL en filtros.
 - XSS en concepto/notas.
 - Manipulación de `userId` en body.
@@ -377,14 +378,14 @@ Iniciar el tour desde Ajustes abre el Dashboard ya en el primer paso, sin añadi
 ## 16. Smoke test de producción
 
 1. Cargar landing/login.
-2. Crear usuario de prueba autorizado.
+2. Iniciar sesión con Firebase usando una cuenta desechable autorizada; no utilizar ni borrar el usuario demo para esta prueba.
 3. Registrar gasto.
 4. Consultar dashboard.
 5. Crear presupuesto.
 6. Consultar gamificación.
 7. Verificar health/readiness.
 8. Verificar footer y licencia.
-9. Eliminar usuario de prueba.
+9. Eliminar únicamente la cuenta desechable creada para el smoke test.
 
 ## 17. Criterio de salida
 

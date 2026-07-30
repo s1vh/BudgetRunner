@@ -1,4 +1,4 @@
-# Budget Runner — Roadmap de implementación para Antigravity
+# Budget Runner — Roadmap de implementación
 
 ## 0. Reglas de ejecución
 
@@ -7,7 +7,7 @@
 - Mantener frontend y backend modulares.
 - No introducir lógica económica en el frontend.
 - Crear migraciones y seeds reproducibles.
-- Ejecutar Browser Agent al final de cada fase funcional.
+- Ejecutar las pruebas de automatización de navegador al final de cada fase funcional.
 - No avanzar con tests críticos fallidos.
 
 ## Fase 1 — Bootstrap y arquitectura
@@ -42,17 +42,17 @@ Salida: shell visual fiel al mockup en 1280 px y 360 px.
 
 ## Fase 3 — Identidad y seguridad
 
-- Registro email/contraseña.
-- Login y refresh JWT.
+- Registro email/contraseña con Firebase Authentication en `prod`.
+- Firebase ID tokens para la API; login y refresh JWT conservados para desarrollo y regresión.
 - Logout.
-- Recuperación por email.
-- Google OAuth.
+- Recuperación por email mediante Firebase en `prod`.
+- Google mediante Firebase en `prod`; OAuth/OIDC propio como flujo heredado.
 - Middleware de autorización.
 - Rate limiting.
 - Sesiones revocables.
 - Perfil y ajustes básicos.
 
-Salida: flujos completos probados por Browser Agent.
+Salida: flujos completos probados mediante automatización de navegador.
 
 ## Fase 4 — Finanzas personales
 
@@ -137,10 +137,12 @@ Salida: ciclo riesgo/recompensa completo.
 ## Fase 10 — QA y despliegue
 
 - Ejecutar todos los escenarios de TEST_PLAN.
-- Corregir errores mediante Browser Agent.
+- Corregir los errores detectados mediante automatización de navegador.
 - Validar producción con variables seguras.
-- Desplegar frontend y servicios compatibles en Firebase.
-- Configurar PostgreSQL gestionado accesible desde backend.
+- Desplegar el frontend estático en Firebase Hosting desde `prod`.
+- Desplegar la API Express y el cron diario en Vercel Hobby.
+- Configurar PostgreSQL gestionado en Neon con conexión pooled para runtime y direct para migraciones.
+- Validar Firebase Authentication y la vinculación entre Firebase UID y UUID interno.
 - Smoke tests postdespliegue.
 - Verificar licencia, footer y LinkedIn.
 
@@ -181,6 +183,6 @@ Una historia está terminada cuando:
 - usa transacción SQL en economía;
 - dispone de estado loading/empty/error;
 - funciona en 360 px y escritorio;
-- Browser Agent completa el flujo;
+- la automatización de navegador completa el flujo;
 - documentación y migraciones están actualizadas;
 - no expone secretos ni datos de otro usuario.
