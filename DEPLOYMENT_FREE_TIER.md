@@ -114,3 +114,14 @@ Antes de desplegar, verifica que `frontend/dist` se ha compilado con la URL real
 - **Modo de demostración:** como contingencia, recompilar temporalmente con `VITE_DATA_SOURCE=mock` sin borrar datos de Neon.
 
 No se debe borrar una cuenta, base, proyecto o deployment para hacer rollback.
+
+## 7. Restauración del usuario demo
+
+La rama `prod` incluye un script de mantenimiento local para regenerar de forma atómica los datos de aplicación de `nomada@budgetrunner.local`. No forma parte de la API ni se ejecuta durante el build o el despliegue.
+
+El procedimiento completo, las salvaguardas y las diferencias normalizadas respecto al mock original están documentados en `PROD_DEMO_RESET.md`. Ejecuta siempre primero el modo de solo lectura:
+
+```powershell
+$env:PROD_DEMO_DATABASE_URL='postgresql://URL-DIRECT'
+npm run prod:demo:reset -- --dry-run
+```
