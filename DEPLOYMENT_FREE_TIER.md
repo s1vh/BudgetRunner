@@ -117,11 +117,13 @@ No se debe borrar una cuenta, base, proyecto o deployment para hacer rollback.
 
 ## 7. Restauración del usuario demo
 
-La rama `prod` incluye un script de mantenimiento local para regenerar de forma atómica los datos de aplicación de `nomada@budgetrunner.local`. No forma parte de la API ni se ejecuta durante el build o el despliegue.
+La rama `prod` incluye un script de mantenimiento local para restaurar la identidad Firebase, las credenciales de `testuser.nfo` y todos los datos de aplicación de `nomada@budgetrunner.local`. También recrea las cuentas borradas conservando el UUID interno y el UID Firebase canónicos. No forma parte de la API ni se ejecuta durante el build o el despliegue.
 
 El procedimiento completo, las salvaguardas y las diferencias normalizadas respecto al mock original están documentados en `PROD_DEMO_RESET.md`. Ejecuta siempre primero el modo de solo lectura:
 
 ```powershell
 $env:PROD_DEMO_DATABASE_URL='postgresql://URL-DIRECT'
+$env:PROD_DEMO_FIREBASE_PROJECT_ID='budget-runner-cyberdeck'
+$env:GOOGLE_APPLICATION_CREDENTIALS='C:\ruta-segura\firebase-admin.json'
 npm run prod:demo:reset -- --dry-run
 ```

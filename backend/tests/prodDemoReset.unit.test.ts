@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { buildProdDemoFixture, PROD_DEMO_EMAIL } from '../src/scripts/prodDemoFixture.js'
-import { parseResetArgs } from '../src/scripts/resetProdDemoUser.js'
+import { parseResetArgs, parseTestUserNfo } from '../src/scripts/resetProdDemoUser.js'
 
 describe('production demo reset safety', () => {
   test('only accepts dry-run or the exact demo-user confirmation', () => {
@@ -10,6 +10,24 @@ describe('production demo reset safety', () => {
     expect(() => parseResetArgs([])).toThrow('Argumentos no válidos')
     expect(() => parseResetArgs(['--confirm', 'another-user@example.com'])).toThrow('Argumentos no válidos')
     expect(() => parseResetArgs(['--confirm', PROD_DEMO_EMAIL, '--extra'])).toThrow('Argumentos no válidos')
+  })
+
+  test('uses the credentials file email as the exact confirmation value', () => {
+    const credentials = parseTestUserNfo('\nNomada@BudgetRunner.local\nNeonRunner!2026\n')
+    expect(credentials).toEqual({
+      email: 'nomada@budgetrunner.local',
+      password: 'NeonRunner!2026',
+    })
+    expect(parseResetArgs(['--confirm', credentials.email], credentials.email)).toEqual({ mode: 'apply' })
+    expect(() => parseResetArgs(['--confirm', PROD_DEMO_EMAIL], 'future-demo@budgetrunner.local')).toThrow(
+      'Argumentos no válidos',
+    )
+  })
+
+  test('rejects malformed credential files before any maintenance can run', () => {
+    expect(() => parseTestUserNfo('not-an-email\nNeonRunner!2026')).toThrow('email válido')
+    expect(() => parseTestUserNfo('nomada@budgetrunner.local\nshort')).toThrow('contraseña Firebase válida')
+    expect(() => parseTestUserNfo('')).toThrow('email válido')
   })
 })
 

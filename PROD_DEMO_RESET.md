@@ -1,119 +1,150 @@
 # Reset del usuario demo de producción
 
-Este procedimiento restaura los datos de aplicación de `nomada@budgetrunner.local` en la base live. El script existe únicamente en la rama `prod`, se ejecuta manualmente desde una consola local y no forma parte del frontend, la API desplegada, los builds ni el cron.
+Este procedimiento restaura por completo `nomada@budgetrunner.local` en el entorno live: identidad de Firebase Authentication, credenciales, perfil y datos de aplicación. El script existe únicamente en la rama `prod`, se ejecuta manualmente desde una consola local y no forma parte del frontend, la API, los builds, el cron ni el despliegue.
+
+## Fuente de verdad
+
+`testuser.nfo`, situado en la raíz de `prod`, contiene en este orden:
+
+1. email o nombre de usuario de acceso;
+2. contraseña.
+
+El script lee el fichero en cada ejecución. No duplica esos valores en variables de entorno ni en el código. El nombre visible `Nómada` y el resto del perfil proceden del fixture original del mock.
 
 ## Qué restaura
 
-El fixture parte del usuario original del modo mock y regenera:
+En Firebase Authentication:
 
-- perfil, idioma, moneda, zona horaria, preferencias, ayuda contextual y estado del tour;
-- 8 categorías y las 12 transacciones originales;
-- 5 presupuestos con sus periodos y relaciones con transacciones;
-- nivel 24, SynthCoins, rachas y progresión compatible con las reglas live;
-- 9 módulos del cyberdeck, incluido un módulo destruido y varios dañados;
-- una rotación activa con 6 ofertas;
-- historial de recompensa, daño, compra, reparación y niveles;
-- ledgers, eventos e identificadores idempotentes necesarios para que el estado sea auditable.
+- recupera el email y la contraseña de `testuser.nfo`;
+- restaura el nombre visible `Nómada`, elimina la foto, habilita la cuenta y marca el email como verificado;
+- revoca las sesiones anteriores;
+- si la cuenta fue borrada, la crea de nuevo con su UID Firebase canónico;
+- si tras el borrado se creó accidentalmente otra cuenta con el email demo, retira esa identidad de reemplazo antes de recuperar la canónica.
 
-Las fechas se desplazan respecto al momento de ejecución conservando su orden relativo. Así, la oferta sigue activa durante cinco días, la transacción programada permanece futura y los presupuestos de muestra continúan siendo interactivos aunque el reset se ejecute meses después de la hackathon.
+En PostgreSQL:
+
+- recrea el usuario con el mismo UUID interno aunque la fila haya sido borrada;
+- restaura perfil, idioma, moneda, zona horaria, preferencias, ayuda contextual y estado del tour;
+- regenera 8 categorías, 12 transacciones y 5 presupuestos con sus periodos;
+- recupera nivel 24, SynthCoins, rachas y progresión compatible con las reglas live;
+- restaura 9 módulos del cyberdeck, una rotación activa con 6 ofertas y el historial de juego;
+- reconstruye ledgers, eventos e identificadores idempotentes necesarios para auditar el estado.
+
+Las fechas se desplazan respecto al momento de ejecución conservando su orden relativo. La oferta queda activa durante cinco días, la transacción programada permanece futura y los presupuestos continúan siendo interactivos.
+
+## Identidad canónica y cuentas borradas
+
+El primer reset con esta versión guarda en `audit_events` un checkpoint de recuperación con:
+
+- UUID interno de PostgreSQL;
+- UID de Firebase;
+- email de credenciales;
+- versión del fixture.
+
+La referencia `user_id` del evento puede quedar a `NULL` al borrar la fila de usuario, pero `entity_id` y los metadatos sobreviven. Por eso el siguiente reset puede reconstruir ambas cuentas con sus identificadores originales.
+
+La implementación anterior ya dejó eventos `prod_demo.reset` que permiten recuperar el UUID interno durante la transición. Si se borraran a la vez la fila, todos sus eventos históricos y la cuenta Firebase antes de crear el nuevo checkpoint, el identificador no se puede deducir. Solo en esa primera recuperación se debe proporcionar el UUID histórico conocido:
+
+```powershell
+$env:PROD_DEMO_INTERNAL_UUID='00000000-0000-4000-8000-000000000000'
+```
+
+El script se detiene si falta ese valor o no es un UUID válido; nunca genera silenciosamente un UUID interno nuevo.
 
 ## Normalización respecto al mock
 
-El mock contenía proyecciones precalculadas que no coincidían por completo con sus entidades:
+El mock contenía algunas proyecciones que no coincidían por completo con sus entidades: sus transacciones suman 1.321,89 € en gastos aunque una proyección mostraba 1.961,89 €, el Power y los bonus no cuadraban con ciertos totales de Flux, y algunos gastos quedaban fuera de las fechas de sus presupuestos.
 
-- sus 12 transacciones suman 1.321,89 € en gastos, aunque una proyección mostraba 1.961,89 €;
-- el Power de los módulos y los bonus no sumaban los totales de Flux mostrados;
-- algunos gastos quedaban fuera de las fechas de los presupuestos a los que se atribuían.
-
-El reset no inventa movimientos para cuadrar esas diferencias. Conserva las operaciones e importes originales, ajusta las fechas de los gastos de muestra dentro de sus periodos y calcula la progresión con los umbrales y bonus existentes en live. Mantiene el nivel 24 y una posición equivalente dentro de ese nivel para que todas las ofertas del mock puedan probarse.
-
-Las definiciones `mock.*` del catálogo se guardan como inactivas. Pueden respaldar el cyberdeck y las ofertas del usuario demo, pero no entran en las rotaciones normales de otros usuarios.
+El reset conserva las operaciones e importes originales, ajusta las fechas de muestra dentro de sus periodos y calcula la progresión con los umbrales y bonus live. Mantiene el nivel 24 y una posición equivalente dentro del nivel. Las definiciones `mock.*` quedan inactivas: respaldan el usuario demo, pero no participan en las rotaciones de otros usuarios.
 
 ## Qué no modifica
 
-- No crea, elimina ni cambia la identidad de Firebase.
-- No cambia el email, la contraseña ni los proveedores configurados en Firebase Authentication.
 - No modifica datos de otros usuarios.
 - No despliega código ni contacta con GitHub.
-- No ejecuta migraciones ni altera los umbrales o reglas globales de progresión.
+- No ejecuta migraciones ni cambia reglas globales de progresión.
+- No se ejecuta automáticamente desde Firebase, Vercel o Neon.
 
-El UUID interno y el `firebase_uid` existentes se conservan. El usuario debe existir y estar vinculado a Firebase antes del reset. Las sesiones JWT heredadas se eliminan junto con el estado anterior; las sesiones de Firebase se siguen gestionando en Firebase.
+El reset reemplaza deliberadamente todo el estado actual del usuario demo. Cualquier edición realizada después permanecerá hasta la siguiente ejecución.
 
 ## Salvaguardas
 
 El script:
 
-- solo acepta el email fijo `nomada@budgetrunner.local`;
-- lee la conexión desde la variable dedicada `PROD_DEMO_DATABASE_URL`, nunca desde `DATABASE_URL`;
-- ofrece un modo `--dry-run` completamente de solo lectura;
-- exige una confirmación literal para aplicar cambios;
-- adquiere un bloqueo de mantenimiento y ejecuta el reemplazo en una transacción `SERIALIZABLE`;
-- revierte toda la operación si falla una inserción o una comprobación;
-- verifica recuentos, UUID interno y vínculo Firebase antes del commit;
-- usa definiciones de módulos aisladas del catálogo activo.
+- solo acepta como confirmación el email leído de `testuser.nfo`;
+- usa `PROD_DEMO_DATABASE_URL`, nunca la variable habitual `DATABASE_URL`;
+- solo admite el proyecto Firebase `budget-runner-cyberdeck`;
+- exige una cuenta de servicio cuyo `project_id` coincida;
+- rechaza `FIREBASE_AUTH_EMULATOR_HOST` para evitar mezclar entornos;
+- ofrece `--dry-run`, que consulta Firebase y PostgreSQL sin escribir;
+- bloquea y reemplaza PostgreSQL dentro de una transacción `SERIALIZABLE`;
+- verifica recuentos, UUID interno, UID Firebase y email antes del commit.
 
-Aunque la operación es repetible, reemplaza deliberadamente todo el estado de aplicación actual del usuario demo. Cualquier edición realizada por un juez después del reset permanecerá hasta la siguiente ejecución.
+Firebase y PostgreSQL no comparten una transacción distribuida. Al aplicar, Firebase se restaura primero y PostgreSQL después de forma atómica. Si la segunda fase falla, PostgreSQL hace rollback y la salida indica que se vuelva a ejecutar el comando; el procedimiento es idempotente y completa el estado pendiente.
 
 ## Requisitos
 
 - Estar en la rama local `prod`.
-- Node.js 22 y las dependencias del repositorio instaladas.
-- Tener acceso autorizado a la URL **direct** de la base Neon live.
-- Haber aplicado previamente las migraciones y el seed global.
-- Comprobar que el usuario ha iniciado sesión al menos una vez y está vinculado a Firebase.
+- Node.js 22 y dependencias instaladas.
+- URL **direct** autorizada de la base Neon live.
+- Migraciones y seed global aplicados.
+- Un JSON de cuenta de servicio de Firebase con permisos para administrar usuarios de Authentication.
+- `testuser.nfo` revisado y correcto.
 
-La URL pooled puede funcionar, pero para esta operación puntual se recomienda la URL direct.
+Guarda el JSON de la cuenta de servicio fuera del repositorio y no lo añadas a Git. La URL pooled puede funcionar, pero para este mantenimiento se recomienda la URL direct.
 
-## 1. Vista previa
+## 1. Preparar una sesión local
 
-Desde la raíz del repositorio, asigna temporalmente la URL direct:
+Desde la raíz:
 
 ```powershell
 $env:PROD_DEMO_DATABASE_URL='postgresql://USUARIO:PASSWORD@HOST/BASE?sslmode=require'
+$env:PROD_DEMO_FIREBASE_PROJECT_ID='budget-runner-cyberdeck'
+$env:GOOGLE_APPLICATION_CREDENTIALS='C:\ruta-segura\firebase-admin.json'
+```
+
+## 2. Vista previa
+
+```powershell
 npm run prod:demo:reset -- --dry-run
 ```
 
-La salida muestra el host y la base sin imprimir la contraseña, valida la identidad Firebase y enumera el estado actual. No modifica datos.
+La salida muestra el destino PostgreSQL sin contraseña, el proyecto Firebase, el origen del UUID canónico, si existen ambas cuentas y qué identidad de reemplazo se retiraría. También valida las reglas globales y muestra los recuentos actuales. No imprime la contraseña ni modifica datos.
 
-Revisa con especial atención que el destino mostrado corresponda a la base live correcta.
+Revisa especialmente que la base mostrada sea live, que el UUID/UID sean los esperados y que el origen de identidad sea `checkpoint` o `database`.
 
-## 2. Aplicar el reset
+## 3. Aplicar
 
-Utiliza la confirmación literal:
+Usa el email exacto que figure en `testuser.nfo`:
 
 ```powershell
 npm run prod:demo:reset -- --confirm nomada@budgetrunner.local
 ```
 
-La salida final debe indicar:
+La salida final debe confirmar el UUID interno, el UID Firebase, 8 categorías, 12 transacciones, 5 presupuestos, 9 módulos, 6 ofertas activas, nivel 24 y 2.380 SynthCoins.
 
-- 8 categorías;
-- 12 transacciones;
-- 5 presupuestos y 5 periodos;
-- 9 módulos;
-- 6 ofertas activas;
-- nivel 24 y 2.380 SynthCoins;
-- confirmación de que el reset terminó de forma atómica.
-
-## 3. Limpiar la consola y comprobar live
-
-Elimina la URL de la sesión de PowerShell:
+## 4. Limpiar y comprobar
 
 ```powershell
 Remove-Item Env:PROD_DEMO_DATABASE_URL
+Remove-Item Env:PROD_DEMO_FIREBASE_PROJECT_ID
+Remove-Item Env:GOOGLE_APPLICATION_CREDENTIALS
+Remove-Item Env:PROD_DEMO_INTERNAL_UUID -ErrorAction SilentlyContinue
 ```
 
 Después:
 
-1. Inicia sesión en live con `nomada@budgetrunner.local`.
+1. Inicia sesión live con las credenciales actuales de `testuser.nfo`.
 2. Comprueba Dashboard, Gastos, Presupuestos, Gamificación, Perfil y Ajustes.
-3. Verifica que la tienda presenta seis ofertas y que el cyberdeck muestra nueve módulos más el slot vacío.
-4. Realiza cualquier prueba destructiva necesaria y vuelve a ejecutar el reset para dejar el usuario preparado.
+3. Verifica seis ofertas y nueve módulos más el slot vacío.
+4. Si realizas pruebas destructivas, vuelve a ejecutar el reset para dejar preparado el usuario.
 
 ## Errores seguros
 
-- **El usuario no existe:** el script se detiene; no crea una identidad Firebase.
-- **Falta `firebase_uid`:** inicia sesión una vez en live y repite primero el `--dry-run`.
-- **Faltan niveles o bonus globales:** ejecuta el procedimiento normal de migración/seed antes del reset.
-- **Conflicto o timeout:** la transacción se revierte completa; revisa la salida y vuelve a intentarlo cuando no haya otra operación activa sobre el usuario.
-- **Falla la verificación final:** no se realiza el commit y se conserva el estado anterior.
+- **Credenciales inválidas:** corrige `testuser.nfo`; no se conecta a ningún servicio.
+- **Cuenta Firebase ausente:** se recrea con el UID guardado.
+- **Fila PostgreSQL ausente:** se recrea con el UUID guardado.
+- **No existe checkpoint ni historial:** proporciona `PROD_DEMO_INTERNAL_UUID`; el script no improvisa otro.
+- **Proyecto o cuenta de servicio incorrectos:** se detiene antes de cambiar Firebase.
+- **Faltan niveles o bonus:** aplica migraciones/seed y repite.
+- **Fallo tras restaurar Firebase:** PostgreSQL revierte; vuelve a ejecutar el mismo comando.
+- **Falla la verificación final:** PostgreSQL no hace commit.
