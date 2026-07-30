@@ -107,6 +107,7 @@ function usage(email = PROD_DEMO_EMAIL) {
   return [
     'Reset manual de la identidad y los datos del usuario demo de producción.',
     '',
+    `Preparar:      npm run prod:demo:setup`,
     `Vista previa: npm run prod:demo:reset`,
     `Aplicar:       npm run prod:demo:reset -- confirm ${email}`,
     '',

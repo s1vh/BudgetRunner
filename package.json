@@ -6,6 +6,7 @@
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
     "db:setup": "npm --prefix backend run db:setup",
+    "prod:demo:setup": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setupProdDemoSecrets.ps1",
     "prod:demo:reset": "node scripts/runProdDemoReset.mjs",
     "dev:api": "npm --prefix backend run dev",
     "dev:web": "npm --prefix frontend run dev",
