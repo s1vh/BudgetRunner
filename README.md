@@ -1,22 +1,32 @@
 # Budget Runner
 
-Aplicación web responsive de finanzas personales y gamificación cyberdeck. El frontend utiliza React, TypeScript y Tailwind CSS; la API utiliza Node.js, Express y PostgreSQL.
+[Versión en español](README_Es.md)
 
-## Documentación
+A responsive personal finance and cyberdeck gamification web application. The frontend uses React, TypeScript, and Tailwind CSS; the API uses Node.js, Express, and PostgreSQL.
 
-- `PRD.md`: alcance y requisitos funcionales.
-- `DATABASE.md`: modelo PostgreSQL e invariantes.
-- `API.md`: contrato REST bajo `/api/v1`.
-- `GAME_SYSTEM.md`: SynthCoins, Flux, Power y reglas del cyberdeck.
-- `DESIGN.md`: sistema visual Ultrawave.
-- `TEST_PLAN.md`: escenarios funcionales, económicos y responsive.
-- `I18N.md`: arquitectura multilingüe y guía de prueba local de idiomas.
-- `ROADMAP.md`: fases del MVP.
-- `DEPLOYMENT_FREE_TIER.md`: despliegue `prod` en Firebase, Vercel y Neon.
+## Documentation
 
-## Arranque local
+- `PRD.md`: product scope and functional requirements.
+- `DATABASE.md`: PostgreSQL data model and invariants.
+- `API.md`: REST contract under `/api/v1`.
+- `GAME_SYSTEM.md`: SynthCoins, Flux, Power, and cyberdeck rules.
+- `DESIGN.md`: Ultrawave visual system.
+- `TEST_PLAN.md`: functional, economic, and responsive scenarios.
+- `I18N.md`: multilingual architecture and local language-testing guide.
+- `ROADMAP.md`: MVP implementation phases.
+- `DEPLOYMENT_FREE_TIER.md`: `prod` deployment on Firebase, Vercel, and Neon.
 
-Requisitos: Node.js 22 o superior y Docker Desktop.
+## Branch strategy
+
+- `dev` is the primary development branch. New features and bug fixes are developed here. When a change benefits from a more granular workflow, create a short-lived development branch from `dev` and merge it back when the work is ready.
+- `main` is the stable branch. Update it from `dev`, or from a secondary development branch when a complete feature or an urgent fix is ready for promotion.
+- `prod` is the deployment branch. It contains the configuration and dependencies specific to the hybrid deployment, and releases are deployed from it. Once its deployment setup is complete, do not use it for regular development: update it only from `main`.
+
+The normal promotion flow is `dev` → `main` → `prod`. Secondary development branches start from `dev`; they normally return to `dev`, although a completed feature or urgent fix may be promoted directly to `main` when appropriate.
+
+## Local setup
+
+Requirements: Node.js 22 or later and Docker Desktop.
 
 ```bash
 npm --prefix backend install
@@ -25,7 +35,7 @@ npm run db:up
 npm run db:setup
 ```
 
-Arrancar la API y el frontend en dos terminales:
+Start the API and frontend in two terminals:
 
 ```bash
 npm run dev:api
@@ -36,44 +46,44 @@ npm run dev:web
 - API: `http://127.0.0.1:3001/api/v1`
 - Readiness: `http://127.0.0.1:3001/api/v1/internal/readiness`
 
-Identidad de desarrollo creada por el seed:
+Development identity created by the seed:
 
 ```text
 nomada@budgetrunner.local
 NeonRunner!2026
 ```
 
-Las credenciales y secretos de `.env` son exclusivamente locales. Producción debe proporcionar valores distintos mediante variables seguras.
+The credentials and secrets in `.env` are exclusively for local development. Production must provide different values through secure environment variables.
 
-### Autenticación local heredada
+### Legacy local authentication
 
-El flujo Google OAuth/OIDC está implementado en la API. Para activarlo en local, crea un cliente OAuth de tipo **Aplicación web** en Google Cloud y registra exactamente esta URI de redirección:
+The Google OAuth/OIDC flow is implemented in the API. To enable it locally, create an OAuth client of type **Web application** in Google Cloud and register this exact redirect URI:
 
 ```text
 http://localhost:5173/api/v1/auth/google/callback
 ```
 
-Después completa en `backend/.env`:
+Then complete `backend/.env`:
 
 ```text
 FRONTEND_URL=http://localhost:5173
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
 GOOGLE_REDIRECT_URI=http://localhost:5173/api/v1/auth/google/callback
-GOOGLE_OAUTH_STATE_SECRET=un-secreto-aleatorio-de-al-menos-32-caracteres
+GOOGLE_OAUTH_STATE_SECRET=a-random-secret-with-at-least-32-characters
 ```
 
-Y habilita el punto de entrada en `frontend/.env` cuando quieras mostrarlo:
+Enable the frontend entry point in `frontend/.env` when you want to display it:
 
 ```text
 VITE_GOOGLE_OAUTH_ENABLED=true
 ```
 
-Este flujo permanece disponible para desarrollo y para las pruebas de regresión. El despliegue `prod` utiliza Firebase Authentication y desactiva estas rutas heredadas.
+This flow remains available for development and regression testing. The `prod` deployment uses Firebase Authentication and disables these legacy routes.
 
-Reinicia la API después de cambiar estas variables. El callback intercambia el código en el servidor y entrega al frontend únicamente la sesión segura; ningún token de Google se incluye en la URL.
+Restart the API after changing these variables. The callback exchanges the code on the server and only delivers the secure session to the frontend; no Google token is included in the URL.
 
-## Verificación
+## Verification
 
 ```bash
 npm test
@@ -81,23 +91,39 @@ npm run lint
 npm run build
 ```
 
-### Prueba rápida de idiomas sin API
+### Quick language test without the API
 
-El modo mock permite revisar toda la interfaz sin Docker ni PostgreSQL:
+Mock mode lets you review the entire interface without Docker or PostgreSQL:
 
 ```powershell
 $env:VITE_DATA_SOURCE='mock'
 npm run dev:web
 ```
 
-Abre `http://127.0.0.1:5173`, cambia el idioma en **Ajustes → Región y moneda** y recorre Dashboard, Gastos, Presupuestos, Gamificación, Perfil y Ajustes. Para volver a probar la autodetección, borra `budget-runner-ui-locale` de `localStorage`, cambia el idioma preferido del navegador y recarga. Los pasos completos están en `I18N.md`.
+Open `http://127.0.0.1:5173`, change the language under **Settings → Region and currency**, and visit Dashboard, Expenses, Budgets, Gamification, Profile, and Settings. To test automatic detection again, remove `budget-runner-ui-locale` from `localStorage`, change the browser's preferred language, and reload. The complete steps are documented in `I18N.md`.
 
-### Prueba rápida de la ayuda y el tour
+### Quick help and guided-tour test
 
-Con el mismo modo mock, el primer inicio de sesión abre automáticamente el tour. El recorrido resalta las secciones principales de cada página y cambia por sí mismo entre las pestañas de Gamificación. Al iniciarlo manualmente desde Ajustes, el primer paso abre el Dashboard. **Salir del tour** conserva la página del paso actual; **Finalizar** devuelve al Dashboard. En ambos casos, al recargar no debe volver a aparecer automáticamente. En **Ajustes → Ayuda y tour guiado** se pueden ocultar los iconos informativos y volver a iniciar el recorrido en cualquier momento.
+In the same mock mode, the guided tour opens automatically on the first login. It highlights the main sections of each page and automatically switches between the Gamification tabs. When started manually from Settings, the first step opens the Dashboard. **Exit tour** keeps the page for the current step; **Finish** returns to the Dashboard. In both cases, it must not open automatically again after a reload. Under **Settings → Help and guided tour**, you can hide the informational icons and restart the tour at any time.
 
-Para simular otra cuenta que todavía no ha visto el tour, elimina `budget-runner.mock.guided-tour-completed` de `localStorage` y vuelve a iniciar sesión. El estado de los iconos se conserva en `budget-runner.mock.help-hints`. Con la API y PostgreSQL, `npm run db:setup` aplica la migración que deja el tour pendiente tanto para las cuentas existentes como para las nuevas.
+To simulate another account that has not seen the tour, remove `budget-runner.mock.guided-tour-completed` from `localStorage` and log in again. The icon setting is preserved in `budget-runner.mock.help-hints`. With the API and PostgreSQL, `npm run db:setup` applies the migration that leaves the tour pending for both existing test accounts and new accounts.
 
-La vertical persistente cubre identidad, perfil, categorías, transacciones, dashboard, presupuestos, periodos, cierres idempotentes, deduplicación de recompensas, SynthCoins, Flux, rachas, penalizaciones, daño, cyberdeck, tienda rotatoria, compras y reparaciones. En `prod`, Firebase autentica y PostgreSQL conserva el UUID interno y todo el estado de producto.
+The persistent vertical covers identity, profile, categories, transactions, dashboard, budgets, periods, idempotent closures, reward deduplication, SynthCoins, Flux, streaks, penalties, damage, cyberdeck, rotating store, purchases, and repairs. In `prod`, Firebase handles authentication while PostgreSQL retains the internal UUID and all product state.
+
+## How Sol helped build Budget Runner
+
+**Sol, my engineering partner powered by OpenAI Codex, has been deeply involved throughout the project; her contribution has gone far beyond code completion.** She has worked as an architect, full-stack developer, reviewer, QA engineer, and product partner.
+
+- She helped turn the initial idea into executable specifications: the PRD, data model, REST contract, game system, test plan, and roadmap.
+- She designed and refined the React, Express, and PostgreSQL architecture, including user isolation, migrations, auditable ledgers, serializable transactions, and idempotency.
+- She implemented and debugged substantial parts of the frontend and backend: authentication, categories, transactions, dashboard, profile, cyberdeck, store, purchases, repairs, contextual help, and the guided tour.
+- She helped translate the Ultrawave visual language into a responsive, accessible, and consistent interface, and worked on the internationalization architecture and multilingual coverage.
+- She analyzed especially delicate economic rules—Flux, SynthCoins, levels, bonuses, overlaps, rewards, damage, and destruction—to keep outcomes deterministic and traceable.
+- She created and ran unit and integration tests, reproduced real defects, investigated root causes, and fixed concurrency, persistence, typing, SQL-query, and configuration problems.
+- She maintained the technical documentation, environment examples, local instructions, deployment strategies, and rollback guidance.
+- She prepared the Firebase-hosted mock release and helped redesign the MVP deployment around the free tiers of Firebase, Vercel, and Neon while preserving a path to scale.
+- She protected branches and in-progress work through isolated Git workflows, reviewed diffs, and helped prevent secrets or accidental changes from reaching the repository.
+
+Mike Fieldins has retained product vision, creative direction, final decision-making, and release control. Sol has contributed a major share of the technical analysis, implementation, testing, documentation, and problem-solving that turned that vision into a functional and presentable application.
 
 Budget Runner © 2026 Mike Fieldins · MIT License
