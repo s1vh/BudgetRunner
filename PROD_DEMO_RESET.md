@@ -144,6 +144,20 @@ Revisa especialmente que la base mostrada sea live, que el UUID/UID sean los esp
 
 Antes de consultar usuarios o Firebase, el preflight comprueba que PostgreSQL contenga `_migrations`, las siete migraciones esperadas y todas las tablas necesarias. Una conexión válida a una base vacía ya no produce un error SQL ambiguo.
 
+### Comparar con el destino efectivo de Vercel
+
+Si el valor de `DATABASE_URL` aparece vacío en el dashboard, puede estar marcado como sensible: Vercel no vuelve a mostrar esos valores. Para comparar el destino efectivo sin imprimir usuario ni contraseña, inicia sesión en el CLI y ejecuta:
+
+```powershell
+npx vercel@latest login
+npx vercel@latest env run -e production -- node scripts/compareProdDatabaseTargets.mjs
+```
+
+La comprobación usa el proyecto enlazado en `.\.vercel\` y muestra únicamente host, base y si la conexión es pooled. No escribe archivos ni modifica Vercel o Neon.
+
+- Si endpoint o base no coinciden, vuelve a ejecutar `npm run prod:demo:setup` con la URL direct de la rama/base indicada para Vercel.
+- Si ambos coinciden pero el preflight informa que está vacía, no ejecutes el reset: primero debe confirmarse expresamente la inicialización de migraciones y seed en producción.
+
 ## 4. Aplicar
 
 Usa el email exacto que figure en `testuser.nfo`:
