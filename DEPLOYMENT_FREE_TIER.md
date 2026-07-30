@@ -122,8 +122,10 @@ La rama `prod` incluye un script de mantenimiento local para restaurar la identi
 El procedimiento completo, las salvaguardas y las diferencias normalizadas respecto al mock original están documentados en `PROD_DEMO_RESET.md`. Ejecuta siempre primero el modo de solo lectura:
 
 ```powershell
-$env:PROD_DEMO_DATABASE_URL='postgresql://URL-DIRECT'
-$env:PROD_DEMO_FIREBASE_PROJECT_ID='budget-runner-cyberdeck'
-$env:GOOGLE_APPLICATION_CREDENTIALS='C:\ruta-segura\firebase-admin.json'
+# Preparación única, siguiendo PROD_DEMO_RESET.md:
+# .\.secrets\prod-demo-database-url.txt
+# .\.secrets\firebase-admin.json
 npm run prod:demo:reset -- --dry-run
 ```
+
+El proyecto Firebase `budget-runner-cyberdeck` está fijado en el script. Las variables `PROD_DEMO_DATABASE_URL` y `GOOGLE_APPLICATION_CREDENTIALS` quedan disponibles únicamente como overrides opcionales de esas rutas relativas.

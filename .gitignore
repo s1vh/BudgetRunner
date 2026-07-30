@@ -2,6 +2,7 @@
 .env.*
 !.env.example
 !frontend/.env.production
+.secrets/
 backend/node_modules/
 backend/dist/
 backend/coverage/

@@ -71,7 +71,7 @@ El reset reemplaza deliberadamente todo el estado actual del usuario demo. Cualq
 El script:
 
 - solo acepta como confirmación el email leído de `testuser.nfo`;
-- usa `PROD_DEMO_DATABASE_URL`, nunca la variable habitual `DATABASE_URL`;
+- usa `.\.secrets\prod-demo-database-url.txt` o el override `PROD_DEMO_DATABASE_URL`, nunca la variable habitual `DATABASE_URL`;
 - solo admite el proyecto Firebase `budget-runner-cyberdeck`;
 - exige una cuenta de servicio cuyo `project_id` coincida;
 - rechaza `FIREBASE_AUTH_EMULATOR_HOST` para evitar mezclar entornos;
@@ -90,19 +90,59 @@ Firebase y PostgreSQL no comparten una transacción distribuida. Al aplicar, Fir
 - Un JSON de cuenta de servicio de Firebase con permisos para administrar usuarios de Authentication.
 - `testuser.nfo` revisado y correcto.
 
-Guarda el JSON de la cuenta de servicio fuera del repositorio y no lo añadas a Git. La URL pooled puede funcionar, pero para este mantenimiento se recomienda la URL direct.
+La carpeta local `.\.secrets\` está ignorada por Git. No fuerces nunca su inclusión en un commit ni compartas su contenido. La URL pooled puede funcionar, pero para este mantenimiento se recomienda la URL direct.
 
-## 1. Preparar una sesión local
+## 1. Obtener los dos secretos
 
-Desde la raíz:
+### URL direct de Neon
+
+Entra en la [consola de Neon](https://console.neon.tech/), abre el proyecto live de Budget Runner y pulsa **Connect**. Selecciona la rama, base de datos y rol usados en producción, desactiva **Connection pooling** y copia la connection string completa. El host de una URL direct no contiene `-pooler`.
+
+No uses `backend/.env`: su `DATABASE_URL` corresponde al PostgreSQL local en `127.0.0.1`.
+
+### Cuenta de servicio de Firebase
+
+Entra en el proyecto `budget-runner-cyberdeck` de Firebase y abre **Project settings → Service accounts → Firebase Admin SDK → Generate new private key**. Descarga el JSON y consérvalo como un secreto. Esta clave privada se necesita únicamente para que el script local pueda administrar usuarios de Authentication; no se despliega con la aplicación.
+
+La generación y custodia del JSON están descritas también en la [documentación oficial de Firebase Admin](https://firebase.google.com/docs/admin/setup).
+
+`PROD_DEMO_FIREBASE_PROJECT_ID` ya no es necesario: el script fija y valida internamente `budget-runner-cyberdeck`.
+
+## 2. Guardarlos en rutas relativas
+
+Desde la raíz del repositorio, crea la carpeta ignorada:
 
 ```powershell
-$env:PROD_DEMO_DATABASE_URL='postgresql://USUARIO:PASSWORD@HOST/BASE?sslmode=require'
-$env:PROD_DEMO_FIREBASE_PROJECT_ID='budget-runner-cyberdeck'
-$env:GOOGLE_APPLICATION_CREDENTIALS='C:\ruta-segura\firebase-admin.json'
+New-Item -ItemType Directory -Force -Path '.\.secrets'
 ```
 
-## 2. Vista previa
+Guarda la URL direct, sin comillas ni líneas adicionales:
+
+```powershell
+Set-Content -LiteralPath '.\.secrets\prod-demo-database-url.txt' `
+  -Value 'postgresql://USUARIO:PASSWORD@HOST/BASE?sslmode=require' `
+  -NoNewline
+```
+
+Copia y renombra el JSON descargado:
+
+```powershell
+Copy-Item -LiteralPath '<RUTA_AL_JSON_DESCARGADO>' `
+  -Destination '.\.secrets\firebase-admin.json'
+```
+
+El script resuelve ambas rutas desde la raíz del repositorio, independientemente de la unidad o carpeta donde esté clonado.
+
+Las variables de entorno siguen disponibles como overrides opcionales:
+
+```powershell
+$env:PROD_DEMO_DATABASE_URL='postgresql://URL-DIRECT'
+$env:GOOGLE_APPLICATION_CREDENTIALS='.\otra-ruta-relativa\firebase-admin.json'
+```
+
+Una ruta relativa en `GOOGLE_APPLICATION_CREDENTIALS` también se interpreta desde la raíz del repositorio.
+
+## 3. Vista previa
 
 ```powershell
 npm run prod:demo:reset -- --dry-run
@@ -112,7 +152,7 @@ La salida muestra el destino PostgreSQL sin contraseña, el proyecto Firebase, e
 
 Revisa especialmente que la base mostrada sea live, que el UUID/UID sean los esperados y que el origen de identidad sea `checkpoint` o `database`.
 
-## 3. Aplicar
+## 4. Aplicar
 
 Usa el email exacto que figure en `testuser.nfo`:
 
@@ -122,14 +162,16 @@ npm run prod:demo:reset -- --confirm nomada@budgetrunner.local
 
 La salida final debe confirmar el UUID interno, el UID Firebase, 8 categorías, 12 transacciones, 5 presupuestos, 9 módulos, 6 ofertas activas, nivel 24 y 2.380 SynthCoins.
 
-## 4. Limpiar y comprobar
+## 5. Limpiar overrides y comprobar
 
 ```powershell
-Remove-Item Env:PROD_DEMO_DATABASE_URL
-Remove-Item Env:PROD_DEMO_FIREBASE_PROJECT_ID
-Remove-Item Env:GOOGLE_APPLICATION_CREDENTIALS
+Remove-Item Env:PROD_DEMO_DATABASE_URL -ErrorAction SilentlyContinue
+Remove-Item Env:PROD_DEMO_FIREBASE_PROJECT_ID -ErrorAction SilentlyContinue
+Remove-Item Env:GOOGLE_APPLICATION_CREDENTIALS -ErrorAction SilentlyContinue
 Remove-Item Env:PROD_DEMO_INTERNAL_UUID -ErrorAction SilentlyContinue
 ```
+
+No elimines `.\.secrets\` si quieres poder repetir el mantenimiento. Su contenido permanece solo en la copia local y está ignorado por Git.
 
 Después:
 
