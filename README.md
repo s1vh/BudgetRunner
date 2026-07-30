@@ -15,6 +15,14 @@ A responsive personal finance and cyberdeck gamification web application. The fr
 - `I18N.md`: multilingual architecture and local language-testing guide.
 - `ROADMAP.md`: MVP implementation phases.
 
+## Branch strategy
+
+- `dev` is the primary development branch. New features and bug fixes are developed here. When a change benefits from a more granular workflow, create a short-lived development branch from `dev` and merge it back when the work is ready.
+- `main` is the stable branch. Update it from `dev`, or from a secondary development branch when a complete feature or an urgent fix is ready for promotion.
+- `prod` is the deployment branch. It contains the configuration and dependencies specific to the hybrid deployment, and releases are deployed from it. Once its deployment setup is complete, do not use it for regular development: update it only from `main`.
+
+The normal promotion flow is `dev` → `main` → `prod`. Secondary development branches start from `dev`; they normally return to `dev`, although a completed feature or urgent fix may be promoted directly to `main` when appropriate.
+
 ## Local setup
 
 Requirements: Node.js 22 or later and Docker Desktop.

@@ -15,6 +15,14 @@ Aplicación web responsive de finanzas personales y gamificación cyberdeck. El 
 - `I18N.md`: arquitectura multilingüe y guía de prueba local de idiomas.
 - `ROADMAP.md`: fases del MVP.
 
+## Estrategia de ramas
+
+- `dev` es la rama principal de desarrollo. Aquí se desarrollan las nuevas funcionalidades y se solucionan los bugs. Cuando un cambio requiera un flujo más granular, se puede crear una rama de desarrollo de corta duración a partir de `dev` y fusionarla de nuevo cuando el trabajo esté listo.
+- `main` es la rama estable. Se actualiza desde `dev`, o desde una rama de desarrollo secundaria cuando una funcionalidad completa o un fix urgente estén listos para promocionarse.
+- `prod` es la rama de despliegue. Contiene las configuraciones y dependencias específicas del despliegue híbrido, y los despliegues se realizan desde ella. Una vez completada su preparación, no se utiliza para el desarrollo habitual: se actualiza únicamente desde `main`.
+
+El flujo normal de promoción es `dev` → `main` → `prod`. Las ramas de desarrollo secundarias nacen de `dev` y normalmente vuelven a ella, aunque una funcionalidad terminada o un fix urgente pueden promocionarse directamente a `main` cuando resulte apropiado.
+
 ## Arranque local
 
 Requisitos: Node.js 22 o superior y Docker Desktop.
