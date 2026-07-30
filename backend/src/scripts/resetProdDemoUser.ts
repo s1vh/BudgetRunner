@@ -1,7 +1,10 @@
 import 'dotenv/config'
 import { randomUUID } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { cert, deleteApp, initializeApp, type App } from 'firebase-admin/app'
+import { getAuth, type Auth } from 'firebase-admin/auth'
 import pg, { type QueryResult, type QueryResultRow } from 'pg'
 import {
   buildProdDemoFixture,
@@ -12,16 +15,47 @@ import {
 
 const { Client } = pg
 const DATABASE_URL_ENV = 'PROD_DEMO_DATABASE_URL'
-const RESET_LOCK_KEY = `budget-runner:prod-demo-reset:${PROD_DEMO_EMAIL}`
+const FIREBASE_PROJECT_ID_ENV = 'PROD_DEMO_FIREBASE_PROJECT_ID'
+const SERVICE_ACCOUNT_PATH_ENV = 'GOOGLE_APPLICATION_CREDENTIALS'
+const INTERNAL_UUID_FALLBACK_ENV = 'PROD_DEMO_INTERNAL_UUID'
+const TEST_USER_FILE = fileURLToPath(new URL('../../../testuser.nfo', import.meta.url))
+const CHECKPOINT_ACTION = 'prod_demo.identity_checkpoint'
+const FALLBACK_FIREBASE_UID = 'budget-runner-demo-user'
+const EXPECTED_FIREBASE_PROJECT_ID = 'budget-runner-cyberdeck'
 
 interface SqlClient {
   query<Row extends QueryResultRow = QueryResultRow>(text: string, values?: unknown[]): Promise<QueryResult<Row>>
 }
 
-interface TargetUser {
+interface DatabaseUser {
   id: string
   email: string
   firebase_uid: string | null
+  deleted_at: Date | null
+}
+
+export interface TestCredentials {
+  email: string
+  password: string
+}
+
+interface IdentityCheckpoint {
+  internalUserId: string
+  firebaseUid: string | null
+}
+
+interface CanonicalIdentity {
+  internalUserId: string
+  firebaseUidHint: string | null
+  existingDatabaseUser: DatabaseUser | null
+  source: 'checkpoint' | 'database' | 'fallback'
+}
+
+interface FirebaseIdentityPlan {
+  uid: string
+  exists: boolean
+  currentEmail: string | null
+  replacementUid: string | null
 }
 
 export interface ResetOptions {
@@ -66,22 +100,37 @@ interface NormalizedProgress {
   nextLevelFlux: number
 }
 
-function usage() {
+function usage(email = PROD_DEMO_EMAIL) {
   return [
-    'Reset manual del usuario demo de producción.',
+    'Reset manual de la identidad y los datos del usuario demo de producción.',
     '',
     `Vista previa: npm run prod:demo:reset -- --dry-run`,
-    `Aplicar:       npm run prod:demo:reset -- --confirm ${PROD_DEMO_EMAIL}`,
+    `Aplicar:       npm run prod:demo:reset -- --confirm ${email}`,
     '',
-    `La conexión se lee exclusivamente de ${DATABASE_URL_ENV}.`,
+    `Credenciales demo: testuser.nfo`,
+    `PostgreSQL: ${DATABASE_URL_ENV}`,
+    `Firebase: ${FIREBASE_PROJECT_ID_ENV} + ${SERVICE_ACCOUNT_PATH_ENV}`,
   ].join('\n')
 }
 
-export function parseResetArgs(args: string[]): ResetOptions {
+export function parseResetArgs(args: string[], expectedEmail = PROD_DEMO_EMAIL): ResetOptions {
   if (args.length === 1 && (args[0] === '--help' || args[0] === '-h')) return { mode: 'help' }
   if (args.length === 1 && args[0] === '--dry-run') return { mode: 'dry-run' }
-  if (args.length === 2 && args[0] === '--confirm' && args[1] === PROD_DEMO_EMAIL) return { mode: 'apply' }
-  throw new Error(`Argumentos no válidos.\n\n${usage()}`)
+  if (args.length === 2 && args[0] === '--confirm' && args[1] === expectedEmail) return { mode: 'apply' }
+  throw new Error(`Argumentos no válidos.\n\n${usage(expectedEmail)}`)
+}
+
+export function parseTestUserNfo(contents: string): TestCredentials {
+  const lines = contents.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
+  const email = lines[0] ?? ''
+  const password = lines[1] ?? ''
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('testuser.nfo no contiene un email válido en la primera línea.')
+  if (password.length < 6 || password.length > 128) throw new Error('testuser.nfo no contiene una contraseña Firebase válida en la segunda línea.')
+  return { email: email.toLowerCase(), password }
+}
+
+async function readTestCredentials() {
+  return parseTestUserNfo(await readFile(TEST_USER_FILE, 'utf8'))
 }
 
 function safeDatabaseLabel(connectionString: string) {
@@ -97,20 +146,185 @@ function safeDatabaseLabel(connectionString: string) {
   }
 }
 
-async function findTargetUser(client: SqlClient, lock: boolean) {
-  const result = await client.query<TargetUser>(`
-    SELECT id, email::text, firebase_uid
+function validUuid(value: string | undefined | null): value is string {
+  return Boolean(value && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value))
+}
+
+async function readIdentityCheckpoint(client: SqlClient, email: string): Promise<IdentityCheckpoint | null> {
+  const checkpoint = await client.query<{ entity_id: string; firebase_uid: string | null }>(`
+    SELECT entity_id::text, metadata->>'firebaseUid' AS firebase_uid
+      FROM audit_events
+     WHERE action = $1
+       AND entity_type = 'user'
+       AND entity_id IS NOT NULL
+     ORDER BY CASE WHEN metadata->>'credentialEmail' = $2 THEN 0 ELSE 1 END,
+              created_at DESC
+     LIMIT 1
+  `, [CHECKPOINT_ACTION, email])
+  if (checkpoint.rows[0]) {
+    return {
+      internalUserId: checkpoint.rows[0].entity_id,
+      firebaseUid: checkpoint.rows[0].firebase_uid,
+    }
+  }
+  const previousReset = await client.query<{ entity_id: string }>(`
+    SELECT entity_id::text
+      FROM audit_events
+     WHERE action = 'prod_demo.reset'
+       AND entity_type = 'user'
+       AND entity_id IS NOT NULL
+     ORDER BY created_at DESC
+     LIMIT 1
+  `)
+  return previousReset.rows[0] ? { internalUserId: previousReset.rows[0].entity_id, firebaseUid: null } : null
+}
+
+async function findDatabaseUsers(client: SqlClient, internalUserId: string | null, email: string) {
+  const result = await client.query<DatabaseUser>(`
+    SELECT id, email::text, firebase_uid, deleted_at
       FROM users
-     WHERE email = $1 AND deleted_at IS NULL
-     ${lock ? 'FOR UPDATE' : ''}
-  `, [PROD_DEMO_EMAIL])
-  const user = result.rows[0]
-  if (!user) {
-    throw new Error(`No existe ${PROD_DEMO_EMAIL} en la base de datos seleccionada. El reset no crea identidades Firebase.`)
+     WHERE ($1::uuid IS NOT NULL AND id = $1)
+        OR email = $2
+     ORDER BY CASE WHEN id = $1::uuid THEN 0 ELSE 1 END
+     LIMIT 2
+  `, [internalUserId, email])
+  return result.rows
+}
+
+async function resolveCanonicalIdentity(client: SqlClient, email: string): Promise<CanonicalIdentity> {
+  const checkpoint = await readIdentityCheckpoint(client, email)
+  if (checkpoint && !validUuid(checkpoint.internalUserId)) throw new Error('El checkpoint contiene un UUID interno no válido.')
+  const databaseUsers = await findDatabaseUsers(client, checkpoint?.internalUserId ?? null, email)
+  const canonicalDatabaseUser = checkpoint
+    ? databaseUsers.find((candidate) => candidate.id === checkpoint.internalUserId) ?? null
+    : databaseUsers[0] ?? null
+  if (checkpoint?.firebaseUid && canonicalDatabaseUser?.firebase_uid && checkpoint.firebaseUid !== canonicalDatabaseUser.firebase_uid) {
+    throw new Error('El UID Firebase de PostgreSQL no coincide con el checkpoint canónico.')
   }
-  if (!user.firebase_uid) {
-    throw new Error(`${PROD_DEMO_EMAIL} no está vinculado a Firebase. Inicia sesión una vez en live antes de ejecutar el reset.`)
+  if (checkpoint) {
+    return {
+      internalUserId: checkpoint.internalUserId,
+      firebaseUidHint: checkpoint.firebaseUid ?? canonicalDatabaseUser?.firebase_uid ?? null,
+      existingDatabaseUser: canonicalDatabaseUser ?? databaseUsers[0] ?? null,
+      source: 'checkpoint',
+    }
   }
+  if (canonicalDatabaseUser) {
+    return {
+      internalUserId: canonicalDatabaseUser.id,
+      firebaseUidHint: canonicalDatabaseUser.firebase_uid,
+      existingDatabaseUser: canonicalDatabaseUser,
+      source: 'database',
+    }
+  }
+  const fallback = process.env[INTERNAL_UUID_FALLBACK_ENV]?.trim()
+  if (!validUuid(fallback)) {
+    throw new Error(
+      `La cuenta y su checkpoint no existen. Define ${INTERNAL_UUID_FALLBACK_ENV} con el UUID interno histórico para recrearla sin cambiar de identidad.`,
+    )
+  }
+  return {
+    internalUserId: fallback,
+    firebaseUidHint: null,
+    existingDatabaseUser: null,
+    source: 'fallback',
+  }
+}
+
+interface ServiceAccountFile {
+  project_id?: string
+  client_email?: string
+  private_key?: string
+}
+
+async function initializeFirebaseAdmin() {
+  if (process.env.FIREBASE_AUTH_EMULATOR_HOST) {
+    throw new Error('FIREBASE_AUTH_EMULATOR_HOST debe estar vacío: este mantenimiento solo admite el proyecto live confirmado.')
+  }
+  const projectId = process.env[FIREBASE_PROJECT_ID_ENV]?.trim()
+  const serviceAccountPath = process.env[SERVICE_ACCOUNT_PATH_ENV]?.trim()
+  if (!projectId) throw new Error(`Falta ${FIREBASE_PROJECT_ID_ENV}.`)
+  if (!serviceAccountPath) throw new Error(`Falta ${SERVICE_ACCOUNT_PATH_ENV}.`)
+  if (projectId !== EXPECTED_FIREBASE_PROJECT_ID) {
+    throw new Error(`${FIREBASE_PROJECT_ID_ENV} debe ser ${EXPECTED_FIREBASE_PROJECT_ID}.`)
+  }
+  let serviceAccount: ServiceAccountFile
+  try {
+    serviceAccount = JSON.parse(await readFile(resolve(serviceAccountPath), 'utf8')) as ServiceAccountFile
+  } catch {
+    throw new Error(`No se puede leer el JSON indicado por ${SERVICE_ACCOUNT_PATH_ENV}.`)
+  }
+  if (serviceAccount.project_id !== projectId) {
+    throw new Error(`La cuenta de servicio pertenece a otro proyecto; se esperaba ${projectId}.`)
+  }
+  if (!serviceAccount.client_email || !serviceAccount.private_key) {
+    throw new Error('El JSON de la cuenta de servicio no contiene client_email/private_key.')
+  }
+  const app = initializeApp({
+    projectId,
+    credential: cert({
+      projectId,
+      clientEmail: serviceAccount.client_email,
+      privateKey: serviceAccount.private_key,
+    }),
+  }, 'budget-runner-prod-demo-reset')
+  return { app, auth: getAuth(app), projectId }
+}
+
+function firebaseErrorCode(error: unknown) {
+  if (!error || typeof error !== 'object' || !('code' in error)) return ''
+  return String(error.code)
+}
+
+async function optionalFirebaseUserByUid(auth: Auth, uid: string) {
+  try {
+    return await auth.getUser(uid)
+  } catch (error) {
+    if (firebaseErrorCode(error) === 'auth/user-not-found') return null
+    throw error
+  }
+}
+
+async function optionalFirebaseUserByEmail(auth: Auth, email: string) {
+  try {
+    return await auth.getUserByEmail(email)
+  } catch (error) {
+    if (firebaseErrorCode(error) === 'auth/user-not-found') return null
+    throw error
+  }
+}
+
+async function inspectFirebaseIdentity(auth: Auth, identity: CanonicalIdentity, email: string): Promise<FirebaseIdentityPlan> {
+  const desiredUid = identity.firebaseUidHint ?? FALLBACK_FIREBASE_UID
+  const [byUid, byEmail] = await Promise.all([
+    optionalFirebaseUserByUid(auth, desiredUid),
+    optionalFirebaseUserByEmail(auth, email),
+  ])
+  const record = identity.firebaseUidHint ? byUid : (byEmail ?? byUid)
+  return {
+    uid: record?.uid ?? desiredUid,
+    exists: Boolean(record),
+    currentEmail: record?.email ?? null,
+    replacementUid: identity.firebaseUidHint && byEmail && byEmail.uid !== desiredUid ? byEmail.uid : null,
+  }
+}
+
+async function restoreFirebaseIdentity(auth: Auth, plan: FirebaseIdentityPlan, credentials: TestCredentials) {
+  if (plan.replacementUid) await auth.deleteUser(plan.replacementUid)
+  const commonRequest = {
+    email: credentials.email,
+    password: credentials.password,
+    displayName: 'Nómada',
+    emailVerified: true,
+    disabled: false,
+  }
+  const user = plan.exists
+    ? await auth.updateUser(plan.uid, { ...commonRequest, photoURL: null })
+    : await auth.createUser({ uid: plan.uid, ...commonRequest })
+  if (user.uid !== plan.uid || user.email?.toLowerCase() !== credentials.email) {
+    throw new Error('Firebase no devolvió la identidad demo esperada después de restaurarla.')
+  }
+  await auth.revokeRefreshTokens(user.uid)
   return user
 }
 
@@ -192,14 +406,19 @@ async function upsertDefinitions(client: SqlClient, fixture: ProdDemoFixture) {
   return definitionIds
 }
 
-async function insertProfile(client: SqlClient, user: TargetUser, fixture: ProdDemoFixture) {
+async function insertProfile(
+  client: SqlClient,
+  identity: { internalUserId: string; firebaseUid: string },
+  credentials: TestCredentials,
+  fixture: ProdDemoFixture,
+) {
   await client.query(`
     INSERT INTO users
       (id, firebase_uid, email, password_hash, display_name, avatar_url, primary_currency, locale, timezone,
        week_starts_on, preferences, email_verified_at, guided_tour_completed_at, deleted_at)
     VALUES ($1, $2, $3, NULL, $4, NULL, $5, $6, $7, $8, $9::jsonb, now(), NULL, NULL)
   `, [
-    user.id, user.firebase_uid, PROD_DEMO_EMAIL, fixture.profile.displayName, fixture.profile.primaryCurrency,
+    identity.internalUserId, identity.firebaseUid, credentials.email, fixture.profile.displayName, fixture.profile.primaryCurrency,
     fixture.profile.locale, fixture.profile.timezone, fixture.profile.weekStartsOn, JSON.stringify(fixture.profile.preferences),
   ])
 }
@@ -517,23 +736,83 @@ function assertExpectedState(state: UserState) {
   }
 }
 
-export async function resetProdDemoUser(client: SqlClient, now = new Date()) {
+export async function resetProdDemoUser(
+  client: SqlClient,
+  canonical: CanonicalIdentity,
+  firebaseUid: string,
+  credentials: TestCredentials,
+  now = new Date(),
+) {
   const fixture = buildProdDemoFixture(now)
   await client.query('BEGIN ISOLATION LEVEL SERIALIZABLE')
   try {
-    await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [RESET_LOCK_KEY])
-    const user = await findTargetUser(client, true)
-    const before = await readUserState(client, user.id)
+    await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`prod-demo-reset:${credentials.email}`])
+    const candidates = (await client.query<DatabaseUser>(`
+      SELECT id, email::text, firebase_uid, deleted_at
+        FROM users
+       WHERE id = $1
+          OR email = $2
+          OR firebase_uid = $3
+       FOR UPDATE
+    `, [canonical.internalUserId, credentials.email, firebaseUid])).rows
+    const canonicalRow = candidates.find((candidate) => candidate.id === canonical.internalUserId)
+    if (canonicalRow?.firebase_uid && canonicalRow.firebase_uid !== firebaseUid) {
+      throw new Error('El UUID interno canónico está asociado a un UID Firebase diferente.')
+    }
+    const previousUser = canonicalRow
+      ?? candidates.find((candidate) => candidate.firebase_uid === firebaseUid)
+      ?? candidates.find((candidate) => candidate.email.toLowerCase() === credentials.email)
+      ?? null
+    const before = await readUserState(client, previousUser?.id ?? canonical.internalUserId)
     const { thresholds, familyRules } = await loadProgressRules(client)
 
+    const checkpointRequestId = randomUUID()
+    await client.query(`
+      DELETE FROM audit_events
+       WHERE action = $1
+         AND entity_type = 'user'
+         AND (entity_id = $2 OR metadata->>'credentialEmail' = $3)
+    `, [CHECKPOINT_ACTION, canonical.internalUserId, credentials.email])
+    await client.query(`
+      INSERT INTO audit_events
+        (user_id, actor_type, action, entity_type, entity_id, request_id, metadata)
+      VALUES ($1, 'maintenance', $2, 'user', $3, $4,
+              jsonb_build_object(
+                'firebaseUid', $5::text,
+                'credentialEmail', $6::text,
+                'fixtureVersion', $7::text
+              ))
+    `, [
+      previousUser?.id ?? null,
+      CHECKPOINT_ACTION,
+      canonical.internalUserId,
+      checkpointRequestId,
+      firebaseUid,
+      credentials.email,
+      PROD_DEMO_FIXTURE_VERSION,
+    ])
+
+    const candidateIds = candidates.map((candidate) => candidate.id)
     await client.query(`
       DELETE FROM job_runs
-       WHERE scope_id IN (SELECT id FROM budget_periods WHERE user_id = $1)
-    `, [user.id])
-    await client.query('DELETE FROM audit_events WHERE user_id = $1', [user.id])
-    await client.query('DELETE FROM users WHERE id = $1', [user.id])
+       WHERE scope_id IN (SELECT id FROM budget_periods WHERE user_id = ANY($1::uuid[]))
+    `, [candidateIds])
+    await client.query(`
+      DELETE FROM audit_events
+       WHERE user_id = ANY($1::uuid[])
+         AND request_id <> $2
+    `, [candidateIds, checkpointRequestId])
+    await client.query('DELETE FROM users WHERE id = ANY($1::uuid[])', [candidateIds])
 
-    await insertProfile(client, user, fixture)
+    const user = {
+      id: canonical.internalUserId,
+      firebase_uid: firebaseUid,
+      email: credentials.email,
+    }
+    await insertProfile(client, {
+      internalUserId: user.id,
+      firebaseUid: user.firebase_uid,
+    }, credentials, fixture)
     const definitionIds = await upsertDefinitions(client, fixture)
     const categoryIds = await insertCategoriesAndTransactions(client, user.id, fixture)
     await insertBudgets(client, user.id, fixture, categoryIds)
@@ -543,17 +822,44 @@ export async function resetProdDemoUser(client: SqlClient, now = new Date()) {
     await insertStoreAndHistory(client, user.id, fixture, definitionIds, progress)
 
     await client.query(`
+      UPDATE audit_events
+         SET user_id = $1
+       WHERE request_id = $2
+         AND action = $3
+    `, [user.id, checkpointRequestId, CHECKPOINT_ACTION])
+    await client.query(`
       INSERT INTO audit_events
         (user_id, actor_type, action, entity_type, entity_id, request_id, metadata)
       VALUES ($1, 'maintenance', 'prod_demo.reset', 'user', $1, $2,
-              jsonb_build_object('fixtureVersion', $3::text, 'generatedAt', $4::text))
-    `, [user.id, randomUUID(), PROD_DEMO_FIXTURE_VERSION, fixture.generatedAt])
+              jsonb_build_object(
+                'fixtureVersion', $3::text,
+                'generatedAt', $4::text,
+                'credentialEmail', $5::text,
+                'firebaseUid', $6::text
+              ))
+    `, [
+      user.id,
+      randomUUID(),
+      PROD_DEMO_FIXTURE_VERSION,
+      fixture.generatedAt,
+      credentials.email,
+      firebaseUid,
+    ])
 
     const after = await readUserState(client, user.id)
     assertExpectedState(after)
-    const identity = await findTargetUser(client, false)
-    if (identity.id !== user.id || identity.firebase_uid !== user.firebase_uid) {
-      throw new Error('Post-reset verification failed: Firebase identity or internal UUID changed.')
+    const identity = (await client.query<DatabaseUser>(`
+      SELECT id, email::text, firebase_uid, deleted_at
+        FROM users
+       WHERE id = $1
+         AND deleted_at IS NULL
+    `, [user.id])).rows[0]
+    if (
+      !identity
+      || identity.firebase_uid !== user.firebase_uid
+      || identity.email.toLowerCase() !== credentials.email
+    ) {
+      throw new Error('Post-reset verification failed: la identidad canónica no se ha restaurado.')
     }
     await client.query('COMMIT')
     return { user, before, after, progress, generatedAt: fixture.generatedAt }
@@ -569,22 +875,31 @@ function printState(label: string, state: UserState) {
 }
 
 async function main() {
+  let credentials: TestCredentials
+  try {
+    credentials = await readTestCredentials()
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : error)
+    process.exitCode = 1
+    return
+  }
+
   let options: ResetOptions
   try {
-    options = parseResetArgs(process.argv.slice(2))
+    options = parseResetArgs(process.argv.slice(2), credentials.email)
   } catch (error) {
     console.error(error instanceof Error ? error.message : error)
     process.exitCode = 1
     return
   }
   if (options.mode === 'help') {
-    console.log(usage())
+    console.log(usage(credentials.email))
     return
   }
 
   const connectionString = process.env[DATABASE_URL_ENV]?.trim()
   if (!connectionString) {
-    console.error(`Falta ${DATABASE_URL_ENV}.\n\n${usage()}`)
+    console.error(`Falta ${DATABASE_URL_ENV}.\n\n${usage(credentials.email)}`)
     process.exitCode = 1
     return
   }
@@ -605,36 +920,59 @@ async function main() {
     application_name: 'budget-runner-prod-demo-reset',
     connectionTimeoutMillis: 10_000,
   })
+  let firebaseApp: App | null = null
+  let firebaseRestoreAttempted = false
   try {
     await client.connect()
     await client.query("SET lock_timeout = '10s'")
     await client.query("SET statement_timeout = '60s'")
     await client.query("SET idle_in_transaction_session_timeout = '60s'")
+    const firebase = await initializeFirebaseAdmin()
+    firebaseApp = firebase.app
+    const canonical = await resolveCanonicalIdentity(client, credentials.email)
+    const firebasePlan = await inspectFirebaseIdentity(firebase.auth, canonical, credentials.email)
 
     if (options.mode === 'dry-run') {
-      const user = await findTargetUser(client, false)
-      const state = await readUserState(client, user.id)
+      const state = await readUserState(
+        client,
+        canonical.existingDatabaseUser?.id ?? canonical.internalUserId,
+      )
       await loadProgressRules(client)
-      console.log(`Usuario: ${user.email} (${user.id})`)
-      console.log(`Firebase UID: ${user.firebase_uid}`)
+      console.log(`Email canónico: ${credentials.email}`)
+      console.log(`Proyecto Firebase: ${firebase.projectId}`)
+      console.log(`UUID interno canónico: ${canonical.internalUserId} (origen: ${canonical.source})`)
+      console.log(`Fila PostgreSQL actual: ${canonical.existingDatabaseUser?.id ?? 'ausente; se recreará'}`)
+      console.log(`Firebase UID canónico: ${firebasePlan.uid}`)
+      console.log(`Cuenta Firebase: ${firebasePlan.exists ? `presente (${firebasePlan.currentEmail ?? 'sin email'})` : 'ausente; se recreará'}`)
+      if (firebasePlan.replacementUid) {
+        console.log(`Identidad Firebase de reemplazo: ${firebasePlan.replacementUid} (se retirará)`)
+      }
       printState('Estado actual (solo lectura):', state)
-      console.log('El reset regeneraría 8 categorías, 12 transacciones, 5 presupuestos, 9 módulos y 6 ofertas activas.')
+      console.log('El reset restauraría email, contraseña, nombre visible y estado de la cuenta desde testuser.nfo.')
+      console.log('También regeneraría 8 categorías, 12 transacciones, 5 presupuestos, 9 módulos y 6 ofertas activas.')
       console.log('No se ha modificado ningún dato.')
       return
     }
 
-    console.warn(`Se reemplazarán los datos de aplicación de ${PROD_DEMO_EMAIL}.`)
-    const result = await resetProdDemoUser(client)
+    console.warn(`Se restaurarán la identidad, las credenciales y los datos de ${credentials.email}.`)
+    firebaseRestoreAttempted = true
+    const firebaseUser = await restoreFirebaseIdentity(firebase.auth, firebasePlan, credentials)
+    const result = await resetProdDemoUser(client, canonical, firebaseUser.uid, credentials)
     printState('Estado anterior:', result.before)
     printState('Estado regenerado:', result.after)
     console.log(`Progreso normalizado: nivel ${result.progress.level}, Flux ${result.progress.totalFlux}, SynthCoins 2380.`)
-    console.log(`Reset completado de forma atómica (${result.generatedAt}).`)
+    console.log(`Reset completado (${result.generatedAt}). UUID interno ${result.user.id}; Firebase UID ${result.user.firebase_uid}.`)
   } catch (error) {
-    console.error('El reset no se ha completado. La transacción se ha revertido.')
+    if (firebaseRestoreAttempted) {
+      console.error('Firebase pudo modificarse antes del fallo; PostgreSQL se ha revertido. Es seguro volver a ejecutar el reset.')
+    } else {
+      console.error('El reset no se ha completado.')
+    }
     console.error(error instanceof Error ? error.message : error)
     process.exitCode = 1
   } finally {
     await client.end().catch(() => undefined)
+    if (firebaseApp) await deleteApp(firebaseApp).catch(() => undefined)
   }
 }
 
