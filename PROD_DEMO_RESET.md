@@ -2,6 +2,31 @@
 
 Este procedimiento restaura por completo `nomada@budgetrunner.local` en el entorno live: identidad de Firebase Authentication, credenciales, perfil y datos de aplicación. El script existe únicamente en la rama `prod`, se ejecuta manualmente desde una consola local y no forma parte del frontend, la API, los builds, el cron ni el despliegue.
 
+## Versión reducida
+
+Desde la raíz del repositorio y con la rama `prod` activa:
+
+```powershell
+# Solo la primera vez, o cuando cambien los secretos:
+npm run prod:demo:setup
+
+# 1. Comprobar destino, identidad y estado actual sin modificar datos:
+npm run prod:demo:reset
+
+# 2. Restaurar el usuario demo:
+npm run prod:demo:reset -- confirm nomada@budgetrunner.local
+
+# 3. Verificar el resultado sin volver a modificarlo:
+npm run prod:demo:reset
+```
+
+El destino esperado es la rama Neon `production` (`br-rough-truth-a2pys24x`), base `budget_runner`, y el proyecto Firebase `budget-runner-cyberdeck`. Los identificadores esperados son:
+
+- UUID interno: `5c18268e-9ae6-43fa-addf-51e199f6b8d4`;
+- Firebase UID: `XSkJIM4F8MYRi4g9PU2FnUhIMvg1`.
+
+No continúes si la vista previa muestra otro destino, faltan migraciones o los identificadores canónicos no coinciden. El comando que contiene `confirm` es el único que restaura datos; las ejecuciones sin argumentos son vistas previas de solo lectura. El asistente `setup` solo escribe los secretos en `.\.secrets\`. El procedimiento no despliega la aplicación ni sincroniza el repositorio con GitHub.
+
 ## Fuente de verdad
 
 `testuser.nfo`, situado en la raíz de `prod`, contiene en este orden:
@@ -96,7 +121,7 @@ La carpeta local `.\.secrets\` está ignorada por Git. Eso evita que Git la incl
 
 ### URL direct de Neon
 
-Entra en la [consola de Neon](https://console.neon.tech/), abre el proyecto live de Budget Runner y pulsa **Connect**. Selecciona la rama, base de datos y rol usados en producción, desactiva **Connection pooling** y copia la connection string completa. El host de una URL direct no contiene `-pooler`.
+Entra en la [consola de Neon](https://console.neon.tech/), abre el proyecto live de Budget Runner y pulsa **Connect**. Selecciona la rama `production` (`br-rough-truth-a2pys24x`), la base `budget_runner` y el rol de producción, desactiva **Connection pooling** y copia la connection string completa. El host de una URL direct no contiene `-pooler`.
 
 No uses `backend/.env`: su `DATABASE_URL` corresponde al PostgreSQL local en `127.0.0.1`.
 
