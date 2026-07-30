@@ -15,14 +15,11 @@ Aplicación web responsive de finanzas personales y gamificación cyberdeck. El 
 - `I18N.md`: arquitectura multilingüe y guía de prueba local de idiomas.
 - `ROADMAP.md`: fases del MVP.
 - `DEPLOYMENT_FREE_TIER.md`: despliegue de `prod` en Firebase, Vercel y Neon.
+- `CONTRIBUTING_Es.md`: función de las ramas, flujo de promoción y lista de comprobación para releases.
 
 ## Estrategia de ramas
 
-- `dev` es la rama principal de desarrollo. Aquí se desarrollan las nuevas funcionalidades y se solucionan los bugs. Cuando un cambio requiera un flujo más granular, se puede crear una rama de desarrollo de corta duración a partir de `dev` y fusionarla de nuevo cuando el trabajo esté listo.
-- `main` es la rama estable. Se actualiza desde `dev`, o desde una rama de desarrollo secundaria cuando una funcionalidad completa o un fix urgente estén listos para promocionarse.
-- `prod` es la rama de despliegue. Contiene las configuraciones y dependencias específicas del despliegue híbrido, y los despliegues se realizan desde ella. Una vez completada su preparación, no se utiliza para el desarrollo habitual: se actualiza únicamente desde `main`.
-
-El flujo normal de promoción es `dev` → `main` → `prod`. Las ramas de desarrollo secundarias nacen de `dev` y normalmente vuelven a ella, aunque una funcionalidad terminada o un fix urgente pueden promocionarse directamente a `main` cuando resulte apropiado.
+Utiliza `dev` para el desarrollo, `main` para el trabajo estable y `prod` para la configuración del despliegue híbrido. El flujo normal de promoción es `dev` → `main` → `prod`; consulta `CONTRIBUTING_Es.md` para conocer el proceso completo y sus excepciones.
 
 ## Arranque local
 
