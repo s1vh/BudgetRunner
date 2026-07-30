@@ -14,14 +14,11 @@ A responsive personal finance and cyberdeck gamification web application. The fr
 - `TEST_PLAN.md`: functional, economic, and responsive scenarios.
 - `I18N.md`: multilingual architecture and local language-testing guide.
 - `ROADMAP.md`: MVP implementation phases.
+- `CONTRIBUTING.md`: branch roles, promotion flow, and release-readiness checklist.
 
 ## Branch strategy
 
-- `dev` is the primary development branch. New features and bug fixes are developed here. When a change benefits from a more granular workflow, create a short-lived development branch from `dev` and merge it back when the work is ready.
-- `main` is the stable branch. Update it from `dev`, or from a secondary development branch when a complete feature or an urgent fix is ready for promotion.
-- `prod` is the deployment branch. It contains the configuration and dependencies specific to the hybrid deployment, and releases are deployed from it. Once its deployment setup is complete, do not use it for regular development: update it only from `main`.
-
-The normal promotion flow is `dev` → `main` → `prod`. Secondary development branches start from `dev`; they normally return to `dev`, although a completed feature or urgent fix may be promoted directly to `main` when appropriate.
+Use `dev` for development, `main` for stable work, and `prod` for the hybrid deployment configuration. The normal promotion flow is `dev` → `main` → `prod`; see `CONTRIBUTING.md` for the complete workflow and exceptions.
 
 ## Local setup
 
