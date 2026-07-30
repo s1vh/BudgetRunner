@@ -149,14 +149,15 @@ Antes de consultar usuarios o Firebase, el preflight comprueba que PostgreSQL co
 Si el valor de `DATABASE_URL` aparece vacío en el dashboard, puede estar marcado como sensible: Vercel no vuelve a mostrar esos valores. Para comparar el destino efectivo sin imprimir usuario ni contraseña, inicia sesión en el CLI y ejecuta:
 
 ```powershell
-npx vercel@latest login
-npx vercel@latest env run -e production -- node scripts/compareProdDatabaseTargets.mjs
+npx --package=vercel@latest -- vercel login
+npx --package=vercel@latest -- vercel env run -e production -- node scripts/compareProdDatabaseTargets.mjs
 ```
 
-La comprobación usa el proyecto enlazado en `.\.vercel\` y muestra únicamente host, base y si la conexión es pooled. No escribe archivos ni modifica Vercel o Neon.
+Se necesitan dos separadores porque el primero entrega el comando al paquete ejecutado por `npx` y el segundo entrega `node …` a `vercel env run`. La comprobación usa el proyecto enlazado en `.\.vercel\` y muestra únicamente host, base y si la conexión es pooled. No escribe archivos ni modifica Vercel o Neon.
 
 - Si endpoint o base no coinciden, vuelve a ejecutar `npm run prod:demo:setup` con la URL direct de la rama/base indicada para Vercel.
 - Si ambos coinciden pero el preflight informa que está vacía, no ejecutes el reset: primero debe confirmarse expresamente la inicialización de migraciones y seed en producción.
+- Si Vercel no inyecta `DATABASE_URL`, la variable falta en la configuración Production actual. Un deployment anterior puede seguir funcionando con la instantánea que recibió al crearse, pero el siguiente deployment no tendrá conexión. Localiza primero la rama Neon histórica o confirma el bootstrap de una base nueva antes de restaurar la variable pooled y redesplegar.
 
 ## 4. Aplicar
 

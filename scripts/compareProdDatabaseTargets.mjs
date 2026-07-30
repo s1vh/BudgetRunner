@@ -7,10 +7,15 @@ const localValue = (await readFile(
 )).trim()
 const vercelValue = process.env.DATABASE_URL?.trim()
 
-if (!vercelValue || vercelValue === '[SENSITIVE]') {
+if (!vercelValue) {
   throw new Error(
-    'Vercel no ha inyectado DATABASE_URL. Ejecuta este script mediante `vercel env run -e production -- ...`.',
+    'El entorno Production actual de Vercel no contiene DATABASE_URL. '
+    + 'Un deployment antiguo puede seguir usando su propia instantánea histórica, '
+    + 'pero un nuevo deployment no tendrá conexión hasta restaurar la variable.',
   )
+}
+if (vercelValue === '[SENSITIVE]') {
+  throw new Error('DATABASE_URL está redactada; ejecuta la comparación mediante `vercel env run`, no desde un archivo de Vercel pull.')
 }
 
 const localUrl = new URL(localValue)
