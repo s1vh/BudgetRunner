@@ -6,6 +6,7 @@ describe('production demo reset safety', () => {
   test('only accepts dry-run or the exact demo-user confirmation', () => {
     expect(parseResetArgs(['--dry-run'])).toEqual({ mode: 'dry-run' })
     expect(parseResetArgs(['--confirm', PROD_DEMO_EMAIL])).toEqual({ mode: 'apply' })
+    expect(parseResetArgs(['confirm', PROD_DEMO_EMAIL])).toEqual({ mode: 'apply' })
     expect(parseResetArgs(['--help'])).toEqual({ mode: 'help' })
     expect(() => parseResetArgs([])).toThrow('Argumentos no válidos')
     expect(() => parseResetArgs(['--confirm', 'another-user@example.com'])).toThrow('Argumentos no válidos')
@@ -19,6 +20,7 @@ describe('production demo reset safety', () => {
       password: 'NeonRunner!2026',
     })
     expect(parseResetArgs(['--confirm', credentials.email], credentials.email)).toEqual({ mode: 'apply' })
+    expect(parseResetArgs(['confirm', credentials.email], credentials.email)).toEqual({ mode: 'apply' })
     expect(() => parseResetArgs(['--confirm', PROD_DEMO_EMAIL], 'future-demo@budgetrunner.local')).toThrow(
       'Argumentos no válidos',
     )

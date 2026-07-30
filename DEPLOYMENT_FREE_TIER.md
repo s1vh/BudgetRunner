@@ -125,7 +125,7 @@ El procedimiento completo, las salvaguardas y las diferencias normalizadas respe
 # Preparación única, siguiendo PROD_DEMO_RESET.md:
 # .\.secrets\prod-demo-database-url.txt
 # .\.secrets\firebase-admin.json
-npm run prod:demo:reset -- --dry-run
+npm run prod:demo:reset
 ```
 
 El proyecto Firebase `budget-runner-cyberdeck` está fijado en el script. Las variables `PROD_DEMO_DATABASE_URL` y `GOOGLE_APPLICATION_CREDENTIALS` quedan disponibles únicamente como overrides opcionales de esas rutas relativas.

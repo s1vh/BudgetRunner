@@ -75,7 +75,7 @@ El script:
 - solo admite el proyecto Firebase `budget-runner-cyberdeck`;
 - exige una cuenta de servicio cuyo `project_id` coincida;
 - rechaza `FIREBASE_AUTH_EMULATOR_HOST` para evitar mezclar entornos;
-- ofrece `--dry-run`, que consulta Firebase y PostgreSQL sin escribir;
+- ofrece un modo de vista previa, que consulta Firebase y PostgreSQL sin escribir;
 - bloquea y reemplaza PostgreSQL dentro de una transacción `SERIALIZABLE`;
 - verifica recuentos, UUID interno, UID Firebase y email antes del commit.
 
@@ -116,6 +116,8 @@ Desde la raíz del repositorio, crea la carpeta ignorada:
 New-Item -ItemType Directory -Force -Path '.\.secrets'
 ```
 
+Este comando solo crea la carpeta; no descarga ni genera los secretos. Antes de ejecutar el reset deben existir dentro los dos archivos siguientes.
+
 Guarda la URL direct, sin comillas ni líneas adicionales:
 
 ```powershell
@@ -131,6 +133,14 @@ Copy-Item -LiteralPath '<RUTA_AL_JSON_DESCARGADO>' `
   -Destination '.\.secrets\firebase-admin.json'
 ```
 
+Comprueba únicamente los nombres —no muestres su contenido en una captura o log—:
+
+```powershell
+Get-ChildItem -LiteralPath '.\.secrets' | Select-Object Name,Length
+```
+
+La salida debe contener `prod-demo-database-url.txt` y `firebase-admin.json`, ambos con un tamaño mayor que cero.
+
 El script resuelve ambas rutas desde la raíz del repositorio, independientemente de la unidad o carpeta donde esté clonado.
 
 Las variables de entorno siguen disponibles como overrides opcionales:
@@ -145,10 +155,12 @@ Una ruta relativa en `GOOGLE_APPLICATION_CREDENTIALS` también se interpreta des
 ## 3. Vista previa
 
 ```powershell
-npm run prod:demo:reset -- --dry-run
+npm run prod:demo:reset
 ```
 
 La salida muestra el destino PostgreSQL sin contraseña, el proyecto Firebase, el origen del UUID canónico, si existen ambas cuentas y qué identidad de reemplazo se retiraría. También valida las reglas globales y muestra los recuentos actuales. No imprime la contraseña ni modifica datos.
+
+El comando raíz sin argumentos ejecuta siempre esta vista previa. Se evita así `--dry-run`, que algunas versiones de npm interpretan como una opción propia en vez de reenviarla al script.
 
 Revisa especialmente que la base mostrada sea live, que el UUID/UID sean los esperados y que el origen de identidad sea `checkpoint` o `database`.
 
@@ -157,7 +169,7 @@ Revisa especialmente que la base mostrada sea live, que el UUID/UID sean los esp
 Usa el email exacto que figure en `testuser.nfo`:
 
 ```powershell
-npm run prod:demo:reset -- --confirm nomada@budgetrunner.local
+npm run prod:demo:reset -- confirm nomada@budgetrunner.local
 ```
 
 La salida final debe confirmar el UUID interno, el UID Firebase, 8 categorías, 12 transacciones, 5 presupuestos, 9 módulos, 6 ofertas activas, nivel 24 y 2.380 SynthCoins.
