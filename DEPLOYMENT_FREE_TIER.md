@@ -167,6 +167,8 @@ No se debe borrar una cuenta, base, proyecto o deployment para hacer rollback.
 
 La rama `prod` incluye un script de mantenimiento local para restaurar la identidad Firebase, las credenciales de `testuser.nfo` y todos los datos de aplicación de `nomada@budgetrunner.local`. También recrea las cuentas borradas conservando el UUID interno y el UID Firebase canónicos. No forma parte de la API ni se ejecuta durante el build o el despliegue.
 
+**Regla de cierre de release:** después de cada despliegue de `prod` y de comprobar health, readiness y frontend, se debe restaurar manualmente el usuario demo y verificarlo en modo de solo lectura. El perfil canónico queda en `en-US` y `USD`, y el fixture regenera sus transacciones y presupuestos en USD. Este paso solo puede dirigirse a `nomada@budgetrunner.local`; no se debe ejecutar un seed global ni modificar otras cuentas.
+
 El procedimiento completo, las salvaguardas y las diferencias normalizadas respecto al mock original están documentados en `PROD_DEMO_RESET.md`. Ejecuta siempre primero el modo de solo lectura:
 
 ```powershell
@@ -180,4 +182,4 @@ npm run prod:demo:reset -- confirm nomada@budgetrunner.local
 npm run prod:demo:reset
 ```
 
-El proyecto Firebase `budget-runner-cyberdeck` y los identificadores canónicos están fijados y validados por el script. Las variables `PROD_DEMO_DATABASE_URL` y `GOOGLE_APPLICATION_CREDENTIALS` quedan disponibles únicamente como overrides opcionales de las rutas relativas.
+El proyecto Firebase `budget-runner-cyberdeck` y los identificadores canónicos están fijados y validados por el script. La publicación no se considera terminada si la aplicación o la verificación final fallan. Las variables `PROD_DEMO_DATABASE_URL` y `GOOGLE_APPLICATION_CREDENTIALS` quedan disponibles únicamente como overrides opcionales de las rutas relativas.

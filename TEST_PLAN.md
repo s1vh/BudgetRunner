@@ -355,6 +355,50 @@ Finalizar el último paso cierra el tour, vuelve al Dashboard y sitúa la págin
 
 Iniciar el tour desde Ajustes abre el Dashboard ya en el primer paso, sin añadir pasos al recorrido. Los pasos existentes de Flux y Cyberdeck explican en los ocho idiomas los umbrales de nivel, Flux base, Power, bonus, Shield × 10, Energy, destrucción, reparación, familia y rareza, manteniendo literales todos esos términos protegidos.
 
+### T-103 Carga pública por chunks
+
+Abrir `/login`, registro, recuperación, privacidad o licencia carga el núcleo público sin descargar los chunks de Finanzas, Cuenta, Cyberdeck o Tienda.
+
+### T-104 Carga privada por áreas
+
+Después de autenticar, Dashboard solicita el bloque financiero. Perfil/Ajustes y Cyberdeck solo descargan su código al entrar en sus rutas; la navegación directa y la recarga de cada URL funcionan sin pantallas en blanco.
+
+### T-105 Tienda bajo demanda
+
+Entrar en Gamificación carga el bloque principal del Cyberdeck, pero no la Tienda. Hover, foco de teclado o selección de la pestaña pueden anticipar/solicitar su chunk. El tour espera a que el panel exista antes de resaltar `game-store`.
+
+### T-106 Estados y recuperación de chunks
+
+Las cargas conservan el shell apropiado, utilizan skeletons Ultrawave, anuncian actividad de forma accesible y respetan movimiento reducido. Un fallo simulado de importación dinámica muestra una acción de reintento/recarga en vez de una pantalla vacía.
+
+### T-107 Alcance de datos
+
+Tras autenticar, comprobar en Network que no se solicita un snapshot global. Dashboard pide dashboard y categorías; Gastos, transacciones y categorías; Perfil reutiliza el perfil compartido; Ajustes solo añade categorías; Gamificación solicita únicamente los recursos de la pestaña visible. La restauración de sesión no repite `/me` al montar la zona privada.
+
+### T-108 Caché e invalidación selectiva
+
+Volver a una sección dentro de su ventana de frescura reutiliza el caché. Crear, editar o borrar una transacción actualiza el Dashboard con la respuesta de la mutación y refresca la lista activa sin pedir Cyberdeck, tienda, historial ni bonus. Categorías, preferencias, tour, compras y reparaciones aplican las reglas documentadas en `FRONTEND_ARCHITECTURE.md`.
+
+### T-109 Datos por pestaña de Gamificación
+
+Resumen solicita progreso y bonus; Cyberdeck y Reparaciones comparten módulos; Registro solicita historial. Tienda no solicita inventario hasta hover, foco, selección o tour, conserva su chunk separado y utiliza el progreso compartido para los niveles mínimos. Cambiar entre pestañas ya visitadas no produce cargas completas ni pierde el estado local de la página.
+
+### T-110 Espera y recuperación de datos
+
+Con latencia menor de 700 ms solo se ve el skeleton. A partir de 700 ms aparece el texto de sincronización y, al superar 3 s, el aviso de proveedor lento. Ambos se anuncian mediante `role="status"`; un fallo muestra una acción de reintento local con `role="alert"` y el shell continúa operativo.
+
+### T-111 Telemetría de proveedores
+
+En modo API, recorrer las áreas y revisar `window.__BUDGET_RUNNER_API_METRICS__` y las medidas `budget-runner:api:*`. Confirmar rutas normalizadas, ausencia de UUID y query strings, límite de 200 entradas, códigos HTTP y duraciones coherentes con Network. Registrar aparte payload y tiempo hasta contenido útil con latencia representativa de Vercel y Neon.
+
+### T-112 Hardening de entradas y construcción SQL
+
+1. Enviar secuencias con forma de consulta mediante login, alta, nombres de categoría, concepto, notas y búsqueda; incluir comentarios intercalados, codificación porcentual, Unicode de ancho completo, caracteres invisibles, concatenación, tautologías y funciones temporizadas.
+2. Confirmar `422`, mensaje externo neutro, ausencia de detalles del detector y cabeceras de no-cache; comprobar antes y después que no se hayan creado ni modificado filas.
+3. Repetir con textos legítimos que contengan apóstrofes, guiones o palabras similares a verbos SQL y confirmar que se conservan exactamente.
+4. En navegador, provocar el rechazo desde un campo de texto y verificar cancelación de peticiones, purga de cachés de aplicación, recarga y aviso localizado «Integridad de señal restaurada».
+5. Ejecutar `sqlConstruction.unit.test.ts` y confirmar que ninguna ruta o servicio construye SQL en runtime; las consultas con filtros deben seguir funcionando con todos los parámetros opcionales.
+
 ## 14. Seguridad básica
 
 - Firebase ID token ausente, inválido o expirado en `prod`; revocar los refresh tokens debe impedir renovarlo cuando venza el token ya emitido.

@@ -10,6 +10,7 @@ import { authRouter, meRouter } from './routes/authRoutes.js'
 import { budgetInternalRouter, budgetRouter } from './routes/budgetRoutes.js'
 import { gameRouter } from './routes/gameRoutes.js'
 import { transactionRouter } from './routes/transactionRoutes.js'
+import { rejectQueryShapedInput } from './security/textInputGuard.js'
 
 const createHelmetMiddleware = helmet as unknown as () => RequestHandler
 
@@ -33,6 +34,7 @@ export function createApp() {
     response.setHeader('x-request-id', requestId)
     next()
   })
+  app.use(rejectQueryShapedInput)
 
   app.get('/api/v1/internal/health', (_request, response) => response.json({ data: { status: 'ok' }, meta: {} }))
   app.get('/api/v1/internal/readiness', async (_request, response, next) => {

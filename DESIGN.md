@@ -326,6 +326,14 @@ Patrón horizontal de `4px`: mitad transparente, mitad negro al `20%`, con opaci
 }
 ```
 
+### 8.1 Estados de carga diferida
+
+- La carga de identidad o del núcleo público ocupa la pantalla completa sobre el fondo Ultrawave y utiliza un mensaje monoespaciado breve, como “SINCRONIZANDO IDENTIDAD…”.
+- La carga de una ruta privada conserva el shell, la navegación y el fondo. El contenido usa skeletons con las dimensiones aproximadas de la vista final para evitar saltos de layout.
+- La Tienda puede mostrar un skeleton dentro del panel de Gamificación; no debe reemplazar el encabezado ni las pestañas ya disponibles.
+- Los errores de descarga de un chunk se presentan en una tarjeta synth con explicación y acción de reintento/recarga. Nunca se deja una pantalla vacía.
+- Los indicadores incluyen texto accesible o `aria-live`; el movimiento es decorativo y respeta `prefers-reduced-motion`.
+
 ## 9. Accesibilidad
 
 - Contraste mínimo `4.5:1` en texto normal y `3:1` en texto grande y componentes.

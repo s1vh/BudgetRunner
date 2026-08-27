@@ -302,7 +302,7 @@ Protegidas por credencial de servicio:
 - `403` no autorizado o compra bloqueada.
 - `404` recurso inexistente o ajeno.
 - `409` conflicto/idempotencia/estado.
-- `422` regla de negocio incumplida.
+- `422` regla de negocio incumplida o transmisión rechazada antes de alcanzar una ruta.
 - `429` rate limit.
 - `500` error no controlado.
 
@@ -316,6 +316,9 @@ Protegidas por credencial de servicio:
 - Revalidar oferta y bloqueo dentro de la transacción.
 - Recalcular nivel en el mismo commit de compra, daño o reparación cuando proceda.
 - Responder igual ante email existente/no existente en recuperación.
+- Mantener el texto SQL de rutas y servicios estático y enviar cualquier valor no confiable exclusivamente mediante parámetros `$n`.
+- Inspeccionar centralmente los textos de `body` y los campos de búsqueda antes de ejecutar lógica de dominio. Ante una transmisión rechazada, responder con un código y mensaje neutros, sin SQL, payload ni detalles del detector.
+- No aplicar la inspección de texto a credenciales opacas de proveedores OAuth; deben validarse mediante su contrato específico y nunca interpolarse en SQL.
 
 ## 14. Webhooks/eventos internos recomendados
 

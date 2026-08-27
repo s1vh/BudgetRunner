@@ -4,14 +4,21 @@ import { useAppData } from '@/app/AppDataContext'
 import { TransactionForm } from '@/components/forms/TransactionForm'
 import { Badge, Button, Input, Modal, PageSkeleton, Select, SynthCard } from '@/components/ui/primitives'
 import { PageHeader } from '@/components/ui/PageHeader'
-import type { FinancialTransaction, TransactionDraft } from '@/types/domain'
+import type { Category, FinancialTransaction, TransactionDraft } from '@/types/domain'
 import { formatDate, formatMoney } from '@/utils/format'
 import { useI18n } from '@/i18n/I18nContext'
 import { categoryLabel } from '@/i18n/categoryLabel'
+import { useCategoriesQuery, useTransactionsQuery } from '@/app/dataQueries'
+import { DataQueryState } from '@/components/routing/DataQueryState'
+
+const emptyTransactions: FinancialTransaction[] = []
+const emptyCategories: Category[] = []
 
 export function TransactionsPage() {
   const { t, td } = useI18n()
-  const { data, loading, createTransaction, updateTransaction, deleteTransaction } = useAppData()
+  const { profile, profileLoading, profileError, refreshProfile, createTransaction, updateTransaction, deleteTransaction } = useAppData()
+  const transactionsQuery = useTransactionsQuery()
+  const categoriesQuery = useCategoriesQuery()
   const [query, setQuery] = useState('')
   const [type, setType] = useState('all')
   const [category, setCategory] = useState('all')
@@ -20,11 +27,12 @@ export function TransactionsPage() {
   const [deleting, setDeleting] = useState<FinancialTransaction | null>(null)
   const [deletingBusy, setDeletingBusy] = useState(false)
   const [feedback, setFeedback] = useState<string | null>(null)
+  const transactions = transactionsQuery.data ?? emptyTransactions
+  const categories = categoriesQuery.data ?? emptyCategories
 
   const filtered = useMemo(() => {
-    if (!data) return []
-    return data.transactions.filter((transaction) => {
-      const matchedCategory = data.categories.find((item) => item.id === transaction.categoryId)
+    return transactions.filter((transaction) => {
+      const matchedCategory = categories.find((item) => item.id === transaction.categoryId)
       const localizedCategory = matchedCategory ? categoryLabel(matchedCategory, td) : transaction.categoryName
       const normalizedQuery = query.toLocaleLowerCase()
       const matchesQuery = transaction.concept.toLocaleLowerCase().includes(normalizedQuery)
@@ -32,9 +40,11 @@ export function TransactionsPage() {
         || localizedCategory.toLocaleLowerCase().includes(normalizedQuery)
       return matchesQuery && (type === 'all' || transaction.type === type) && (category === 'all' || transaction.categoryId === category) && (status === 'all' || transaction.status === status)
     })
-  }, [category, data, query, status, td, type])
+  }, [categories, category, query, status, td, transactions, type])
 
-  if (loading || !data) return <PageSkeleton />
+  const pending = profileLoading || transactionsQuery.isPending || categoriesQuery.isPending
+  const failed = Boolean(profileError) || transactionsQuery.isError || categoriesQuery.isError
+  if (pending || failed || !profile || !transactionsQuery.data || !categoriesQuery.data) return <DataQueryState pending={pending} error={failed} retry={() => { void refreshProfile(); void transactionsQuery.refetch(); void categoriesQuery.refetch() }}><PageSkeleton /></DataQueryState>
   const expenses = filtered.filter((item) => item.type === 'expense' && item.status === 'posted').reduce((sum, item) => sum + item.amountMinor, 0)
   const income = filtered.filter((item) => item.type === 'income' && item.status === 'posted').reduce((sum, item) => sum + item.amountMinor, 0)
 
@@ -64,16 +74,16 @@ export function TransactionsPage() {
       {feedback && <button type="button" onClick={() => setFeedback(null)} className="flex items-center justify-between rounded-lg border border-neon-cyan/25 bg-neon-cyan/5 p-3 text-left text-sm text-neon-cyan"><span>{feedback}</span><span className="font-mono text-[10px]">{t('common.close')}</span></button>}
 
       <div className="grid gap-4 sm:grid-cols-3" data-tour="transactions-summary">
-        <SynthCard className="p-4 pr-14" tone="magenta" helpKey="help.transactions.expense"><p className="font-mono text-[10px] text-text-muted uppercase">{t('transactions.filteredExpense')}</p><strong className="mt-2 block font-display text-xl text-neon-magenta tabular">{formatMoney(expenses, data.profile.primaryCurrency)}</strong></SynthCard>
-        <SynthCard className="p-4 pr-14" tone="cyan" helpKey="help.transactions.income"><p className="font-mono text-[10px] text-text-muted uppercase">{t('transactions.filteredIncome')}</p><strong className="mt-2 block font-display text-xl text-neon-cyan tabular">{formatMoney(income, data.profile.primaryCurrency)}</strong></SynthCard>
-        <SynthCard className="p-4 pr-14" tone="purple" helpKey="help.transactions.balance"><p className="font-mono text-[10px] text-text-muted uppercase">{t('transactions.visibleBalance')}</p><strong className="mt-2 block font-display text-xl text-tertiary tabular">{formatMoney(income - expenses, data.profile.primaryCurrency)}</strong></SynthCard>
+        <SynthCard className="p-4 pr-14" tone="magenta" helpKey="help.transactions.expense"><p className="font-mono text-[10px] text-text-muted uppercase">{t('transactions.filteredExpense')}</p><strong className="mt-2 block font-display text-xl text-neon-magenta tabular">{formatMoney(expenses, profile.primaryCurrency)}</strong></SynthCard>
+        <SynthCard className="p-4 pr-14" tone="cyan" helpKey="help.transactions.income"><p className="font-mono text-[10px] text-text-muted uppercase">{t('transactions.filteredIncome')}</p><strong className="mt-2 block font-display text-xl text-neon-cyan tabular">{formatMoney(income, profile.primaryCurrency)}</strong></SynthCard>
+        <SynthCard className="p-4 pr-14" tone="purple" helpKey="help.transactions.balance"><p className="font-mono text-[10px] text-text-muted uppercase">{t('transactions.visibleBalance')}</p><strong className="mt-2 block font-display text-xl text-tertiary tabular">{formatMoney(income - expenses, profile.primaryCurrency)}</strong></SynthCard>
       </div>
 
       <SynthCard className="p-4 pr-14 sm:p-5 sm:pr-16" helpKey="help.transactions.filters" data-tour="transactions-filters">
         <div className="grid gap-3 md:grid-cols-[minmax(240px,1fr)_repeat(3,minmax(150px,auto))]">
           <label className="relative"><span className="sr-only">{t('transactions.search')}</span><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-text-muted" /><Input className="pl-10" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t('transactions.search')} /></label>
           <Select value={type} onChange={(event) => setType(event.target.value)} aria-label={t('transactions.filterType')}><option value="all">{t('transactions.allTypes')}</option><option value="expense">{t('chart.expenses')}</option><option value="income">{t('chart.income')}</option></Select>
-          <Select value={category} onChange={(event) => setCategory(event.target.value)} aria-label={t('transactions.filterCategory')}><option value="all">{t('transactions.allCategories')}</option>{data.categories.map((item) => <option key={item.id} value={item.id}>{categoryLabel(item, td)}</option>)}</Select>
+          <Select value={category} onChange={(event) => setCategory(event.target.value)} aria-label={t('transactions.filterCategory')}><option value="all">{t('transactions.allCategories')}</option>{categories.map((item) => <option key={item.id} value={item.id}>{categoryLabel(item, td)}</option>)}</Select>
           <Select value={status} onChange={(event) => setStatus(event.target.value)} aria-label={t('transactions.filterStatus')}><option value="all">{t('transactions.allStatuses')}</option><option value="posted">{t('transactions.posted')}</option><option value="scheduled">{t('transactions.scheduled')}</option></Select>
         </div>
       </SynthCard>
@@ -87,7 +97,7 @@ export function TransactionsPage() {
               {filtered.map((transaction) => (
                 <tr key={transaction.id}>
                   <td data-label={t('transactions.concept')}><div><strong className="text-sm">{transaction.concept}</strong>{transaction.lockedByReward && <span className="ml-2 inline-flex items-center gap-1 font-mono text-[9px] text-sunset"><LockKeyhole className="size-3" />{t('transactions.lockShort')}</span>}</div></td>
-                  <td data-label={t('transactions.category')}><span className="text-sm text-text-muted">{categoryLabel(data.categories.find((item) => item.id === transaction.categoryId) ?? { name: transaction.categoryName }, td)}</span></td>
+                  <td data-label={t('transactions.category')}><span className="text-sm text-text-muted">{categoryLabel(categories.find((item) => item.id === transaction.categoryId) ?? { name: transaction.categoryName }, td)}</span></td>
                   <td data-label={t('transactions.date')}><span className="font-mono text-xs text-text-muted">{formatDate(transaction.occurredAt)}</span></td>
                   <td data-label={t('transactions.status')}><Badge tone={transaction.status === 'posted' ? 'success' : 'purple'}>{transaction.status === 'posted' ? t('transactions.posted') : t('transactions.scheduled')}</Badge></td>
                   <td data-label={t('transactions.amount')}><span className={`font-mono text-sm font-bold tabular ${transaction.type === 'income' ? 'text-neon-cyan' : 'text-neon-magenta'}`}>{transaction.type === 'income' ? '+' : '−'}{formatMoney(transaction.amountMinor, transaction.currency)}</span></td>
@@ -101,7 +111,7 @@ export function TransactionsPage() {
       </SynthCard>
 
       <Modal open={Boolean(editing)} onClose={() => setEditing(null)} title={editing === 'new' ? t('transactions.new') : t('transactions.editTitle')} description={t('transactions.editDescription')}>
-        {editing && <TransactionForm key={editing === 'new' ? 'new' : editing.id} categories={data.categories} initial={editing === 'new' ? undefined : editing} onSubmit={save} onCancel={() => setEditing(null)} />}
+        {editing && <TransactionForm key={editing === 'new' ? 'new' : editing.id} categories={categories} initial={editing === 'new' ? undefined : editing} onSubmit={save} onCancel={() => setEditing(null)} />}
       </Modal>
       <Modal open={Boolean(deleting)} onClose={() => setDeleting(null)} title={t('transactions.deleteTitle')} description={deleting ? t('transactions.deleteQuestion', { name: deleting.concept }) : undefined}>
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><Button variant="ghost" onClick={() => setDeleting(null)}>{t('common.cancel')}</Button><Button variant="magenta" icon={Trash2} loading={deletingBusy} onClick={() => void confirmDelete()}>{t('common.delete')}</Button></div>

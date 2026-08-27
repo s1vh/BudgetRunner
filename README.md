@@ -13,6 +13,8 @@ A responsive personal finance and cyberdeck gamification web application. The fr
 - `DESIGN.md`: Ultrawave visual system.
 - `TEST_PLAN.md`: functional, economic, and responsive scenarios.
 - `I18N.md`: multilingual architecture and local language-testing guide.
+- `FRONTEND_ARCHITECTURE.md`: frontend boundaries, code splitting, and loading/error rules.
+- `BACKLOG.md`: identified future work and resolution history; entries are informational until prioritized.
 - `ROADMAP.md`: MVP implementation phases.
 - `DEPLOYMENT_FREE_TIER.md`: `prod` deployment on Firebase, Vercel, and Neon.
 - `PROD_DEMO_RESET.md`: safe local procedure for restoring the live demo user.
@@ -20,29 +22,48 @@ A responsive personal finance and cyberdeck gamification web application. The fr
 
 ## Branch strategy
 
-Use `dev` for development, `main` for stable work, and `prod` for the hybrid deployment configuration. The normal promotion flow is `dev` → `main` → `prod`; see `CONTRIBUTING.md` for the complete workflow and exceptions.
+Use `dev` for development, `main` for stable work, and `prod` for the hybrid deployment configuration. The normal promotion flow is `dev` → `main` → `prod`; Vercel only builds `prod`. See `CONTRIBUTING.md` for publishing, validation, backlog, and promotion rules.
 
 ## Local setup
 
 Requirements: Node.js 22 or later and Docker Desktop.
 
+Run every command below from the repository root, where the top-level `package.json` is located.
+
+On the first setup, or after dependency changes:
+
 ```bash
-npm --prefix backend install
-npm --prefix frontend install
+npm --prefix backend ci
+npm --prefix frontend ci
 npm run db:up
+docker compose ps
 npm run db:setup
 ```
 
-Start the API and frontend in two terminals:
+Wait until `docker compose ps` reports PostgreSQL as healthy before running `db:setup`. The setup applies pending migrations and runs an idempotent development seed: it creates the local demo user when missing and restores its canonical password and display name when it already exists. Local seed data is independent from the live Firebase/Neon demo account.
+
+For a normal full-stack start, keep PostgreSQL running and start the API and frontend from the repository root in two terminals:
 
 ```bash
+# API terminal
+npm run db:up
 npm run dev:api
+
+# Web terminal
 npm run dev:web
 ```
 
 - Web: `http://127.0.0.1:5173`
 - API: `http://127.0.0.1:3001/api/v1`
 - Readiness: `http://127.0.0.1:3001/api/v1/internal/readiness`
+
+After starting the API, this PowerShell check must return `status: ok` before attempting to log in:
+
+```powershell
+Invoke-RestMethod 'http://127.0.0.1:3001/api/v1/internal/readiness'
+```
+
+If login returns HTTP 500, check readiness and `docker compose ps`: the API cannot currently use PostgreSQL. Start the database, wait for it to be healthy, run `npm run db:setup`, and restart the API. HTTP 401 instead means the request reached the database but the credentials were rejected.
 
 Development identity created by the seed:
 
