@@ -6,9 +6,11 @@ Este fichero registra trabajo futuro ya identificado, pero **no autoriza su impl
 
 ### BR-BL-001 — Dividir la carga de datos por áreas funcionales
 
-**Estado:** pendiente
+**Estado:** en curso
 
-**Prioridad:** por determinar
+**Prioridad:** alta
+
+**Rama de trabajo:** `codex/feature/data-loading-splitting`
 
 **Dependencia:** estabilizar primero el code splitting de JavaScript.
 
