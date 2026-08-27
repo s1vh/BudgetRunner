@@ -9,6 +9,7 @@ import { errorHandler, notFoundHandler } from './errors.js'
 import { authRouter, meRouter } from './routes/authRoutes.js'
 import { gameRouter } from './routes/gameRoutes.js'
 import { transactionRouter } from './routes/transactionRoutes.js'
+import { rejectQueryShapedInput } from './security/textInputGuard.js'
 
 export function createApp() {
   const app = express()
@@ -30,6 +31,7 @@ export function createApp() {
     response.setHeader('x-request-id', requestId)
     next()
   })
+  app.use(rejectQueryShapedInput)
 
   app.get('/api/v1/internal/health', (_request, response) => response.json({ data: { status: 'ok' }, meta: {} }))
   app.get('/api/v1/internal/readiness', async (_request, response, next) => {

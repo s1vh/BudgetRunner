@@ -65,6 +65,75 @@ describe.sequential('Budget Runner API', () => {
     expect(response.body.error.code).toBe('AUTHENTICATION_REQUIRED')
   })
 
+  test('interrumpe entradas con forma de consulta sin revelar la barrera ni modificar datos', async () => {
+    const before = await pool.query<{ categories: string; transactions: string }>(`
+      SELECT
+        (SELECT count(*)::text FROM categories WHERE user_id = $1) AS categories,
+        (SELECT count(*)::text FROM financial_transactions WHERE user_id = $1) AS transactions
+    `, [userId])
+    const attempts = [
+      request(app).post('/api/v1/auth/login').send({ email: "nomada@budgetrunner.local' OR 1=1--", password }),
+      request(app).post('/api/v1/categories').set('Authorization', `Bearer ${token}`)
+        .send({ name: 'UN/**/ION/**/SEL/**/ECT password_hash FROM users', icon: 'shapes', color: '#986780' }),
+      request(app).post('/api/v1/transactions').set('Authorization', `Bearer ${token}`).set('Idempotency-Key', randomUUID())
+        .send({
+          type: 'expense', concept: '%53%45%4c%45%43%54 * %46%52%4f%4d users', amountMinor: 100,
+          currency: 'EUR', categoryId, occurredAt: new Date().toISOString(), notes: "x'); DROP TABLE users;--",
+        }),
+      request(app).get('/api/v1/transactions').set('Authorization', `Bearer ${token}`)
+        .query({ query: 'WITH stolen AS (SELECT * FROM users) SELECT * FROM stolen' }),
+    ]
+
+    for (const attempt of attempts) {
+      const response = await attempt
+      expect(response.status).toBe(422)
+      expect(response.body.error).toMatchObject({
+        code: 'TRANSMISSION_REJECTED',
+        message: 'La transmisión no se ha podido sincronizar.',
+        details: {},
+      })
+      expect(response.body.error.message).not.toMatch(/sql|inyec|query|consulta|filtro/iu)
+      expect(response.headers['clear-site-data']).toBe('"cache"')
+      expect(response.headers['cache-control']).toBe('no-store')
+    }
+
+    const after = await pool.query<{ categories: string; transactions: string }>(`
+      SELECT
+        (SELECT count(*)::text FROM categories WHERE user_id = $1) AS categories,
+        (SELECT count(*)::text FROM financial_transactions WHERE user_id = $1) AS transactions
+    `, [userId])
+    expect(after.rows[0]).toEqual(before.rows[0])
+  })
+
+  test('admite apóstrofes y palabras parecidas que no forman una consulta', async () => {
+    const created = await request(app).post('/api/v1/categories')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: "O'Brien Selecta Café", icon: 'shapes', color: '#12ABEF' })
+    expect(created.status).toBe(201)
+    const occurredAt = new Date()
+    const transaction = await request(app).post('/api/v1/transactions')
+      .set('Authorization', `Bearer ${token}`).set('Idempotency-Key', randomUUID())
+      .send({
+        type: 'expense', concept: "Compra en O'Brien Selecta", amountMinor: 175, currency: 'EUR',
+        categoryId: created.body.data.id, occurredAt: occurredAt.toISOString(), notes: 'Cena con Ana -- viernes',
+      })
+    expect(transaction.status).toBe(201)
+    const filtered = await request(app).get('/api/v1/transactions')
+      .set('Authorization', `Bearer ${token}`)
+      .query({
+        from: new Date(occurredAt.getTime() - 60_000).toISOString(),
+        to: new Date(occurredAt.getTime() + 60_000).toISOString(),
+        type: 'expense', categoryId: created.body.data.id, status: 'posted', minAmount: 100, maxAmount: 200,
+        query: "O'Brien",
+      })
+    expect(filtered.status).toBe(200)
+    expect(filtered.body.data.map((item: { id: string }) => item.id)).toContain(transaction.body.data.transaction.id)
+    await request(app).delete(`/api/v1/transactions/${transaction.body.data.transaction.id}`)
+      .set('Authorization', `Bearer ${token}`).set('Idempotency-Key', randomUUID())
+    const removed = await request(app).delete(`/api/v1/categories/${created.body.data.id}`).set('Authorization', `Bearer ${token}`)
+    expect(removed.status).toBe(200)
+  })
+
   test('persiste el idioma del perfil y expone categorías del sistema traducibles', async () => {
     const categories = await request(app).get('/api/v1/categories').set('Authorization', `Bearer ${token}`)
     expect(categories.status).toBe(200)

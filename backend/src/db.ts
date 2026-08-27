@@ -8,14 +8,14 @@ export const pool = new Pool({
   max: 12,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 5_000,
+  statement_timeout: 10_000,
+  query_timeout: 12_000,
+  lock_timeout: 5_000,
+  idle_in_transaction_session_timeout: 10_000,
 })
 
 export interface DbClient {
   query<Row extends QueryResultRow = QueryResultRow>(text: string, values?: unknown[]): Promise<QueryResult<Row>>
-}
-
-export async function query<Row extends QueryResultRow>(text: string, values: unknown[] = []) {
-  return pool.query<Row>(text, values)
 }
 
 export async function withTransaction<T>(operation: (client: DbClient) => Promise<T>, attempts = 3): Promise<T> {

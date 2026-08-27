@@ -7,6 +7,7 @@ import { displayErrorMessage } from '@/i18n/apiErrors'
 import type { SupportedLocale } from '@/i18n/locales'
 import { readProfileBootstrap } from '@/services/profileBootstrap'
 import { repository } from '@/services/repository'
+import { enforceSafeUserInput, registerSecurityCachePurge } from '@/security/securityReset'
 import type {
   BudgetDraft,
   Category,
@@ -62,6 +63,8 @@ function AppDataStateProvider({ children }: { children: ReactNode }) {
     if (profile) syncProfileLocale(profile.locale)
   }, [profile, syncProfileLocale])
 
+  useEffect(() => registerSecurityCachePurge(() => queryClient.clear()), [queryClient])
+
   const run = useCallback(async <T,>(operation: () => Promise<T>) => {
     try {
       return await operation()
@@ -84,11 +87,13 @@ function AppDataStateProvider({ children }: { children: ReactNode }) {
     profileError: profileQuery.error ? errorMessage(profileQuery.error) : null,
     refreshProfile,
     createCategory: (draft) => run(async () => {
+      enforceSafeUserInput(draft)
       const category = await repository.createCategory(draft)
       await invalidate(dataQueryKeys.categories, dataQueryKeys.transactions, dataQueryKeys.dashboard)
       return category
     }),
     updateCategory: (id, draft) => run(async () => {
+      enforceSafeUserInput(draft)
       const category = await repository.updateCategory(id, draft)
       await invalidate(dataQueryKeys.categories, dataQueryKeys.transactions, dataQueryKeys.dashboard)
       return category
@@ -98,11 +103,13 @@ function AppDataStateProvider({ children }: { children: ReactNode }) {
       await invalidate(dataQueryKeys.categories, dataQueryKeys.transactions, dataQueryKeys.dashboard)
     }),
     createTransaction: (draft) => run(async () => {
+      enforceSafeUserInput(draft)
       const result = await repository.createTransaction(draft)
       queryClient.setQueryData(dataQueryKeys.dashboard, result.dashboard)
       await invalidate(dataQueryKeys.transactions)
     }),
     updateTransaction: (id, draft) => run(async () => {
+      enforceSafeUserInput(draft)
       const result = await repository.updateTransaction(id, draft)
       queryClient.setQueryData(dataQueryKeys.dashboard, result.dashboard)
       await invalidate(dataQueryKeys.transactions)
@@ -113,6 +120,7 @@ function AppDataStateProvider({ children }: { children: ReactNode }) {
       await invalidate(dataQueryKeys.transactions)
     }),
     createBudget: (draft) => run(async () => {
+      enforceSafeUserInput(draft)
       await repository.createBudget(draft)
       await invalidate(dataQueryKeys.budgets, dataQueryKeys.dashboard)
     }),

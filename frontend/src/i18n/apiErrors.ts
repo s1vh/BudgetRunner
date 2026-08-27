@@ -8,6 +8,7 @@ const errorKeys: Record<string, TranslationKey> = {
   REFRESH_TOKEN_REQUIRED: 'error.authentication',
   INVALID_CREDENTIALS: 'error.invalidCredentials',
   VALIDATION_ERROR: 'error.invalidInput',
+  TRANSMISSION_REJECTED: 'error.requestFailed',
   INVALID_REFERENCE: 'error.invalidInput',
   INVALID_CATEGORY: 'error.invalidInput',
   FUTURE_TRANSACTION_MUST_BE_SCHEDULED: 'error.invalidInput',
