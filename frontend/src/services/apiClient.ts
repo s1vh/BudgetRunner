@@ -1,6 +1,7 @@
 import { apiErrorMessage } from '@/i18n/apiErrors'
 import { catalogs } from '@/i18n/messages'
 import { getRuntimeLocale } from '@/i18n/locales'
+import { recordApiRequest } from '@/services/apiRequestMetrics'
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? '/api/v1'
 const tokenKey = 'budget-runner-access-token'
@@ -71,29 +72,37 @@ class ApiClient {
   }
 
   async request<T>(path: string, init: RequestInit = {}, retry = true): Promise<T> {
+    const startedAt = performance.now()
+    let responseStatus = 0
     const headers = new Headers(init.headers)
     if (init.body && !headers.has('content-type')) headers.set('content-type', 'application/json')
     if (this.accessToken) headers.set('authorization', `Bearer ${this.accessToken}`)
     let response: Response
     try {
       response = await fetch(`${baseUrl}${path}`, { ...init, headers, credentials: 'include' })
+      responseStatus = response.status
     } catch {
+      recordApiRequest(init.method ?? 'GET', path, startedAt, responseStatus)
       throw unreachableError()
     }
-    if (response.status === 401 && retry && !path.startsWith('/auth/')) {
-      if (await this.refresh()) return this.request<T>(path, init, false)
+    try {
+      if (response.status === 401 && retry && !path.startsWith('/auth/')) {
+        if (await this.refresh()) return this.request<T>(path, init, false)
+      }
+      if (response.status === 204) return undefined as T
+      const payload = await readPayload<T>(response)
+      if (!payload) {
+        if (response.ok) return undefined as T
+        throw new ApiClientError(response.status, 'EMPTY_API_RESPONSE', `${apiErrorMessage('EMPTY_API_RESPONSE')} (HTTP ${response.status})`)
+      }
+      if (!response.ok || payload.error) {
+        const code = payload.error?.code ?? 'HTTP_ERROR'
+        throw new ApiClientError(response.status, code, apiErrorMessage(code), payload.error?.details)
+      }
+      return payload.data as T
+    } finally {
+      recordApiRequest(init.method ?? 'GET', path, startedAt, responseStatus)
     }
-    if (response.status === 204) return undefined as T
-    const payload = await readPayload<T>(response)
-    if (!payload) {
-      if (response.ok) return undefined as T
-      throw new ApiClientError(response.status, 'EMPTY_API_RESPONSE', `${apiErrorMessage('EMPTY_API_RESPONSE')} (HTTP ${response.status})`)
-    }
-    if (!response.ok || payload.error) {
-      const code = payload.error?.code ?? 'HTTP_ERROR'
-      throw new ApiClientError(response.status, code, apiErrorMessage(code), payload.error?.details)
-    }
-    return payload.data as T
   }
 }
 

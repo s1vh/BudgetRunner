@@ -34,9 +34,49 @@ Los bloques funcionales se emiten por separado y no aparecen en el HTML inicial:
 
 Los módulos compartidos pueden acabar en chunks comunes generados por Vite. No se deben forzar `manualChunks` solo para ocultar una advertencia: primero se emplean límites de `import()` estables y después se ajusta la configuración únicamente si las mediciones lo justifican.
 
-### Carga de datos
+## Splitting de datos
 
-El code splitting descrito aquí afecta solo al JavaScript. `AppDataProvider` mantiene por ahora la carga completa de datos al entrar en la zona privada. Dividir las peticiones y el estado está registrado como `BR-BL-001` en `BACKLOG.md` y queda fuera de este cambio.
+### Problema de partida
+
+Hasta `BR-BL-001`, entrar en cualquier ruta privada ejecutaba un único `getSnapshot()` que lanzaba nueve lecturas en paralelo: dashboard, transacciones, categorías, progreso, cyberdeck, tienda, historial, bonus de familias y perfil. Cada mutación volvía a descargar el snapshot completo, aunque la pantalla activa solo utilizara una parte.
+
+### Límites y caché
+
+La implementación incorporada desde `codex/feature/data-loading-splitting` añade TanStack Query 5.102.8 dentro del chunk privado y sustituye el snapshot global por consultas independientes. `AppDataProvider` conserva las acciones y el perfil compartido por el shell, mientras que cada página o pestaña solicita sus propios recursos:
+
+| Área visible | Datos solicitados |
+| --- | --- |
+| Shell privado | Perfil (`/me`); al restaurar una sesión se reutiliza el perfil completo ya obtenido por autenticación y no se duplica la llamada. |
+| Dashboard | Dashboard y categorías. |
+| Gastos | Transacciones y categorías; utiliza el perfil ya compartido para la moneda. |
+| Presupuestos | Presupuestos y categorías. Mientras no exista la vertical persistente, los presupuestos proceden del repositorio mock/local y no de una API ficticia. |
+| Perfil | Perfil compartido. |
+| Ajustes | Perfil compartido; categorías solo al montar su gestor. |
+| Gamificación · Resumen | Resumen de progreso y bonus de familias. |
+| Gamificación · Cyberdeck / Reparaciones | Slots y módulos del cyberdeck. |
+| Gamificación · Tienda | Resumen de progreso e inventario rotatorio; código e inventario se precargan con hover o foco y se solicitan al seleccionar la pestaña o cuando el tour la necesita. |
+| Gamificación · Registro | Historial del juego. |
+
+Las consultas mantienen datos frescos durante 30 segundos por defecto, dos minutos para categorías y cinco minutos para el perfil. No se refrescan solo por recuperar el foco de la ventana. El caché se destruye al desmontar la zona autenticada.
+
+### Coherencia después de mutar
+
+- Crear, editar o borrar una transacción aprovecha el dashboard recalculado que ya devuelve la API e invalida únicamente la lista de transacciones.
+- Cambiar categorías invalida categorías, transacciones y dashboard; TanStack Query solo vuelve a solicitar en ese momento las consultas activas y deja el resto marcado como obsoleto.
+- Crear un presupuesto invalida presupuestos y dashboard. La API real seguirá pendiente hasta `BR-BL-005`.
+- Cambiar idioma, preferencias o completar el tour actualiza directamente el perfil en caché.
+- Comprar o reparar recibe el estado completo del juego, reparte sus piezas entre las consultas correspondientes e invalida perfil y dashboard para recoger los saldos derivados.
+
+Los repositorios HTTP y mock implementan el mismo contrato granular. No se deben reintroducir agregadores que consulten todos los recursos para simplificar una pantalla.
+
+### Espera, error y medición
+
+- Cada recurso muestra primero un skeleton estable. El texto de sincronización aparece solo a partir de **700 ms**, para no generar parpadeos, y a los **3 s** añade un aviso accesible de que el proveedor sigue respondiendo.
+- Un error de datos queda contenido en la sección afectada y permite reintentar su consulta sin recargar toda la aplicación. Los errores de descarga de JavaScript siguen siendo responsabilidad de `AsyncBoundary`.
+- `apiClient` conserva en `window.__BUDGET_RUNNER_API_METRICS__` las últimas 200 peticiones con método, ruta normalizada, estado y duración. Los UUID y query strings no se guardan. Las mismas operaciones quedan registradas como medidas `budget-runner:api:*` en la Performance API.
+- Para una medición manual, vacía el array antes del recorrido y consulta después `console.table(window.__BUDGET_RUNNER_API_METRICS__)`. Combínalo con Network/Performance del navegador para payload, waterfalls y tiempo hasta contenido útil bajo la latencia real de Vercel y Neon.
+
+La validación cubrió build, lint, 13 tests de integración, contrato de chunks y navegación por todas las áreas y pestañas. El mantenedor aprobó la experiencia local el 27 de agosto de 2026. La observación de métricas con los proveedores reales queda como seguimiento operativo del próximo despliegue autorizado, no como una condición pendiente de implementación.
 
 ### Experiencia de carga
 
