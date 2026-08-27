@@ -10,14 +10,21 @@ import { Button, Modal, PageSkeleton, Progress, SynthCard } from '@/components/u
 import { StatCard } from '@/components/ui/StatCard'
 import { formatMoney, formatNumber } from '@/utils/format'
 import { useI18n } from '@/i18n/I18nContext'
+import { useCategoriesQuery, useDashboardQuery } from '@/app/dataQueries'
+import { DataQueryState } from '@/components/routing/DataQueryState'
 
 export function DashboardPage() {
   const { t, td } = useI18n()
-  const { data, loading, createTransaction } = useAppData()
+  const { createTransaction } = useAppData()
+  const dashboardQuery = useDashboardQuery()
+  const categoriesQuery = useCategoriesQuery()
   const [formOpen, setFormOpen] = useState(false)
-  if (loading || !data) return <PageSkeleton />
+  const pending = dashboardQuery.isPending || categoriesQuery.isPending
+  const failed = dashboardQuery.isError || categoriesQuery.isError
+  if (pending || failed || !dashboardQuery.data || !categoriesQuery.data) return <DataQueryState pending={pending} error={failed} retry={() => { void dashboardQuery.refetch(); void categoriesQuery.refetch() }}><PageSkeleton /></DataQueryState>
 
-  const { dashboard } = data
+  const dashboard = dashboardQuery.data
+  const categories = categoriesQuery.data
   const progressValue = dashboard.progress.totalFlux - dashboard.progress.currentLevelFlux
   const progressMax = dashboard.progress.nextLevelFlux - dashboard.progress.currentLevelFlux
 
@@ -49,7 +56,7 @@ export function DashboardPage() {
         </SynthCard>
         <SynthCard className="p-5 pr-14 sm:p-6 sm:pr-16" helpKey="help.dashboard.recent" data-tour="dashboard-recent">
           <div className="mb-2 flex items-center justify-between"><div className="flex items-center gap-2"><ReceiptText className="size-4 text-neon-magenta" /><h2 className="font-display text-sm font-bold tracking-wider uppercase">{t('dashboard.transmissions')}</h2></div><Link to="/transactions" className="font-mono text-[10px] text-neon-cyan hover:underline">{t('dashboard.viewAll')}</Link></div>
-          <TransactionList transactions={dashboard.recentTransactions} categories={data.categories} limit={4} />
+          <TransactionList transactions={dashboard.recentTransactions} categories={categories} limit={4} />
         </SynthCard>
       </div>
 
@@ -63,7 +70,7 @@ export function DashboardPage() {
       </section>
 
       <Modal open={formOpen} onClose={() => setFormOpen(false)} title={t('dashboard.newOperation')} description={t('dashboard.operationDescription')}>
-        <TransactionForm categories={data.categories} onCancel={() => setFormOpen(false)} onSubmit={async (draft) => { await createTransaction(draft); setFormOpen(false) }} />
+        <TransactionForm categories={categories} onCancel={() => setFormOpen(false)} onSubmit={async (draft) => { await createTransaction(draft); setFormOpen(false) }} />
       </Modal>
     </div>
   )

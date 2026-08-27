@@ -5,6 +5,8 @@ import { apiClient } from '@/services/apiClient'
 import { useI18n } from '@/i18n/I18nContext'
 import type { SupportedLocale } from '@/i18n/locales'
 import { FullPageLoader } from '@/components/routing/AsyncBoundary'
+import { clearProfileBootstrap, primeProfileBootstrap } from '@/services/profileBootstrap'
+import type { UserProfile } from '@/types/domain'
 
 interface AuthUser { id: string; email: string; displayName: string }
 interface RegisterInput { email: string; password: string; displayName: string; currency: string; timezone: string; locale: SupportedLocale }
@@ -30,11 +32,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let active = true
     async function restore() {
       try {
-        if (!apiClient.hasAccessToken() && !await apiClient.refresh()) return
-        const current = await apiClient.request<AuthUser>('/me')
-        if (active) setUser(current)
+        if (!apiClient.hasAccessToken() && !await apiClient.refresh()) {
+          clearProfileBootstrap()
+          return
+        }
+        const current = await apiClient.request<UserProfile>('/me')
+        if (active) {
+          primeProfileBootstrap(current)
+          setUser(current)
+        }
       } catch {
         apiClient.setAccessToken(null)
+        clearProfileBootstrap()
       } finally {
         if (active) setLoading(false)
       }
@@ -48,12 +57,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     async login(email, password) {
       if (!usesApi) { setUser({ id: 'mock-user', email, displayName: 'Nómada' }); return }
+      clearProfileBootstrap()
       const result = await apiClient.request<{ accessToken: string; user: AuthUser }>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) })
       apiClient.setAccessToken(result.accessToken)
       setUser(result.user)
     },
     async register(input) {
       if (!usesApi) { setUser({ id: 'mock-user', email: input.email, displayName: input.displayName }); return }
+      clearProfileBootstrap()
       const result = await apiClient.request<{ accessToken: string; user: AuthUser }>('/auth/register', { method: 'POST', body: JSON.stringify(input) })
       apiClient.setAccessToken(result.accessToken)
       setUser(result.user)
@@ -61,12 +72,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async completeGoogleLogin() {
       if (!usesApi) { setUser({ id: 'mock-google-user', email: 'google@local', displayName: 'Nómada Google' }); return }
       if (!await apiClient.refresh()) throw new Error(t('auth.google.failed'))
-      const current = await apiClient.request<AuthUser>('/me')
+      const current = await apiClient.request<UserProfile>('/me')
+      primeProfileBootstrap(current)
       setUser(current)
     },
     async logout() {
       if (usesApi) await apiClient.request<void>('/auth/logout', { method: 'POST' }).catch(() => undefined)
       apiClient.setAccessToken(null)
+      clearProfileBootstrap()
       setUser(null)
     },
   }), [loading, t, user])
