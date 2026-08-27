@@ -2,15 +2,16 @@
 
 [English version](CONTRIBUTING.md)
 
-Este fichero es la referencia canónica para el flujo de trabajo del repositorio y la promoción entre ramas. El comportamiento y los requisitos del producto pertenecen a `PRD.md`; los detalles de despliegue pertenecen a `DEPLOYMENT_FREE_TIER.md`.
+Este fichero es la referencia canónica para el flujo de trabajo del repositorio, la promoción entre ramas y el mantenimiento del backlog. El comportamiento y los requisitos del producto pertenecen a `PRD.md`; el trabajo futuro identificado pertenece a `BACKLOG.md`; los detalles de despliegue pertenecen a `DEPLOYMENT_FREE_TIER.md` cuando ese fichero exista en la rama de despliegue.
 
 ## Función de cada rama
 
 ### `dev`: rama principal de desarrollo
 
 - Desarrolla las nuevas funcionalidades y los fixes en `dev`.
-- Cuando un cambio necesite aislamiento, crea a partir de `dev` una rama temática de corta duración, por ejemplo `feature/...` o `fix/...`.
+- Cuando un cambio sea complejo, delicado o necesite aislamiento, crea a partir de `dev` una rama temática de corta duración, preferentemente `codex/feature/...` o `codex/fix/...` para trabajo realizado con Codex.
 - Fusiona el trabajo terminado de nuevo en `dev` después de realizar las verificaciones apropiadas.
+- El código integrado en `dev` se prueba localmente y necesita aceptación del mantenedor antes de promoverse a `main`. La documentación puede actualizarse y publicarse sin esperar esa validación funcional.
 
 ### `main`: rama estable
 
@@ -38,6 +39,21 @@ rama temática (opcional, creada desde dev)
 
 El recorrido normal es `dev` → `main` → `prod`. Las ramas temáticas vuelven normalmente a `dev`; la promoción directa a `main` se reserva para una funcionalidad completa o un fix urgente que la justifique.
 
+## Publicación y despliegue
+
+- Se pueden publicar commits y ramas temáticas en remoto como parte del trabajo normal, después de revisar que no contienen secretos ni cambios ajenos a la tarea.
+- Publicar una rama temática o `dev` no autoriza promoverla a `main`; la promoción requiere que el código esté completo, verificado y aceptado.
+- `main` conserva exclusivamente trabajo estable. `prod` se actualiza únicamente desde `main` y nunca recibe desarrollo directo.
+- Vercel tiene `prod` como Production Branch e ignora los builds Git de cualquier otra rama. Un push a `prod` puede iniciar un despliegue real y exige la aprobación de release correspondiente.
+- Firebase se despliega únicamente desde `prod` mediante su procedimiento documentado; un push Git por sí solo no sustituye esa verificación.
+
+## Gestión del backlog
+
+- `BACKLOG.md` es la fuente informativa de trabajo futuro identificado. Una entrada no autoriza a implementarla ni cambia el alcance del hilo actual.
+- Antes de comenzar una entrada, el mantenedor confirma prioridad, alcance y criterios de aceptación. Al iniciarla, se marca como **en curso** y se anota la rama de trabajo.
+- Las entradas resueltas no se borran: se marcan como **resueltas**, se mueven al historial y se completan con fecha, resultado, decisiones, commits o pull requests, verificaciones y deuda residual pertinente.
+- Los hallazgos nuevos que queden fuera del alcance actual se añaden al backlog en vez de incorporarse silenciosamente a la implementación.
+
 ## Lista de comprobación
 
 Antes de promocionar un cambio:
@@ -48,4 +64,4 @@ Antes de promocionar un cambio:
 - Comprueba que no se incluyan credenciales, ficheros de entorno local, metadatos de despliegue generados ni trabajo no relacionado.
 - Al actualizar `prod`, confirma que su configuración de despliegue híbrido sigue funcionando y que la release se prepara desde `main`.
 
-La publicación en un repositorio remoto y el despliegue son acciones distintas y explícitas. Un commit o merge local no autoriza ninguna de ellas.
+La sincronización remota durante el desarrollo está permitida, pero la promoción y el despliegue siguen siendo decisiones separadas con sus propias comprobaciones.

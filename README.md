@@ -13,12 +13,14 @@ A responsive personal finance and cyberdeck gamification web application. The fr
 - `DESIGN.md`: Ultrawave visual system.
 - `TEST_PLAN.md`: functional, economic, and responsive scenarios.
 - `I18N.md`: multilingual architecture and local language-testing guide.
+- `FRONTEND_ARCHITECTURE.md`: frontend boundaries, code splitting, and loading/error rules.
+- `BACKLOG.md`: identified future work and resolution history; entries are informational until prioritized.
 - `ROADMAP.md`: MVP implementation phases.
 - `CONTRIBUTING.md`: branch roles, promotion flow, and release-readiness checklist.
 
 ## Branch strategy
 
-Use `dev` for development, `main` for stable work, and `prod` for the hybrid deployment configuration. The normal promotion flow is `dev` → `main` → `prod`; see `CONTRIBUTING.md` for the complete workflow and exceptions.
+Use `dev` for development, `main` for stable work, and `prod` for the hybrid deployment configuration. The normal promotion flow is `dev` → `main` → `prod`; Vercel only builds `prod`. See `CONTRIBUTING.md` for publishing, validation, backlog, and promotion rules.
 
 ## Local setup
 
