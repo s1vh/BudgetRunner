@@ -31,10 +31,9 @@ const navItems: NavItem[] = [
 
 function DesktopNav() {
   const { t } = useI18n()
-  const { data } = useAppData()
+  const { profile } = useAppData()
   const { logout } = useAuth()
   const navigate = useNavigate()
-  const profile = data?.profile
   const initials = profile?.displayName.split(' ').map((part) => part[0]).slice(0, 2).join('') ?? 'BR'
   const levelProgress = profile ? profile.progress.totalFlux - profile.progress.currentLevelFlux : 0
   const levelRange = profile ? profile.progress.nextLevelFlux - profile.progress.currentLevelFlux : 1
@@ -79,8 +78,8 @@ function MobileNav() {
 
 export function AppShell() {
   const { t } = useI18n()
-  const { data } = useAppData()
-  const preferences = data?.profile.preferences
+  const { profile } = useAppData()
+  const preferences = profile?.preferences
   return (
     <div className={cn('min-h-screen', preferences?.reducedMotion && 'reduce-motion', preferences?.compactMode && 'compact-mode')}>
       <AmbientBackground ambientEffects={preferences?.ambientEffects} scanlines={preferences?.scanlines} />
