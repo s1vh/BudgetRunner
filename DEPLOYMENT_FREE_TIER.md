@@ -11,7 +11,7 @@ El cron diario es compatible con Hobby. Cada lectura de `GET /budgets` ejecuta a
 
 ## Estado operativo verificado
 
-Última revisión: **30 de julio de 2026**.
+Última revisión: **27 de agosto de 2026**.
 
 - Frontend live: `https://budget-runner-cyberdeck.web.app`.
 - API live: `https://budget-runner.vercel.app/api/v1`.
@@ -20,21 +20,20 @@ El cron diario es compatible con Hobby. Cada lectura de `GET /budgets` ejecuta a
 - Esquema PostgreSQL: `public`, con las 7 migraciones actuales aplicadas.
 - Rama de despliegue: `prod`; solo se actualiza desde `main`.
 
-### Pausa temporal de publicación
+### Publicación habilitada
 
-Durante el periodo de revisión de la hackathon no se debe modificar la aplicación desplegada ni sincronizar el repositorio remoto. Hasta **después del 12 de agosto de 2026** solo se prepararán cambios y commits locales. Tampoco debe provocarse un despliegue automático mediante push a `prod`.
+La pausa de publicación de la hackathon finalizó el **27 de agosto de 2026**. Se puede volver a sincronizar el repositorio y desplegar, manteniendo el flujo `dev` → `main` → `prod` y publicando únicamente desde `prod`.
 
-### Pendiente obligatorio antes del próximo despliegue
+### Preflight de base de datos
 
-La configuración **Production** actual de Vercel no inyectaba `DATABASE_URL` al comprobarla el 30 de julio de 2026. El deployment live puede seguir funcionando porque conserva la instantánea de variables con la que fue creado, pero las modificaciones de variables solo se aplican a deployments nuevos.
+La configuración **Production** de Vercel contiene `DATABASE_URL` como variable Sensitive. Estos valores son de solo escritura: funcionan dentro del deployment, pero Vercel no permite volver a leerlos desde el dashboard, `env pull` o `env run`. La ausencia de un valor legible localmente no significa que la variable falte.
 
-Después de la pausa y **antes de crear el siguiente deployment**:
+Antes de crear un deployment:
 
-1. restaura en Vercel Production una `DATABASE_URL` **pooled** que apunte a la rama `production` y la base `budget_runner`;
-2. conserva `DB_POOL_MAX=4`;
-3. ejecuta la comparación segura descrita en la sección de Vercel;
-4. no continúes si host o base no coinciden;
-5. despliega y valida health, readiness y los smoke tests.
+1. confirma con `vercel env ls production` que existe `DATABASE_URL` para Production;
+2. si hay cualquier duda sobre su origen, sobrescríbela como Sensitive con una URL **pooled** obtenida de la rama `production` y la base `budget_runner`;
+3. conserva `DB_POOL_MAX=4`;
+4. despliega y valida health, readiness y los smoke tests.
 
 ### Límites gratuitos relevantes
 
@@ -115,14 +114,14 @@ CRON_SECRET=secreto-aleatorio-de-32-o-mas-caracteres
 
 Vercel detecta `backend/src/index.ts`. `backend/vercel.json` registra a las `02:00 UTC` un cron diario contra `/api/v1/internal/jobs/close-due-periods`; en Hobby puede ejecutarse en cualquier momento de esa hora. Vercel enviará `CRON_SECRET` como Bearer token y no reintentará automáticamente una invocación fallida.
 
-Desde la raíz del repositorio, compara el `DATABASE_URL` efectivo de Vercel con el destino direct guardado para mantenimiento sin imprimir credenciales:
+Desde la raíz del repositorio, comprueba que la variable esté asignada a Production:
 
 ```powershell
 npx --package=vercel@latest -- vercel login
-npx --package=vercel@latest -- vercel env run -e production -- node scripts/compareProdDatabaseTargets.mjs
+npx --package=vercel@latest -- vercel env ls production
 ```
 
-El resultado debe mostrar el mismo endpoint base y `budget_runner`; es normal que Vercel use el host pooled y el mantenimiento el direct. Si informa que falta `DATABASE_URL`, resuelve el pendiente operativo anterior antes del siguiente despliegue.
+Si `DATABASE_URL` no es Sensitive, `vercel env run -e production -- node scripts/compareProdDatabaseTargets.mjs` compara host y base sin imprimir credenciales. Si es Sensitive, Vercel no entrega el valor al proceso local y la comparación no es posible: valida el destino al establecer o rotar la variable y confirma después el deployment mediante readiness y smoke tests.
 
 Comprobaciones tras desplegar:
 
@@ -141,7 +140,7 @@ npm --prefix frontend run build
 firebase deploy --only hosting
 ```
 
-No ejecutes estos comandos durante la pausa de publicación. Después de ella, verifica antes de desplegar que `frontend/dist` se ha compilado con `VITE_DATA_SOURCE=api` y la URL real de Vercel. La configuración pública de Firebase puede aparecer en el bundle; `CRON_SECRET`, la URL de Neon y las cuentas de servicio nunca deben estar en variables `VITE_*`.
+Antes de desplegar, verifica que `frontend/dist` se ha compilado con `VITE_DATA_SOURCE=api` y la URL real de Vercel. La configuración pública de Firebase puede aparecer en el bundle; `CRON_SECRET`, la URL de Neon y las cuentas de servicio nunca deben estar en variables `VITE_*`.
 
 ## 5. Smoke test
 
@@ -181,4 +180,4 @@ npm run prod:demo:reset -- confirm nomada@budgetrunner.local
 npm run prod:demo:reset
 ```
 
-Este mantenimiento de identidad y datos sí está permitido durante la pausa porque no cambia el código desplegado. El proyecto Firebase `budget-runner-cyberdeck` y los identificadores canónicos están fijados y validados por el script. Las variables `PROD_DEMO_DATABASE_URL` y `GOOGLE_APPLICATION_CREDENTIALS` quedan disponibles únicamente como overrides opcionales de las rutas relativas.
+El proyecto Firebase `budget-runner-cyberdeck` y los identificadores canónicos están fijados y validados por el script. Las variables `PROD_DEMO_DATABASE_URL` y `GOOGLE_APPLICATION_CREDENTIALS` quedan disponibles únicamente como overrides opcionales de las rutas relativas.

@@ -9,13 +9,14 @@ const vercelValue = process.env.DATABASE_URL?.trim()
 
 if (!vercelValue) {
   throw new Error(
-    'El entorno Production actual de Vercel no contiene DATABASE_URL. '
-    + 'Un deployment antiguo puede seguir usando su propia instantánea histórica, '
-    + 'pero un nuevo deployment no tendrá conexión hasta restaurar la variable.',
+    'DATABASE_URL no está disponible para el proceso local. La variable puede faltar '
+    + 'o estar marcada como Sensitive, en cuyo caso Vercel no permite volver a leerla. '
+    + 'Comprueba su presencia con `vercel env ls production`; si es Sensitive, valida '
+    + 'el destino al establecerla o rotarla y mediante los smoke tests del deployment.',
   )
 }
 if (vercelValue === '[SENSITIVE]') {
-  throw new Error('DATABASE_URL está redactada; ejecuta la comparación mediante `vercel env run`, no desde un archivo de Vercel pull.')
+  throw new Error('DATABASE_URL está redactada porque es Sensitive y no puede compararse localmente.')
 }
 
 const localUrl = new URL(localValue)

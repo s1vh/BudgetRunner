@@ -171,18 +171,24 @@ Antes de consultar usuarios o Firebase, el preflight comprueba que PostgreSQL co
 
 ### Comparar con el destino efectivo de Vercel
 
-Si el valor de `DATABASE_URL` aparece vacío en el dashboard, puede estar marcado como sensible: Vercel no vuelve a mostrar esos valores. Para comparar el destino efectivo sin imprimir usuario ni contraseña, inicia sesión en el CLI y ejecuta:
+Si el valor de `DATABASE_URL` aparece vacío en el dashboard, puede estar marcado como Sensitive: Vercel no vuelve a mostrar esos valores ni los entrega a `env pull` o `env run`. Confirma primero que la clave exista en Production:
 
 ```powershell
 npx --package=vercel@latest -- vercel login
+npx --package=vercel@latest -- vercel env ls production
+```
+
+Si la variable no es Sensitive, se puede comparar el destino efectivo sin imprimir usuario ni contraseña:
+
+```powershell
 npx --package=vercel@latest -- vercel env run -e production -- node scripts/compareProdDatabaseTargets.mjs
 ```
 
-Se necesitan dos separadores porque el primero entrega el comando al paquete ejecutado por `npx` y el segundo entrega `node …` a `vercel env run`. La comprobación usa el proyecto enlazado en `.\.vercel\` y muestra únicamente host, base y si la conexión es pooled. No escribe archivos ni modifica Vercel o Neon.
+La comprobación usa el proyecto enlazado en `.\.vercel\` y muestra únicamente host, base y si la conexión es pooled. No escribe archivos ni modifica Vercel o Neon. Con una variable Sensitive la comparación local no es técnicamente posible; valida el destino al establecerla o rotarla y confirma el deployment con readiness y los smoke tests.
 
 - Si endpoint o base no coinciden, vuelve a ejecutar `npm run prod:demo:setup` con la URL direct de la rama/base indicada para Vercel.
 - Si ambos coinciden pero el preflight informa que está vacía, no ejecutes el reset: primero debe confirmarse expresamente la inicialización de migraciones y seed en producción.
-- Si Vercel no inyecta `DATABASE_URL`, la variable falta en la configuración Production actual. Un deployment anterior puede seguir funcionando con la instantánea que recibió al crearse, pero el siguiente deployment no tendrá conexión. Localiza primero la rama Neon histórica o confirma el bootstrap de una base nueva antes de restaurar la variable pooled y redesplegar.
+- Si `vercel env ls production` no enumera `DATABASE_URL`, la variable falta. Un deployment anterior puede seguir funcionando con su instantánea histórica, pero el siguiente no tendrá conexión. Restaura una URL pooled de `production/budget_runner` antes de redesplegar.
 
 ## 4. Aplicar
 
