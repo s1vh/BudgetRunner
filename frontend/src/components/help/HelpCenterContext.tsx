@@ -79,22 +79,16 @@ function GuidedTour({ open, stepIndex, onStepChange, onExit, onFinish }: {
 
   useEffect(() => {
     if (!open) return
-    let observer: MutationObserver | null = null
     const measure = () => {
       const target = step.target ? document.querySelector<HTMLElement>(`[data-tour="${step.target}"]`) : null
       setTargetRect(target?.getBoundingClientRect() ?? null)
     }
     const reveal = () => {
       const target = step.target ? document.querySelector<HTMLElement>(`[data-tour="${step.target}"]`) : null
-      if (target) {
-        target.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'auto' })
-        observer?.disconnect()
-      }
+      if (target) target.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'auto' })
       else if (step.route) window.scrollTo({ top: 0, behavior: 'auto' })
       measure()
     }
-    observer = new MutationObserver(reveal)
-    observer.observe(document.body, { childList: true, subtree: true })
     const frame = window.requestAnimationFrame(reveal)
     const delayed = window.setTimeout(reveal, 180)
     window.addEventListener('resize', measure)
@@ -102,7 +96,6 @@ function GuidedTour({ open, stepIndex, onStepChange, onExit, onFinish }: {
     return () => {
       window.cancelAnimationFrame(frame)
       window.clearTimeout(delayed)
-      observer?.disconnect()
       window.removeEventListener('resize', measure)
       window.removeEventListener('scroll', measure, true)
     }

@@ -10,20 +10,6 @@ Reducir el JavaScript necesario para mostrar el acceso y evitar descargar áreas
 
 El éxito se mide por los recursos realmente solicitados y ejecutados en cada recorrido, no solo por eliminar el aviso de tamaño de Vite.
 
-### Resultado en `dev`
-
-El build de producción del 27 de agosto de 2026 deja el HTML inicial enlazado a **480,66 kB minificados / 173,50 kB gzip** de JavaScript (entry y chunks compartidos), una reducción del **18,8 % / 12,5 %** frente a la referencia. El entry principal pasa a **245,09 kB / 77,59 kB gzip**, un **58,6 %** menos en tamaño minificado, y desaparece el aviso de chunks superiores a 500 kB.
-
-Los bloques funcionales se emiten por separado y no aparecen en el HTML inicial:
-
-- Estructura privada: 5,90 kB / 2,28 kB gzip.
-- Finanzas: 39,37 kB / 10,03 kB gzip.
-- Cuenta: 23,58 kB / 6,12 kB gzip.
-- Cyberdeck: 11,33 kB / 3,51 kB gzip.
-- Tienda: 4,36 kB / 1,68 kB gzip.
-
-`npm --prefix frontend run verify:chunks` comprueba de forma automatizada que estos cinco artefactos existan y que ninguno quede referenciado prematuramente desde `dist/index.html`. Las cifras son una referencia reproducible, no un presupuesto inmutable: pueden variar al evolucionar las dependencias, pero cualquier regresión relevante debe justificarse y volver a medirse.
-
 ### Límites funcionales
 
 1. **Núcleo público:** arranque, estilos globales, idioma, autenticación, shells públicos, acceso, registro, recuperación, páginas legales y estados globales de carga/error.

@@ -2,8 +2,6 @@
 import { X, type LucideIcon } from 'lucide-react'
 import {
   forwardRef,
-  lazy,
-  Suspense,
   useEffect,
   type ButtonHTMLAttributes,
   type HTMLAttributes,
@@ -13,9 +11,8 @@ import {
   type TextareaHTMLAttributes,
 } from 'react'
 import { useI18n } from '@/i18n/I18nContext'
+import { CardHelp } from '@/components/help/CardHelp'
 import type { TranslationKey } from '@/i18n/messages'
-
-const LazyCardHelp = lazy(() => import('@/components/help/CardHelp').then((module) => ({ default: module.CardHelp })))
 
 export function cn(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(' ')
@@ -33,7 +30,7 @@ export const SynthCard = forwardRef<HTMLDivElement, SynthCardProps>(function Syn
   return (
     <div ref={ref} className={cn('synth-card', tone !== 'default' && `synth-card--${tone}`, interactive && 'synth-card--interactive', className)} {...props}>
       {children}
-      {helpKey && <Suspense fallback={null}><LazyCardHelp messageKey={helpKey} /></Suspense>}
+      {helpKey && <CardHelp messageKey={helpKey} />}
     </div>
   )
 })

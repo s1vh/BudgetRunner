@@ -17,7 +17,6 @@ import { AmbientBackground } from './AmbientBackground'
 import { cn, Progress } from '@/components/ui/primitives'
 import { useI18n } from '@/i18n/I18nContext'
 import type { TranslationKey } from '@/i18n/messages'
-import { AsyncBoundary, PageRouteLoader } from '@/components/routing/AsyncBoundary'
 
 interface NavItem { to: string; labelKey: TranslationKey; icon: LucideIcon; end?: boolean }
 const navItems: NavItem[] = [
@@ -83,12 +82,12 @@ export function AppShell() {
   const preferences = data?.profile.preferences
   return (
     <div className={cn('min-h-screen', preferences?.reducedMotion && 'reduce-motion', preferences?.compactMode && 'compact-mode')}>
-      <AmbientBackground ambientEffects={preferences?.ambientEffects} scanlines={preferences?.scanlines} />
+      <AmbientBackground />
       <DesktopNav />
       <MobileNav />
       <main className="min-h-screen pb-24 md:ml-64 md:pb-0">
         <div className="page-content mx-auto w-full max-w-[1480px] p-4 sm:p-6 lg:p-8">
-          <AsyncBoundary fallback={<PageRouteLoader />}><Outlet /></AsyncBoundary>
+          <Outlet />
           <footer className="mt-10 flex flex-col gap-2 border-t border-outline-soft/50 py-6 font-mono text-[10px] tracking-wide text-text-muted sm:flex-row sm:items-center sm:justify-between">
             <span>Budget Runner © 2026 <a href="https://www.linkedin.com/in/mikefieldins/" target="_blank" rel="noreferrer noopener" className="text-neon-cyan hover:underline">Mike Fieldins</a></span>
             <NavLink to="/licencia" className="hover:text-neon-cyan">MIT License</NavLink>
