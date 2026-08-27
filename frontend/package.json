@@ -7,9 +7,12 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "verify:chunks": "node scripts/verifyCodeSplitting.mjs"
   },
   "dependencies": {
+    "@tanstack/react-query": "5.102.8",
+    "budget-runner": "file:..",
     "firebase": "^12.16.0",
     "lucide-react": "^1.24.0",
     "react": "^19.2.7",

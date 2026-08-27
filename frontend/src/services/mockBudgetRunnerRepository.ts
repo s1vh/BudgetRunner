@@ -1,14 +1,19 @@
 import { cashflow, categories as initialCategories, gameHistory, initialBudgets, initialTransactions, modules, offers, profile, progress } from '@/data/mockData'
 import type { BudgetRunnerRepository } from './budgetRunnerRepository'
 import type {
-  AppSnapshot,
   Budget,
   BudgetDraft,
   BudgetPeriod,
   Category,
   CategoryDraft,
   CategoryDistribution,
+  CyberModule,
+  DashboardData,
   FinancialTransaction,
+  GameData,
+  GameEvent,
+  ProgressSummary,
+  StoreOffer,
   TransactionDraft,
   UserPreferences,
   UserProfile,
@@ -57,47 +62,93 @@ export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
       .slice(0, 5)
   }
 
-  async getSnapshot(): Promise<AppSnapshot> {
-    await wait()
+  private dashboardData(): DashboardData {
     const posted = this.transactions.filter((transaction) => transaction.status === 'posted')
     const income = posted.filter((transaction) => transaction.type === 'income').reduce((sum, item) => sum + item.amountMinor, 0)
     const expenses = posted.filter((transaction) => transaction.type === 'expense').reduce((sum, item) => sum + item.amountMinor, 0)
     const activeBudgets = this.budgets.filter((budget) => budget.status === 'active')
     const remaining = activeBudgets.reduce((sum, budget) => sum + Math.max(0, budget.limitMinor - budget.spendMinor), 0)
 
-    return structuredClone({
-      dashboard: {
-        displayName: this.currentProfile.displayName,
-        systemStatus: 'dashboard.systemOnline',
-        balanceMinor: income - expenses,
-        budgetRemainingMinor: remaining,
-        currency: this.currentProfile.primaryCurrency,
-        distribution: this.distribution(),
-        cashflow,
-        recentTransactions: [...this.transactions].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt)).slice(0, 5),
-        progress,
-        alerts: [
-          { id: 'alert-1', tone: 'warning', message: { key: 'alert.criticalModule', params: { name: 'Ghostlink Q7', energy: 18 } } },
-          { id: 'alert-2', tone: 'info', message: { key: 'alert.storeRotation.other', params: { days: 5 } } },
-        ] as AppSnapshot['dashboard']['alerts'],
-      },
-      transactions: [...this.transactions].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt)),
-      budgets: this.budgets,
-      game: {
-        progress,
-        modules,
-        offers,
-        history: gameHistory,
-        familyBonuses: [
-          { family: 'retrowave', count: 2, power: 310, bonus: 15 },
-          { family: 'synthwave', count: 2, power: 325, bonus: 16 },
-          { family: 'vaporwave', count: 3, power: 520, bonus: 62 },
-          { family: 'hifi_tech', count: 1, power: 280, bonus: 0 },
-        ],
-      },
-      profile: this.currentProfile,
-      categories: this.categories,
-    })
+    return {
+      displayName: this.currentProfile.displayName,
+      systemStatus: 'dashboard.systemOnline',
+      balanceMinor: income - expenses,
+      budgetRemainingMinor: remaining,
+      currency: this.currentProfile.primaryCurrency,
+      distribution: this.distribution(),
+      cashflow,
+      recentTransactions: [...this.transactions].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt)).slice(0, 5),
+      progress,
+      alerts: [
+        { id: 'alert-1', tone: 'warning', message: { key: 'alert.criticalModule', params: { name: 'Ghostlink Q7', energy: 18 } } },
+        { id: 'alert-2', tone: 'info', message: { key: 'alert.storeRotation.other', params: { days: 5 } } },
+      ],
+    }
+  }
+
+  private gameData(): GameData {
+    return {
+      progress,
+      modules,
+      offers,
+      history: gameHistory,
+      familyBonuses: [
+        { family: 'retrowave', count: 2, power: 310, bonus: 15 },
+        { family: 'synthwave', count: 2, power: 325, bonus: 16 },
+        { family: 'vaporwave', count: 3, power: 520, bonus: 62 },
+        { family: 'hifi_tech', count: 1, power: 280, bonus: 0 },
+      ],
+    }
+  }
+
+  async getProfile(): Promise<UserProfile> {
+    await wait()
+    return structuredClone(this.currentProfile)
+  }
+
+  async getDashboard(): Promise<DashboardData> {
+    await wait()
+    return structuredClone(this.dashboardData())
+  }
+
+  async getTransactions(): Promise<FinancialTransaction[]> {
+    await wait()
+    return structuredClone([...this.transactions].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt)))
+  }
+
+  async getCategories(): Promise<Category[]> {
+    await wait()
+    return structuredClone(this.categories)
+  }
+
+  async getBudgets(): Promise<Budget[]> {
+    await wait()
+    return structuredClone(this.budgets)
+  }
+
+  async getGameSummary(): Promise<ProgressSummary> {
+    await wait()
+    return structuredClone(progress)
+  }
+
+  async getCyberdeck(): Promise<CyberModule[]> {
+    await wait()
+    return structuredClone(modules)
+  }
+
+  async getStoreOffers(): Promise<StoreOffer[]> {
+    await wait()
+    return structuredClone(offers)
+  }
+
+  async getGameHistory(): Promise<GameEvent[]> {
+    await wait()
+    return structuredClone(gameHistory)
+  }
+
+  async getFamilyBonuses(): Promise<GameData['familyBonuses']> {
+    await wait()
+    return structuredClone(this.gameData().familyBonuses)
   }
 
   async createCategory(input: CategoryDraft): Promise<Category> {
@@ -130,7 +181,7 @@ export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
     this.categories = this.categories.filter((category) => category.id !== id)
   }
 
-  async createTransaction(input: TransactionDraft): Promise<FinancialTransaction> {
+  async createTransaction(input: TransactionDraft) {
     await wait(260)
     const transaction: FinancialTransaction = {
       ...input,
@@ -139,24 +190,25 @@ export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
       status: input.status ?? 'posted',
     }
     this.transactions = [transaction, ...this.transactions]
-    return structuredClone(transaction)
+    return structuredClone({ transaction, dashboard: this.dashboardData() })
   }
 
-  async updateTransaction(id: string, input: TransactionDraft): Promise<FinancialTransaction> {
+  async updateTransaction(id: string, input: TransactionDraft) {
     await wait(260)
     const current = this.transactions.find((transaction) => transaction.id === id)
     if (!current) throw new Error('TRANSACTION_NOT_FOUND')
     if (current.lockedByReward) throw new Error('REWARDED_TRANSACTION_LOCKED')
     const updated = { ...current, ...input, categoryName: this.categoryName(input.categoryId), status: input.status ?? current.status }
     this.transactions = this.transactions.map((transaction) => transaction.id === id ? updated : transaction)
-    return structuredClone(updated)
+    return structuredClone({ transaction: updated, dashboard: this.dashboardData() })
   }
 
-  async deleteTransaction(id: string): Promise<void> {
+  async deleteTransaction(id: string) {
     await wait(220)
     const current = this.transactions.find((transaction) => transaction.id === id)
     if (current?.lockedByReward) throw new Error('REWARDED_TRANSACTION_LOCKED')
     this.transactions = this.transactions.filter((transaction) => transaction.id !== id)
+    return structuredClone({ dashboard: this.dashboardData() })
   }
 
   async createBudget(input: BudgetDraft): Promise<Budget> {
@@ -234,11 +286,13 @@ export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
     this.currentProfile = { ...this.currentProfile, guidedTourCompleted: true }
   }
 
-  async purchaseModule(): Promise<AppSnapshot['game']> {
-    return (await this.getSnapshot()).game
+  async purchaseModule(): Promise<GameData> {
+    await wait()
+    return structuredClone(this.gameData())
   }
 
-  async repairModule(): Promise<AppSnapshot['game']> {
-    return (await this.getSnapshot()).game
+  async repairModule(): Promise<GameData> {
+    await wait()
+    return structuredClone(this.gameData())
   }
 }

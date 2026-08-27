@@ -61,6 +61,12 @@ interface DatabaseUser {
   deleted_at: Date | null
 }
 
+interface VerifiedDatabaseUser extends DatabaseUser {
+  displayName: string
+  primaryCurrency: string
+  locale: string
+}
+
 export interface TestCredentials {
   email: string
   password: string
@@ -967,8 +973,9 @@ export async function resetProdDemoUser(
 
     const after = await readUserState(client, user.id)
     assertExpectedState(after)
-    const identity = (await client.query<DatabaseUser>(`
-      SELECT id, email::text, firebase_uid, deleted_at
+    const identity = (await client.query<VerifiedDatabaseUser>(`
+      SELECT id, email::text, firebase_uid, deleted_at,
+             display_name AS "displayName", primary_currency AS "primaryCurrency", locale
         FROM users
        WHERE id = $1
          AND deleted_at IS NULL
@@ -977,11 +984,25 @@ export async function resetProdDemoUser(
       !identity
       || identity.firebase_uid !== user.firebase_uid
       || identity.email.toLowerCase() !== credentials.email
+      || identity.displayName !== fixture.profile.displayName
+      || identity.primaryCurrency !== fixture.profile.primaryCurrency
+      || identity.locale !== fixture.profile.locale
     ) {
-      throw new Error('Post-reset verification failed: la identidad canónica no se ha restaurado.')
+      throw new Error('Post-reset verification failed: la identidad o el perfil canónico no se han restaurado.')
     }
     await client.query('COMMIT')
-    return { user, before, after, progress, generatedAt: fixture.generatedAt }
+    return {
+      user,
+      before,
+      after,
+      progress,
+      profile: {
+        displayName: identity.displayName,
+        primaryCurrency: identity.primaryCurrency,
+        locale: identity.locale,
+      },
+      generatedAt: fixture.generatedAt,
+    }
   } catch (error) {
     await client.query('ROLLBACK')
     throw error
@@ -1073,6 +1094,7 @@ async function main() {
       }
       printState('Estado actual (solo lectura):', state)
       console.log('El reset restauraría email, contraseña, nombre visible y estado de la cuenta desde testuser.nfo.')
+      console.log('Perfil objetivo: idioma en-US y moneda principal USD.')
       console.log('También regeneraría 8 categorías, 12 transacciones, 5 presupuestos, 9 módulos y 6 ofertas activas.')
       console.log('No se ha modificado ningún dato.')
       return
@@ -1084,6 +1106,7 @@ async function main() {
     const result = await resetProdDemoUser(client, canonical, firebaseUser.uid, credentials)
     printState('Estado anterior:', result.before)
     printState('Estado regenerado:', result.after)
+    console.log(`Perfil restaurado: ${result.profile.displayName}; idioma ${result.profile.locale}; moneda ${result.profile.primaryCurrency}.`)
     console.log(`Progreso normalizado: nivel ${result.progress.level}, Flux ${result.progress.totalFlux}, SynthCoins 2380.`)
     console.log(`Reset completado (${result.generatedAt}). UUID interno ${result.user.id}; Firebase UID ${result.user.firebase_uid}.`)
   } catch (error) {

@@ -6,14 +6,14 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { useI18n } from '@/i18n/I18nContext'
 import { localeOptions, resolveLocale } from '@/i18n/locales'
 import { formatDate } from '@/utils/format'
+import { DataQueryState } from '@/components/routing/DataQueryState'
 
 export function ProfilePage() {
   const { t, td } = useI18n()
   const navigate = useNavigate()
-  const { data, loading } = useAppData()
+  const { profile, profileLoading, profileError, refreshProfile } = useAppData()
 
-  if (loading || !data) return <PageSkeleton />
-  const { profile } = data
+  if (profileLoading || profileError || !profile) return <DataQueryState pending={profileLoading} error={Boolean(profileError)} retry={() => void refreshProfile()}><PageSkeleton /></DataQueryState>
   const initials = profile.displayName.split(' ').map((part) => part[0]).slice(0, 2).join('')
   const progressValue = profile.progress.totalFlux - profile.progress.currentLevelFlux
   const progressMax = profile.progress.nextLevelFlux - profile.progress.currentLevelFlux

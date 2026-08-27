@@ -6,6 +6,8 @@ import type { Category, CategoryDraft } from '@/types/domain'
 import { useI18n } from '@/i18n/I18nContext'
 import type { TranslationKey } from '@/i18n/messages'
 import { categoryLabel } from '@/i18n/categoryLabel'
+import { useCategoriesQuery } from '@/app/dataQueries'
+import { DataQueryState } from '@/components/routing/DataQueryState'
 
 const iconOptions = [
   ['shapes', 'icon.shapes'],
@@ -23,7 +25,8 @@ const emptyDraft: CategoryDraft = { name: '', icon: 'shapes', color: '#00FFFF' }
 
 export function CategoryManager() {
   const { t, td } = useI18n()
-  const { data, createCategory, updateCategory, deleteCategory } = useAppData()
+  const { createCategory, updateCategory, deleteCategory } = useAppData()
+  const categoriesQuery = useCategoriesQuery()
   const [draft, setDraft] = useState<CategoryDraft>(emptyDraft)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editorOpen, setEditorOpen] = useState(false)
@@ -32,7 +35,8 @@ export function CategoryManager() {
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
-  if (!data) return null
+  if (categoriesQuery.isPending || categoriesQuery.isError || !categoriesQuery.data) return <DataQueryState mode="panel" pending={categoriesQuery.isPending} error={categoriesQuery.isError} retry={() => void categoriesQuery.refetch()}><span /></DataQueryState>
+  const categories = categoriesQuery.data
 
   function openCreate() {
     setDraft(emptyDraft)
@@ -154,7 +158,7 @@ export function CategoryManager() {
       </div>
 
       <div className="grid gap-2">
-        {data.categories.map((category) => (
+        {categories.map((category) => (
           <div key={category.id} className="rounded-lg border border-white/7 bg-white/[0.025] p-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <span className="flex min-w-0 items-center gap-3">
@@ -177,7 +181,7 @@ export function CategoryManager() {
             )}
           </div>
         ))}
-        {data.categories.length === 0 && <p className="rounded-lg border border-dashed border-outline-soft p-4 text-center text-xs text-text-muted">{t('categories.empty')}</p>}
+        {categories.length === 0 && <p className="rounded-lg border border-dashed border-outline-soft p-4 text-center text-xs text-text-muted">{t('categories.empty')}</p>}
       </div>
     </SynthCard>
   )

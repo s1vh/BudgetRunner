@@ -115,6 +115,9 @@ describe('production demo fixture', () => {
     expect(fixture.offers).toHaveLength(6)
     expect(fixture.definitions).toHaveLength(15)
     expect(fixture.targetProgress).toMatchObject({ level: 24, synthcoins: 2380, weeklyStreak: 7, monthlyStreak: 3 })
+    expect(fixture.profile).toMatchObject({ locale: 'en-US', primaryCurrency: 'USD' })
+    expect(fixture.transactions.every((transaction) => transaction.currency === 'USD')).toBe(true)
+    expect(fixture.budgets.every((budget) => budget.currency === 'USD')).toBe(true)
   })
 
   test('keeps the main financial totals and budget samples consistent', () => {

@@ -1,25 +1,30 @@
 /* eslint-disable react-refresh/only-export-components -- provider and hook intentionally share one context module */
+import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query'
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { dataQueryKeys, useProfileQuery } from '@/app/dataQueries'
+import { useI18n } from '@/i18n/I18nContext'
+import { displayErrorMessage } from '@/i18n/apiErrors'
+import type { SupportedLocale } from '@/i18n/locales'
+import { readProfileBootstrap } from '@/services/profileBootstrap'
 import { repository } from '@/services/repository'
+import { enforceSafeUserInput, registerSecurityCachePurge } from '@/security/securityReset'
 import type {
-  AppSnapshot,
   BudgetDraft,
   BudgetPeriod,
   Category,
   CategoryDraft,
   FinancialTransaction,
+  GameData,
   TransactionDraft,
   UserPreferences,
+  UserProfile,
 } from '@/types/domain'
-import { useI18n } from '@/i18n/I18nContext'
-import type { SupportedLocale } from '@/i18n/locales'
-import { displayErrorMessage } from '@/i18n/apiErrors'
 
 interface AppDataValue {
-  data: AppSnapshot | null
-  loading: boolean
-  error: string | null
-  refresh: () => Promise<void>
+  profile: UserProfile | null
+  profileLoading: boolean
+  profileError: string | null
+  refreshProfile: () => Promise<void>
   createCategory: (draft: CategoryDraft) => Promise<Category>
   updateCategory: (id: string, draft: CategoryDraft) => Promise<Category>
   deleteCategory: (id: string) => Promise<void>
@@ -44,80 +49,137 @@ function errorMessage(error: unknown) {
   return displayErrorMessage(error)
 }
 
-export function AppDataProvider({ children }: { children: ReactNode }) {
-  const { syncProfileLocale } = useI18n()
-  const [data, setData] = useState<AppSnapshot | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+function cacheGame(queryClient: QueryClient, game: GameData) {
+  queryClient.setQueryData(dataQueryKeys.gameSummary, game.progress)
+  queryClient.setQueryData(dataQueryKeys.cyberdeck, game.modules)
+  queryClient.setQueryData(dataQueryKeys.storeOffers, game.offers)
+  queryClient.setQueryData(dataQueryKeys.gameHistory, game.history)
+  queryClient.setQueryData(dataQueryKeys.familyBonuses, game.familyBonuses)
+}
 
-  const refresh = useCallback(async () => {
-    setError(null)
-    try {
-      const snapshot = await repository.getSnapshot()
-      setData(snapshot)
-      syncProfileLocale(snapshot.profile.locale)
-    } catch (caught) {
-      setError(errorMessage(caught))
-    } finally {
-      setLoading(false)
-    }
-  }, [syncProfileLocale])
+function AppDataStateProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient()
+  const { syncProfileLocale } = useI18n()
+  const [bootstrapProfile] = useState(readProfileBootstrap)
+  const profileQuery = useProfileQuery(bootstrapProfile)
+  const profile = profileQuery.data ?? null
 
   useEffect(() => {
-    let active = true
-    repository.getSnapshot()
-      .then((snapshot) => { if (active) { setData(snapshot); syncProfileLocale(snapshot.profile.locale) } })
-      .catch((caught: unknown) => { if (active) setError(errorMessage(caught)) })
-      .finally(() => { if (active) setLoading(false) })
-    return () => { active = false }
-  }, [syncProfileLocale])
+    if (profile) syncProfileLocale(profile.locale)
+  }, [profile, syncProfileLocale])
 
-  const mutate = useCallback(async (operation: () => Promise<unknown>) => {
-    setError(null)
+  useEffect(() => registerSecurityCachePurge(() => queryClient.clear()), [queryClient])
+
+  const run = useCallback(async <T,>(operation: () => Promise<T>) => {
     try {
-      await operation()
-      await refresh()
+      return await operation()
     } catch (caught) {
-      const message = errorMessage(caught)
-      setError(message)
-      throw new Error(message, { cause: caught })
+      throw new Error(errorMessage(caught), { cause: caught })
     }
-  }, [refresh])
+  }, [])
+
+  const invalidate = useCallback(async (...keys: ReadonlyArray<readonly unknown[]>) => {
+    await Promise.all(keys.map((queryKey) => queryClient.invalidateQueries({ queryKey })))
+  }, [queryClient])
+
+  const refreshProfile = useCallback(async () => {
+    await profileQuery.refetch()
+  }, [profileQuery])
 
   const value = useMemo<AppDataValue>(() => ({
-    data,
-    loading,
-    error,
-    refresh,
-    createCategory: async (draft) => {
-      let category: Category | undefined
-      await mutate(async () => { category = await repository.createCategory(draft) })
-      if (!category) throw new Error(displayErrorMessage(new Error('INTERNAL_ERROR')))
+    profile,
+    profileLoading: profileQuery.isPending,
+    profileError: profileQuery.error ? errorMessage(profileQuery.error) : null,
+    refreshProfile,
+    createCategory: (draft) => run(async () => {
+      enforceSafeUserInput(draft)
+      const category = await repository.createCategory(draft)
+      await invalidate(dataQueryKeys.categories, dataQueryKeys.transactions, dataQueryKeys.dashboard)
       return category
-    },
-    updateCategory: async (id, draft) => {
-      let category: Category | undefined
-      await mutate(async () => { category = await repository.updateCategory(id, draft) })
-      if (!category) throw new Error(displayErrorMessage(new Error('INTERNAL_ERROR')))
+    }),
+    updateCategory: (id, draft) => run(async () => {
+      enforceSafeUserInput(draft)
+      const category = await repository.updateCategory(id, draft)
+      await invalidate(dataQueryKeys.categories, dataQueryKeys.transactions, dataQueryKeys.dashboard)
       return category
-    },
-    deleteCategory: (id) => mutate(() => repository.deleteCategory(id)),
-    createTransaction: (draft) => mutate(() => repository.createTransaction(draft)),
-    updateTransaction: (id, draft) => mutate(() => repository.updateTransaction(id, draft)),
-    deleteTransaction: (transaction) => mutate(() => repository.deleteTransaction(transaction.id)),
-    createBudget: (draft) => mutate(() => repository.createBudget(draft)),
-    pauseBudget: (id) => mutate(() => repository.pauseBudget(id)),
-    resumeBudget: (id) => mutate(() => repository.resumeBudget(id)),
-    archiveBudget: (id) => mutate(() => repository.archiveBudget(id)),
-    loadBudgetPeriods: (id) => repository.getBudgetPeriods(id),
-    updatePreferences: (preferences) => mutate(() => repository.updatePreferences(preferences)),
-    updateLocale: (locale) => mutate(() => repository.updateLocale(locale)),
-    completeGuidedTour: () => mutate(() => repository.completeGuidedTour()),
-    purchaseModule: (offerId) => mutate(() => repository.purchaseModule(offerId)),
-    repairModule: (instanceId) => mutate(() => repository.repairModule(instanceId)),
-  }), [data, error, loading, mutate, refresh])
+    }),
+    deleteCategory: (id) => run(async () => {
+      await repository.deleteCategory(id)
+      await invalidate(dataQueryKeys.categories, dataQueryKeys.transactions, dataQueryKeys.dashboard)
+    }),
+    createTransaction: (draft) => run(async () => {
+      enforceSafeUserInput(draft)
+      const result = await repository.createTransaction(draft)
+      queryClient.setQueryData(dataQueryKeys.dashboard, result.dashboard)
+      await invalidate(dataQueryKeys.transactions)
+    }),
+    updateTransaction: (id, draft) => run(async () => {
+      enforceSafeUserInput(draft)
+      const result = await repository.updateTransaction(id, draft)
+      queryClient.setQueryData(dataQueryKeys.dashboard, result.dashboard)
+      await invalidate(dataQueryKeys.transactions)
+    }),
+    deleteTransaction: (transaction) => run(async () => {
+      const result = await repository.deleteTransaction(transaction.id)
+      queryClient.setQueryData(dataQueryKeys.dashboard, result.dashboard)
+      await invalidate(dataQueryKeys.transactions)
+    }),
+    createBudget: (draft) => run(async () => {
+      enforceSafeUserInput(draft)
+      await repository.createBudget(draft)
+      await invalidate(dataQueryKeys.budgets, dataQueryKeys.dashboard, dataQueryKeys.gameSummary)
+    }),
+    pauseBudget: (id) => run(async () => {
+      await repository.pauseBudget(id)
+      await invalidate(dataQueryKeys.budgets, dataQueryKeys.dashboard, dataQueryKeys.gameSummary)
+    }),
+    resumeBudget: (id) => run(async () => {
+      await repository.resumeBudget(id)
+      await invalidate(dataQueryKeys.budgets, dataQueryKeys.dashboard, dataQueryKeys.gameSummary)
+    }),
+    archiveBudget: (id) => run(async () => {
+      await repository.archiveBudget(id)
+      await invalidate(dataQueryKeys.budgets, dataQueryKeys.dashboard, dataQueryKeys.gameSummary)
+    }),
+    loadBudgetPeriods: (id) => run(() => repository.getBudgetPeriods(id)),
+    updatePreferences: (preferences) => run(async () => {
+      const updated = await repository.updatePreferences(preferences)
+      queryClient.setQueryData(dataQueryKeys.profile, updated)
+    }),
+    updateLocale: (locale) => run(async () => {
+      const updated = await repository.updateLocale(locale)
+      queryClient.setQueryData(dataQueryKeys.profile, updated)
+    }),
+    completeGuidedTour: () => run(async () => {
+      await repository.completeGuidedTour()
+      queryClient.setQueryData<UserProfile>(dataQueryKeys.profile, (current) => current ? { ...current, guidedTourCompleted: true } : current)
+    }),
+    purchaseModule: (offerId) => run(async () => {
+      cacheGame(queryClient, await repository.purchaseModule(offerId))
+      await invalidate(dataQueryKeys.profile, dataQueryKeys.dashboard)
+    }),
+    repairModule: (instanceId) => run(async () => {
+      cacheGame(queryClient, await repository.repairModule(instanceId))
+      await invalidate(dataQueryKeys.profile, dataQueryKeys.dashboard)
+    }),
+  }), [invalidate, profile, profileQuery.error, profileQuery.isPending, queryClient, refreshProfile, run])
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>
+}
+
+export function AppDataProvider({ children }: { children: ReactNode }) {
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 30_000,
+        gcTime: 10 * 60_000,
+        retry: 1,
+        refetchOnWindowFocus: false,
+      },
+    },
+  }))
+
+  return <QueryClientProvider client={queryClient}><AppDataStateProvider>{children}</AppDataStateProvider></QueryClientProvider>
 }
 
 export function useAppData() {

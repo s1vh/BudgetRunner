@@ -1,5 +1,5 @@
 export const PROD_DEMO_EMAIL = 'nomada@budgetrunner.local'
-export const PROD_DEMO_FIXTURE_VERSION = 'mock-v1-live-normalized'
+export const PROD_DEMO_FIXTURE_VERSION = 'mock-v2-live-en-usd'
 
 const REFERENCE_NOW = Date.parse('2026-07-16T00:00:00.000Z')
 
@@ -136,18 +136,18 @@ export function buildProdDemoFixture(now = new Date()): ProdDemoFixture {
   ]
 
   const transactions: ProdDemoFixture['transactions'] = [
-    { id: 'd2000000-0000-4000-8000-000000000001', type: 'expense', status: 'posted', concept: 'Neo-Burger', amountMinor: 2450, currency: 'EUR', categoryKey: 'food', occurredAt: shifted('2026-07-12T12:30:00Z', now), lockedByReward: false },
-    { id: 'd2000000-0000-4000-8000-000000000002', type: 'expense', status: 'posted', concept: 'Cyber Deck Upgrade', amountMinor: 15000, currency: 'EUR', categoryKey: 'tech', occurredAt: shifted('2026-07-14T17:00:00Z', now), lockedByReward: false },
-    { id: 'd2000000-0000-4000-8000-000000000003', type: 'expense', status: 'posted', concept: 'Holo-Cinema', amountMinor: 3500, currency: 'EUR', categoryKey: 'fun', occurredAt: shifted('2026-07-15T20:15:00Z', now), lockedByReward: false },
-    { id: 'd2000000-0000-4000-8000-000000000004', type: 'income', status: 'posted', concept: 'Nómina · Nexus Corp', amountMinor: 286500, currency: 'EUR', categoryKey: 'income', occurredAt: shifted('2026-07-01T08:00:00Z', now), lockedByReward: true },
-    { id: 'd2000000-0000-4000-8000-000000000005', type: 'expense', status: 'posted', concept: 'Alquiler Sector 7', amountMinor: 87500, currency: 'EUR', categoryKey: 'home', occurredAt: shifted('2026-07-02T09:00:00Z', now), lockedByReward: true },
-    { id: 'd2000000-0000-4000-8000-000000000006', type: 'expense', status: 'posted', concept: 'Carga hovercar', amountMinor: 6850, currency: 'EUR', categoryKey: 'fuel', occurredAt: shifted('2026-07-08T18:45:00Z', now), lockedByReward: false },
-    { id: 'd2000000-0000-4000-8000-000000000007', type: 'expense', status: 'posted', concept: 'Clínica Synapse', amountMinor: 4200, currency: 'EUR', categoryKey: 'health', occurredAt: shifted('2026-07-07T11:20:00Z', now), lockedByReward: false },
-    { id: 'd2000000-0000-4000-8000-000000000008', type: 'expense', status: 'posted', concept: 'Streaming de la Red', amountMinor: 1599, currency: 'EUR', categoryKey: 'fun', occurredAt: shifted('2026-07-14T07:30:00Z', now), lockedByReward: false },
-    { id: 'd2000000-0000-4000-8000-000000000009', type: 'expense', status: 'posted', concept: 'Mercado nocturno', amountMinor: 7890, currency: 'EUR', categoryKey: 'food', occurredAt: shifted('2026-07-10T19:10:00Z', now), lockedByReward: false },
-    { id: 'd2000000-0000-4000-8000-000000000010', type: 'income', status: 'posted', concept: 'Freelance · Vector Labs', amountMinor: 62000, currency: 'EUR', categoryKey: 'income', occurredAt: shifted('2026-07-04T16:00:00Z', now), lockedByReward: false },
-    { id: 'd2000000-0000-4000-8000-000000000011', type: 'expense', status: 'scheduled', concept: 'Seguro Hovercar', amountMinor: 5400, currency: 'EUR', categoryKey: 'fuel', occurredAt: shifted('2026-07-20T08:00:00Z', now), lockedByReward: false },
-    { id: 'd2000000-0000-4000-8000-000000000012', type: 'expense', status: 'posted', concept: 'Cable cuántico', amountMinor: 3200, currency: 'EUR', categoryKey: 'tech', occurredAt: shifted('2026-07-03T13:40:00Z', now), lockedByReward: false },
+    { id: 'd2000000-0000-4000-8000-000000000001', type: 'expense', status: 'posted', concept: 'Neo-Burger', amountMinor: 2450, currency: 'USD', categoryKey: 'food', occurredAt: shifted('2026-07-12T12:30:00Z', now), lockedByReward: false },
+    { id: 'd2000000-0000-4000-8000-000000000002', type: 'expense', status: 'posted', concept: 'Cyber Deck Upgrade', amountMinor: 15000, currency: 'USD', categoryKey: 'tech', occurredAt: shifted('2026-07-14T17:00:00Z', now), lockedByReward: false },
+    { id: 'd2000000-0000-4000-8000-000000000003', type: 'expense', status: 'posted', concept: 'Holo-Cinema', amountMinor: 3500, currency: 'USD', categoryKey: 'fun', occurredAt: shifted('2026-07-15T20:15:00Z', now), lockedByReward: false },
+    { id: 'd2000000-0000-4000-8000-000000000004', type: 'income', status: 'posted', concept: 'Nómina · Nexus Corp', amountMinor: 286500, currency: 'USD', categoryKey: 'income', occurredAt: shifted('2026-07-01T08:00:00Z', now), lockedByReward: true },
+    { id: 'd2000000-0000-4000-8000-000000000005', type: 'expense', status: 'posted', concept: 'Alquiler Sector 7', amountMinor: 87500, currency: 'USD', categoryKey: 'home', occurredAt: shifted('2026-07-02T09:00:00Z', now), lockedByReward: true },
+    { id: 'd2000000-0000-4000-8000-000000000006', type: 'expense', status: 'posted', concept: 'Carga hovercar', amountMinor: 6850, currency: 'USD', categoryKey: 'fuel', occurredAt: shifted('2026-07-08T18:45:00Z', now), lockedByReward: false },
+    { id: 'd2000000-0000-4000-8000-000000000007', type: 'expense', status: 'posted', concept: 'Clínica Synapse', amountMinor: 4200, currency: 'USD', categoryKey: 'health', occurredAt: shifted('2026-07-07T11:20:00Z', now), lockedByReward: false },
+    { id: 'd2000000-0000-4000-8000-000000000008', type: 'expense', status: 'posted', concept: 'Streaming de la Red', amountMinor: 1599, currency: 'USD', categoryKey: 'fun', occurredAt: shifted('2026-07-14T07:30:00Z', now), lockedByReward: false },
+    { id: 'd2000000-0000-4000-8000-000000000009', type: 'expense', status: 'posted', concept: 'Mercado nocturno', amountMinor: 7890, currency: 'USD', categoryKey: 'food', occurredAt: shifted('2026-07-10T19:10:00Z', now), lockedByReward: false },
+    { id: 'd2000000-0000-4000-8000-000000000010', type: 'income', status: 'posted', concept: 'Freelance · Vector Labs', amountMinor: 62000, currency: 'USD', categoryKey: 'income', occurredAt: shifted('2026-07-04T16:00:00Z', now), lockedByReward: false },
+    { id: 'd2000000-0000-4000-8000-000000000011', type: 'expense', status: 'scheduled', concept: 'Seguro Hovercar', amountMinor: 5400, currency: 'USD', categoryKey: 'fuel', occurredAt: shifted('2026-07-20T08:00:00Z', now), lockedByReward: false },
+    { id: 'd2000000-0000-4000-8000-000000000012', type: 'expense', status: 'posted', concept: 'Cable cuántico', amountMinor: 3200, currency: 'USD', categoryKey: 'tech', occurredAt: shifted('2026-07-03T13:40:00Z', now), lockedByReward: false },
   ]
 
   const definitions: ProdDemoFixture['definitions'] = [
@@ -172,8 +172,8 @@ export function buildProdDemoFixture(now = new Date()): ProdDemoFixture {
     generatedAt: now.toISOString(),
     profile: {
       displayName: 'Nómada',
-      primaryCurrency: 'EUR',
-      locale: 'es-ES',
+      primaryCurrency: 'USD',
+      locale: 'en-US',
       timezone: 'Europe/Madrid',
       weekStartsOn: 1,
       guidedTourCompleted: false,
@@ -199,7 +199,7 @@ export function buildProdDemoFixture(now = new Date()): ProdDemoFixture {
       {
         id: 'd3000000-0000-4000-8000-000000000001', periodId: 'd3100000-0000-4000-8000-000000000001',
         name: 'Ciclo mensual global', frequency: 'monthly', scope: 'global', categoryKey: null, limitMinor: 225000,
-        currency: 'EUR', status: 'active', startsAt: shifted('2026-07-01T00:00:00Z', now), endsAt: shifted('2026-08-01T00:00:00Z', now),
+        currency: 'USD', status: 'active', startsAt: shifted('2026-07-01T00:00:00Z', now), endsAt: shifted('2026-08-01T00:00:00Z', now),
         periodStatus: 'open', spendMinor: 132189, surplusMinor: 92811, eligibleSurplusMinor: 88151, excludedRewardMinor: 4660,
         synthcoinsAwarded: 0, fluxAwarded: 0, excessPercentBp: 0, baseDamage: 0,
         transactionIds: transactions.filter((item) => item.type === 'expense' && item.status === 'posted').map((item) => item.id),
@@ -207,7 +207,7 @@ export function buildProdDemoFixture(now = new Date()): ProdDemoFixture {
       {
         id: 'd3000000-0000-4000-8000-000000000002', periodId: 'd3100000-0000-4000-8000-000000000002',
         name: 'Ocio Holográfico', frequency: 'weekly', scope: 'category', categoryKey: 'fun', limitMinor: 12000,
-        currency: 'EUR', status: 'active', startsAt: shifted('2026-07-14T00:00:00Z', now), endsAt: shifted('2026-07-21T00:00:00Z', now),
+        currency: 'USD', status: 'active', startsAt: shifted('2026-07-14T00:00:00Z', now), endsAt: shifted('2026-07-21T00:00:00Z', now),
         periodStatus: 'open', spendMinor: 5099, surplusMinor: 6901, eligibleSurplusMinor: 6901, excludedRewardMinor: 0,
         synthcoinsAwarded: 0, fluxAwarded: 0, excessPercentBp: 0, baseDamage: 0,
         transactionIds: transactions.filter((item) => item.categoryKey === 'fun' && item.status === 'posted').map((item) => item.id),
@@ -215,7 +215,7 @@ export function buildProdDemoFixture(now = new Date()): ProdDemoFixture {
       {
         id: 'd3000000-0000-4000-8000-000000000003', periodId: 'd3100000-0000-4000-8000-000000000003',
         name: 'Raciones de la semana', frequency: 'weekly', scope: 'category', categoryKey: 'food', limitMinor: 15000,
-        currency: 'EUR', status: 'active', startsAt: shifted('2026-07-07T00:00:00Z', now), endsAt: shifted('2026-07-14T00:00:00Z', now),
+        currency: 'USD', status: 'active', startsAt: shifted('2026-07-07T00:00:00Z', now), endsAt: shifted('2026-07-14T00:00:00Z', now),
         periodStatus: 'met', spendMinor: 10340, surplusMinor: 4660, eligibleSurplusMinor: 4660, excludedRewardMinor: 0,
         synthcoinsAwarded: 46, fluxAwarded: 25, excessPercentBp: 0, baseDamage: 0,
         transactionIds: transactions.filter((item) => item.categoryKey === 'food' && item.status === 'posted').map((item) => item.id),
@@ -223,7 +223,7 @@ export function buildProdDemoFixture(now = new Date()): ProdDemoFixture {
       {
         id: 'd3000000-0000-4000-8000-000000000004', periodId: 'd3100000-0000-4000-8000-000000000004',
         name: 'Hardware esencial', frequency: 'monthly', scope: 'category', categoryKey: 'tech', limitMinor: 13000,
-        currency: 'EUR', status: 'active', startsAt: shifted('2026-07-01T00:00:00Z', now), endsAt: shifted('2026-08-01T00:00:00Z', now),
+        currency: 'USD', status: 'active', startsAt: shifted('2026-07-01T00:00:00Z', now), endsAt: shifted('2026-08-01T00:00:00Z', now),
         periodStatus: 'exceeded', spendMinor: 18200, surplusMinor: 0, eligibleSurplusMinor: 0, excludedRewardMinor: 0,
         synthcoinsAwarded: 0, fluxAwarded: 0, excessPercentBp: 4000, baseDamage: 62,
         transactionIds: transactions.filter((item) => item.categoryKey === 'tech' && item.status === 'posted').map((item) => item.id),
@@ -231,7 +231,7 @@ export function buildProdDemoFixture(now = new Date()): ProdDemoFixture {
       {
         id: 'd3000000-0000-4000-8000-000000000005', periodId: 'd3100000-0000-4000-8000-000000000005',
         name: 'Combustible agosto', frequency: 'monthly', scope: 'category', categoryKey: 'fuel', limitMinor: 18000,
-        currency: 'EUR', status: 'scheduled', startsAt: shifted('2026-08-01T00:00:00Z', now), endsAt: shifted('2026-09-01T00:00:00Z', now),
+        currency: 'USD', status: 'scheduled', startsAt: shifted('2026-08-01T00:00:00Z', now), endsAt: shifted('2026-09-01T00:00:00Z', now),
         periodStatus: 'open', spendMinor: 0, surplusMinor: 18000, eligibleSurplusMinor: 18000, excludedRewardMinor: 0,
         synthcoinsAwarded: 0, fluxAwarded: 0, excessPercentBp: 0, baseDamage: 0, transactionIds: [],
       },

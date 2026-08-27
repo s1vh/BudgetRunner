@@ -2,6 +2,8 @@
 import { X, type LucideIcon } from 'lucide-react'
 import {
   forwardRef,
+  lazy,
+  Suspense,
   useEffect,
   type ButtonHTMLAttributes,
   type HTMLAttributes,
@@ -11,8 +13,11 @@ import {
   type TextareaHTMLAttributes,
 } from 'react'
 import { useI18n } from '@/i18n/I18nContext'
-import { CardHelp } from '@/components/help/CardHelp'
 import type { TranslationKey } from '@/i18n/messages'
+import { containsQueryShapedText } from '@/security/textInputGuard'
+import { triggerSecurityReset } from '@/security/securityReset'
+
+const LazyCardHelp = lazy(() => import('@/components/help/CardHelp').then((module) => ({ default: module.CardHelp })))
 
 export function cn(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(' ')
@@ -30,7 +35,7 @@ export const SynthCard = forwardRef<HTMLDivElement, SynthCardProps>(function Syn
   return (
     <div ref={ref} className={cn('synth-card', tone !== 'default' && `synth-card--${tone}`, interactive && 'synth-card--interactive', className)} {...props}>
       {children}
-      {helpKey && <CardHelp messageKey={helpKey} />}
+      {helpKey && <Suspense fallback={null}><LazyCardHelp messageKey={helpKey} /></Suspense>}
     </div>
   )
 })
@@ -87,16 +92,28 @@ export function Field({ label, htmlFor, hint, error, required, children }: Field
   )
 }
 
-export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
-  return <input className={cn('form-control', className)} {...props} />
+export function Input({ className, onChange, ...props }: InputHTMLAttributes<HTMLInputElement>) {
+  return <input className={cn('form-control', className)} onChange={(event) => {
+    if (containsQueryShapedText(event.currentTarget.value)) {
+      triggerSecurityReset()
+      return
+    }
+    onChange?.(event)
+  }} {...props} />
 }
 
 export function Select({ className, children, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
   return <select className={cn('form-control', className)} {...props}>{children}</select>
 }
 
-export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className={cn('form-control', className)} {...props} />
+export function Textarea({ className, onChange, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return <textarea className={cn('form-control', className)} onChange={(event) => {
+    if (containsQueryShapedText(event.currentTarget.value)) {
+      triggerSecurityReset()
+      return
+    }
+    onChange?.(event)
+  }} {...props} />
 }
 
 interface ProgressProps {

@@ -1,6 +1,6 @@
 # Reset del usuario demo de producción
 
-Este procedimiento restaura por completo `nomada@budgetrunner.local` en el entorno live: identidad de Firebase Authentication, credenciales, perfil y datos de aplicación. El script existe únicamente en la rama `prod`, se ejecuta manualmente desde una consola local y no forma parte del frontend, la API, los builds, el cron ni el despliegue.
+Este procedimiento restaura por completo `nomada@budgetrunner.local` en el entorno live: identidad de Firebase Authentication, credenciales, perfil y datos de aplicación. El perfil canónico usa inglés (`en-US`) y dólar estadounidense (`USD`), y las operaciones y presupuestos del fixture también se regeneran en USD. El script existe únicamente en la rama `prod`, se ejecuta manualmente desde una consola local y no forma parte del frontend, la API, los builds ni el cron.
 
 ## Versión reducida
 
@@ -20,6 +20,8 @@ npm run prod:demo:reset -- confirm nomada@budgetrunner.local
 npm run prod:demo:reset
 ```
 
+Esta secuencia es obligatoria al cerrar **cada despliegue de `prod`**: vista previa, aplicación y verificación. Se ejecuta después de comprobar que API y frontend están operativos y afecta exclusivamente al usuario demo canónico.
+
 El destino esperado es la rama Neon `production` (`br-rough-truth-a2pys24x`), base `budget_runner`, y el proyecto Firebase `budget-runner-cyberdeck`. Los identificadores esperados son:
 
 - UUID interno: `5c18268e-9ae6-43fa-addf-51e199f6b8d4`;
@@ -34,7 +36,7 @@ No continúes si la vista previa muestra otro destino, faltan migraciones o los 
 1. email o nombre de usuario de acceso;
 2. contraseña.
 
-El script lee el fichero en cada ejecución. No duplica esos valores en variables de entorno ni en el código. El nombre visible `Nómada` y el resto del perfil proceden del fixture original del mock.
+El script lee el fichero en cada ejecución. No duplica esos valores en variables de entorno ni en el código. El nombre visible `Nómada` y el resto del perfil proceden del fixture versionado: idioma `en-US`, moneda principal `USD`, zona horaria `Europe/Madrid` y preferencias demo.
 
 ## Qué restaura
 
@@ -49,8 +51,8 @@ En Firebase Authentication:
 En PostgreSQL:
 
 - recrea el usuario con el mismo UUID interno aunque la fila haya sido borrada;
-- restaura perfil, idioma, moneda, zona horaria, preferencias, ayuda contextual y estado del tour;
-- regenera 8 categorías, 12 transacciones y 5 presupuestos con sus periodos;
+- restaura perfil, idioma `en-US`, moneda principal `USD`, zona horaria, preferencias, ayuda contextual y estado del tour;
+- regenera 8 categorías, 12 transacciones en USD y 5 presupuestos en USD con sus periodos;
 - recupera nivel 24, SynthCoins, rachas y progresión compatible con las reglas live;
 - restaura 9 módulos del cyberdeck, una rotación activa con 6 ofertas y el historial de juego;
 - reconstruye ledgers, eventos e identificadores idempotentes necesarios para auditar el estado.
@@ -82,12 +84,25 @@ El mock contenía algunas proyecciones que no coincidían por completo con sus e
 
 El reset conserva las operaciones e importes originales, ajusta las fechas de muestra dentro de sus periodos y calcula la progresión con los umbrales y bonus live. Mantiene el nivel 24 y una posición equivalente dentro del nivel. Las definiciones `mock.*` quedan inactivas: respaldan el usuario demo, pero no participan en las rotaciones de otros usuarios.
 
+Para que la demo sea internacional, el fixture live interpreta esos importes de muestra en USD y fija `en-US` como idioma inicial. No se aplica una conversión de divisa: se preservan las cantidades enteras del dataset de demostración.
+
+## Regla obligatoria después de desplegar
+
+Una publicación desde `prod` no se considera cerrada hasta restaurar el usuario demo. Tras verificar health, readiness y la carga del frontend:
+
+1. ejecuta `npm run prod:demo:reset` y confirma destino, proyecto e identificadores;
+2. ejecuta `npm run prod:demo:reset -- confirm nomada@budgetrunner.local`;
+3. repite `npm run prod:demo:reset` como verificación de solo lectura;
+4. comprueba que la salida aplicada confirma `en-US`, `USD` y los recuentos esperados.
+
+No generalices este mantenimiento a otros usuarios ni lo sustituyas por un seed global. Las salvaguardas del script fijan el email, UUID interno, Firebase UID, proyecto y base canónicos. La ejecución sigue siendo manual para que un build o una configuración CI incorrecta no pueda escribir en las cuentas de producción.
+
 ## Qué no modifica
 
 - No modifica datos de otros usuarios.
 - No despliega código ni contacta con GitHub.
 - No ejecuta migraciones ni cambia reglas globales de progresión.
-- No se ejecuta automáticamente desde Firebase, Vercel o Neon.
+- No se ejecuta automáticamente desde Firebase, Vercel o Neon; se aplica manualmente como paso obligatorio del cierre de cada despliegue.
 
 El reset reemplaza deliberadamente todo el estado actual del usuario demo. Cualquier edición realizada después permanecerá hasta la siguiente ejecución.
 
@@ -198,7 +213,7 @@ Usa el email exacto que figure en `testuser.nfo`:
 npm run prod:demo:reset -- confirm nomada@budgetrunner.local
 ```
 
-La salida final debe confirmar el UUID interno, el UID Firebase, 8 categorías, 12 transacciones, 5 presupuestos, 9 módulos, 6 ofertas activas, nivel 24 y 2.380 SynthCoins.
+La salida final debe confirmar el UUID interno, el UID Firebase, el perfil `en-US`/`USD`, 8 categorías, 12 transacciones, 5 presupuestos, 9 módulos, 6 ofertas activas, nivel 24 y 2.380 SynthCoins.
 
 ## 5. Limpiar overrides y comprobar
 
