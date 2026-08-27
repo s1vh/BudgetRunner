@@ -26,13 +26,7 @@ Utiliza `dev` para el desarrollo, `main` para el trabajo estable y `prod` para l
 
 Requisitos: Node.js 22 o superior y Docker Desktop.
 
-Ejecuta todos los comandos desde la raíz del repositorio, donde se encuentra el `package.json` principal. Un terminal nuevo de PowerShell puede abrirse en el perfil de usuario de Windows aunque el proyecto ya esté abierto, así que comprueba la ubicación en cada terminal. Sustituye la ruta de ejemplo por la de tu clon:
-
-```powershell
-Set-Location -LiteralPath 'C:\ruta\a\BudgetRunner'
-Test-Path .\package.json # Debe mostrar True
-git branch --show-current
-```
+Ejecuta todos los comandos siguientes desde la raíz del repositorio, donde se encuentra el `package.json` principal.
 
 Durante la primera preparación, o después de cambiar dependencias:
 

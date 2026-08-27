@@ -26,13 +26,7 @@ Use `dev` for development, `main` for stable work, and `prod` for the hybrid dep
 
 Requirements: Node.js 22 or later and Docker Desktop.
 
-Run every command from the repository root, where the top-level `package.json` is located. A new PowerShell terminal can open in the Windows user profile even when the project is already open, so verify the location in each terminal first. Replace the example path with the path to your clone:
-
-```powershell
-Set-Location -LiteralPath 'C:\path\to\BudgetRunner'
-Test-Path .\package.json # Must print True
-git branch --show-current
-```
+Run every command below from the repository root, where the top-level `package.json` is located.
 
 On the first setup, or after dependency changes:
 
