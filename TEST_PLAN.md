@@ -372,7 +372,23 @@ Las cargas conservan el shell apropiado, utilizan skeletons Ultrawave, anuncian 
 
 ### T-107 Alcance de datos
 
-El splitting de JavaScript no cambia el snapshot actual: las peticiones de datos privadas mantienen su comportamiento hasta resolver `BR-BL-001` en `BACKLOG.md`.
+Tras autenticar, comprobar en Network que no se solicita un snapshot global. Dashboard pide dashboard y categorías; Gastos, transacciones y categorías; Perfil reutiliza el perfil compartido; Ajustes solo añade categorías; Gamificación solicita únicamente los recursos de la pestaña visible. La restauración de sesión no repite `/me` al montar la zona privada.
+
+### T-108 Caché e invalidación selectiva
+
+Volver a una sección dentro de su ventana de frescura reutiliza el caché. Crear, editar o borrar una transacción actualiza el Dashboard con la respuesta de la mutación y refresca la lista activa sin pedir Cyberdeck, tienda, historial ni bonus. Categorías, preferencias, tour, compras y reparaciones aplican las reglas documentadas en `FRONTEND_ARCHITECTURE.md`.
+
+### T-109 Datos por pestaña de Gamificación
+
+Resumen solicita progreso y bonus; Cyberdeck y Reparaciones comparten módulos; Registro solicita historial. Tienda no solicita inventario hasta hover, foco, selección o tour, conserva su chunk separado y utiliza el progreso compartido para los niveles mínimos. Cambiar entre pestañas ya visitadas no produce cargas completas ni pierde el estado local de la página.
+
+### T-110 Espera y recuperación de datos
+
+Con latencia menor de 700 ms solo se ve el skeleton. A partir de 700 ms aparece el texto de sincronización y, al superar 3 s, el aviso de proveedor lento. Ambos se anuncian mediante `role="status"`; un fallo muestra una acción de reintento local con `role="alert"` y el shell continúa operativo.
+
+### T-111 Telemetría de proveedores
+
+En modo API, recorrer las áreas y revisar `window.__BUDGET_RUNNER_API_METRICS__` y las medidas `budget-runner:api:*`. Confirmar rutas normalizadas, ausencia de UUID y query strings, límite de 200 entradas, códigos HTTP y duraciones coherentes con Network. Registrar aparte payload y tiempo hasta contenido útil con latencia representativa de Vercel y Neon.
 
 ## 14. Seguridad básica
 
