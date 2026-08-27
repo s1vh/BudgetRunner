@@ -21,7 +21,9 @@ El trabajo deberá estudiar como mínimo:
 - coherencia después de crear gastos, cerrar presupuestos, comprar o reparar módulos;
 - comportamiento equivalente entre repositorios HTTP y mock;
 - impacto sobre el tour guiado y la navegación directa;
-- medición de peticiones, payload y tiempo hasta contenido útil antes y después.
+- medición de peticiones, payload y tiempo hasta contenido útil antes y después;
+- pruebas con latencia representativa de Firebase, Vercel y Neon, prestando especial atención a la carga diferida de la tienda;
+- feedback progresivo de espera: evitar parpadeos en cargas rápidas y mostrar un mensaje accesible si la espera supera un umbral medido y documentado.
 
 ### BR-BL-002 — Corregir el título transparente en Chrome/Chromium
 
