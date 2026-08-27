@@ -1,12 +1,14 @@
 .env
 .env.*
 !.env.example
+.secrets/
 backend/node_modules/
 backend/dist/
 backend/coverage/
 frontend/dist/
 frontend/.vite-cache/
 .firebase/
+.vercel/
 firebase-debug.log
 firebase-debug.*.log
 frontend/.vite.*.log

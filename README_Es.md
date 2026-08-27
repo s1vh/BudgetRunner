@@ -13,34 +13,55 @@ Aplicación web responsive de finanzas personales y gamificación cyberdeck. El 
 - `DESIGN.md`: sistema visual Ultrawave.
 - `TEST_PLAN.md`: escenarios funcionales, económicos y responsive.
 - `I18N.md`: arquitectura multilingüe y guía de prueba local de idiomas.
+- `FRONTEND_ARCHITECTURE.md`: límites del frontend, code splitting y reglas de carga/error.
+- `BACKLOG.md`: trabajo futuro identificado e historial de resolución; sus entradas son informativas hasta que se prioricen.
 - `ROADMAP.md`: fases del MVP.
 - `CONTRIBUTING_Es.md`: función de las ramas, flujo de promoción y lista de comprobación para releases.
 
 ## Estrategia de ramas
 
-Utiliza `dev` para el desarrollo, `main` para el trabajo estable y `prod` para la configuración del despliegue híbrido. El flujo normal de promoción es `dev` → `main` → `prod`; consulta `CONTRIBUTING_Es.md` para conocer el proceso completo y sus excepciones.
+Utiliza `dev` para el desarrollo, `main` para el trabajo estable y `prod` para la configuración del despliegue híbrido. El flujo normal de promoción es `dev` → `main` → `prod`; Vercel solo construye `prod`. Consulta `CONTRIBUTING_Es.md` para conocer las reglas de publicación, validación, backlog y promoción.
 
 ## Arranque local
 
 Requisitos: Node.js 22 o superior y Docker Desktop.
 
+Ejecuta todos los comandos siguientes desde la raíz del repositorio, donde se encuentra el `package.json` principal.
+
+Durante la primera preparación, o después de cambiar dependencias:
+
 ```bash
-npm --prefix backend install
-npm --prefix frontend install
+npm --prefix backend ci
+npm --prefix frontend ci
 npm run db:up
+docker compose ps
 npm run db:setup
 ```
 
-Arrancar la API y el frontend en dos terminales:
+Espera a que `docker compose ps` muestre PostgreSQL como saludable antes de ejecutar `db:setup`. La preparación aplica las migraciones pendientes y ejecuta un seed de desarrollo idempotente: crea el usuario demo local si falta y restaura su contraseña y nombre canónicos si ya existe. Los datos del seed local son independientes de la cuenta demo publicada en Firebase/Neon.
+
+Para un arranque full-stack normal, mantén PostgreSQL activo e inicia la API y el frontend desde la raíz del repositorio en dos terminales:
 
 ```bash
+# Terminal de la API
+npm run db:up
 npm run dev:api
+
+# Terminal web
 npm run dev:web
 ```
 
 - Web: `http://127.0.0.1:5173`
 - API: `http://127.0.0.1:3001/api/v1`
 - Readiness: `http://127.0.0.1:3001/api/v1/internal/readiness`
+
+Después de iniciar la API, esta comprobación de PowerShell debe devolver `status: ok` antes de intentar iniciar sesión:
+
+```powershell
+Invoke-RestMethod 'http://127.0.0.1:3001/api/v1/internal/readiness'
+```
+
+Si el login devuelve HTTP 500, comprueba readiness y `docker compose ps`: la API no puede utilizar PostgreSQL en ese momento. Inicia la base, espera a que esté saludable, ejecuta `npm run db:setup` y reinicia la API. Un HTTP 401 indica en cambio que la petición llegó a la base, pero las credenciales fueron rechazadas.
 
 Identidad de desarrollo creada por el seed:
 
