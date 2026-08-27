@@ -4,7 +4,6 @@ import { Navigate, useLocation } from 'react-router'
 import { apiClient } from '@/services/apiClient'
 import { useI18n } from '@/i18n/I18nContext'
 import type { SupportedLocale } from '@/i18n/locales'
-import { FullPageLoader } from '@/components/routing/AsyncBoundary'
 
 interface AuthUser { id: string; email: string; displayName: string }
 interface RegisterInput { email: string; password: string; displayName: string; currency: string; timezone: string; locale: SupportedLocale }
@@ -82,8 +81,9 @@ export function useAuth() {
 
 export function RequireAuth({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
+  const { t } = useI18n()
   const location = useLocation()
-  if (loading) return <FullPageLoader labelKey="loading.identity" />
+  if (loading) return <div className="grid min-h-screen place-items-center font-mono text-neon-cyan">{t('loading.identity')}</div>
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />
   return children
 }
