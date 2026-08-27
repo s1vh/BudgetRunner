@@ -19,7 +19,7 @@ export function CardHelp({ messageKey }: { messageKey: TranslationKey }) {
   const tooltipId = useId()
   const [open, setOpen] = useState(false)
   const [position, setPosition] = useState<TooltipPosition>({ left: 16, top: 16, width: 320 })
-  const enabled = appData?.data?.profile.preferences.helpHints ?? false
+  const enabled = appData?.profile?.preferences.helpHints ?? false
 
   const placeTooltip = useCallback(() => {
     const button = buttonRef.current

@@ -8,8 +8,13 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { useI18n } from '@/i18n/I18nContext'
 import { categoryLabel } from '@/i18n/categoryLabel'
 import type { TranslationKey } from '@/i18n/messages'
-import type { Budget, BudgetStatus } from '@/types/domain'
+import type { Budget, BudgetStatus, Category } from '@/types/domain'
 import { formatDate, formatMoney } from '@/utils/format'
+import { useBudgetsQuery, useCategoriesQuery } from '@/app/dataQueries'
+import { DataQueryState } from '@/components/routing/DataQueryState'
+
+const emptyBudgets: Budget[] = []
+const emptyCategories: Category[] = []
 
 const statusMeta: Record<BudgetStatus, { labelKey: TranslationKey; tone: 'cyan' | 'magenta' | 'purple' | 'success' | 'warning' | 'muted' }> = {
   active: { labelKey: 'budget.active', tone: 'cyan' },
@@ -22,12 +27,18 @@ const statusMeta: Record<BudgetStatus, { labelKey: TranslationKey; tone: 'cyan' 
 
 export function BudgetsPage() {
   const { t, td } = useI18n()
-  const { data, loading, createBudget } = useAppData()
+  const { createBudget } = useAppData()
+  const budgetsQuery = useBudgetsQuery()
+  const categoriesQuery = useCategoriesQuery()
   const [formOpen, setFormOpen] = useState(false)
   const [selected, setSelected] = useState<Budget | null>(null)
   const [filter, setFilter] = useState<'all' | BudgetStatus>('all')
-  const visible = useMemo(() => data?.budgets.filter((budget) => filter === 'all' || budget.status === filter) ?? [], [data, filter])
-  if (loading || !data) return <PageSkeleton />
+  const budgets = budgetsQuery.data ?? emptyBudgets
+  const categories = categoriesQuery.data ?? emptyCategories
+  const visible = useMemo(() => budgets.filter((budget) => filter === 'all' || budget.status === filter), [budgets, filter])
+  const pending = budgetsQuery.isPending || categoriesQuery.isPending
+  const failed = budgetsQuery.isError || categoriesQuery.isError
+  if (pending || failed || !budgetsQuery.data || !categoriesQuery.data) return <DataQueryState pending={pending} error={failed} retry={() => { void budgetsQuery.refetch(); void categoriesQuery.refetch() }}><PageSkeleton /></DataQueryState>
 
   return (
     <div className="page-enter grid gap-6">
@@ -39,7 +50,7 @@ export function BudgetsPage() {
         {visible.map((budget) => {
           const status = statusMeta[budget.status]
           const over = budget.spendMinor > budget.limitMinor
-          const budgetCategory = budget.categoryId ? data.categories.find((category) => category.id === budget.categoryId) : undefined
+          const budgetCategory = budget.categoryId ? categories.find((category) => category.id === budget.categoryId) : undefined
           const categoryName = budgetCategory ? categoryLabel(budgetCategory, td) : budget.categoryName
           return (
             <SynthCard key={budget.id} interactive tone={over ? 'danger' : budget.status === 'met' ? 'cyan' : 'default'} className="flex min-h-72 flex-col p-5">
@@ -52,7 +63,7 @@ export function BudgetsPage() {
         })}
       </div>
 
-      <Modal open={formOpen} onClose={() => setFormOpen(false)} title={t('budgets.new')} description={t('budget.newDescription')}><BudgetForm categories={data.categories} onCancel={() => setFormOpen(false)} onSubmit={async (draft) => { await createBudget(draft); setFormOpen(false) }} /></Modal>
+      <Modal open={formOpen} onClose={() => setFormOpen(false)} title={t('budgets.new')} description={t('budget.newDescription')}><BudgetForm categories={categories} onCancel={() => setFormOpen(false)} onSubmit={async (draft) => { await createBudget(draft); setFormOpen(false) }} /></Modal>
       <Modal open={Boolean(selected)} onClose={() => setSelected(null)} title={selected?.name ?? t('budget.detailTitle')} description={t('budget.snapshot')}>
         {selected && <div className="grid gap-5"><BudgetGauge spendMinor={selected.spendMinor} limitMinor={selected.limitMinor} currency={selected.currency} /><div className="grid gap-3 sm:grid-cols-3"><div className="rounded-lg border border-white/8 p-3"><Coins className="mb-2 size-4 text-sunset" /><span className="block font-mono text-[10px] text-text-muted">{t('budget.eligible', { amount: '' })}</span><strong className="font-mono text-sm">{formatMoney(selected.eligibleSurplusMinor, selected.currency)}</strong></div><div className="rounded-lg border border-white/8 p-3"><History className="mb-2 size-4 text-tertiary" /><span className="block font-mono text-[10px] text-text-muted">{t('budget.excluded')}</span><strong className="font-mono text-sm">{formatMoney(selected.excludedRewardMinor ?? 0, selected.currency)}</strong></div><div className="rounded-lg border border-white/8 p-3"><CalendarDays className="mb-2 size-4 text-neon-cyan" /><span className="block font-mono text-[10px] text-text-muted">{t('budget.frequency')}</span><strong className="font-mono text-sm">{selected.frequency === 'weekly' ? t('budget.weekly') : t('budget.monthly')}</strong></div></div><div className="rounded-lg border border-outline-soft/60 bg-void/40 p-4 text-sm leading-6 text-text-muted">{t('budget.rewardNote')}</div><div className="flex flex-wrap justify-end gap-3"><Button variant="ghost" icon={CirclePause}>{t('budget.pause')}</Button><Button variant="purple" icon={Pause}>{t('budget.viewPeriods')}</Button></div></div>}
       </Modal>
