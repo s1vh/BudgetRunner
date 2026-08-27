@@ -73,6 +73,42 @@ Para resolver esta entrada se deberá:
 - validar la compilación y el comportamiento de Firebase Functions antes de promover el cambio a `main` y `prod`;
 - registrar al cerrar la entrada las versiones finales, avisos resueltos, verificaciones y posible riesgo aceptado.
 
+### BR-BL-005 — Implementar la persistencia real de Presupuestos
+
+**Estado:** pendiente
+
+**Prioridad:** por determinar
+
+Sustituir los presupuestos de demostración del frontend por la vertical persistente completa definida en `PRD.md`, `DATABASE.md`, `API.md` y `GAME_SYSTEM.md`. El trabajo abarcará la API, PostgreSQL, el scheduler de periodos, cierres, recompensas y penalizaciones, además de la experiencia de creación y seguimiento en el frontend.
+
+La implementación deberá contemplar como mínimo:
+
+- aislamiento por usuario y contratos CRUD completos;
+- frecuencias, zonas horarias, pausas, reanudaciones, archivado y periodos derivados;
+- cierres idempotentes, concurrencia, transacciones serializables y recuperación ante fallos;
+- cálculo auditable de cumplimiento, Flux, SynthCoins, daño y cualquier ajuste compensatorio;
+- migración desde los datos mock sin presentar presupuestos ficticios como persistidos;
+- invalidación selectiva de Dashboard, Presupuestos y Gamificación;
+- pruebas unitarias, de integración, scheduler, aislamiento y casos límite de calendario.
+
+### BR-BL-006 — Añadir una capa de hardening contra SQL injection
+
+**Estado:** pendiente
+
+**Prioridad:** alta
+
+Reforzar de forma sistemática la protección frente a SQL injection sobre la base ya existente de consultas parametrizadas con `pg` y validación mediante Zod. El objetivo es convertir esas buenas prácticas en invariantes verificables y reducir el riesgo de regresión al incorporar filtros, ordenación, búsquedas, tareas internas o nuevas verticales.
+
+El hardening deberá estudiar como mínimo:
+
+- inventario y revisión de consultas, migraciones y cualquier SQL construido dinámicamente;
+- prohibición de interpolar valores y allowlists explícitas para identificadores, orden y fragmentos que no admitan parámetros;
+- validación y límites de longitud, paginación, filtros y operadores antes de llegar a PostgreSQL;
+- usuario de base con privilegios mínimos, timeouts de consulta y límites defensivos apropiados;
+- errores externos neutros y logs internos suficientes sin exponer SQL sensible, credenciales ni datos personales;
+- comprobaciones estáticas o reglas de lint que detecten patrones inseguros;
+- pruebas automatizadas con payloads de inyección en autenticación, filtros, búsquedas, IDs y mutaciones, incluyendo verificación de aislamiento entre usuarios.
+
 ## Historial resuelto
 
 Las entradas completadas no se eliminan. Se mueven a esta sección, se marcan como resueltas y se amplían con:
