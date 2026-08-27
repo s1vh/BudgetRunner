@@ -6,6 +6,7 @@ import { ErrorPage, ForgotPasswordPage, LoginPage, OAuthCallbackPage, RegisterPa
 import { LicensePage, PrivacyPage } from '@/pages/LegalPages'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { AsyncBoundary, FullPageLoader } from '@/components/routing/AsyncBoundary'
+import { SecurityResetNotice } from '@/components/security/SecurityResetNotice'
 
 const loadFinancialPages = () => import('@/features/finance/FinancialPages')
 const loadAccountPages = () => import('@/features/account/AccountPages')
@@ -20,26 +21,29 @@ const GamePage = lazy(() => import('@/pages/GamePage').then((module) => ({ defau
 
 export function App() {
   return (
-    <Routes>
-      <Route element={<RequireAuth><AsyncBoundary mode="screen" fallback={<FullPageLoader />}><ProtectedLayout /></AsyncBoundary></RequireAuth>}>
-        <Route index element={<DashboardPage />} />
-        <Route path="transactions" element={<TransactionsPage />} />
-        <Route path="budgets" element={<BudgetsPage />} />
-        <Route path="gamification" element={<GamePage />} />
-        <Route path="profile" element={<ProfilePage />} />
-        <Route path="settings" element={<SettingsPage />} />
-      </Route>
-      <Route element={<PublicShell />}>
-        <Route path="login" element={<LoginPage />} />
-        <Route path="registro" element={<RegisterPage />} />
-        <Route path="recuperar" element={<ForgotPasswordPage />} />
-        <Route path="restablecer" element={<ResetPasswordPage />} />
-        <Route path="oauth/callback" element={<OAuthCallbackPage />} />
-        <Route path="licencia" element={<LicensePage />} />
-        <Route path="privacidad" element={<PrivacyPage />} />
-        <Route path="error" element={<ErrorPage />} />
-      </Route>
-      <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+    <>
+      <SecurityResetNotice />
+      <Routes>
+        <Route element={<RequireAuth><AsyncBoundary mode="screen" fallback={<FullPageLoader />}><ProtectedLayout /></AsyncBoundary></RequireAuth>}>
+          <Route index element={<DashboardPage />} />
+          <Route path="transactions" element={<TransactionsPage />} />
+          <Route path="budgets" element={<BudgetsPage />} />
+          <Route path="gamification" element={<GamePage />} />
+          <Route path="profile" element={<ProfilePage />} />
+          <Route path="settings" element={<SettingsPage />} />
+        </Route>
+        <Route element={<PublicShell />}>
+          <Route path="login" element={<LoginPage />} />
+          <Route path="registro" element={<RegisterPage />} />
+          <Route path="recuperar" element={<ForgotPasswordPage />} />
+          <Route path="restablecer" element={<ResetPasswordPage />} />
+          <Route path="oauth/callback" element={<OAuthCallbackPage />} />
+          <Route path="licencia" element={<LicensePage />} />
+          <Route path="privacidad" element={<PrivacyPage />} />
+          <Route path="error" element={<ErrorPage />} />
+        </Route>
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </>
   )
 }
