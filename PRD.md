@@ -443,6 +443,8 @@ En todas las páginas públicas y autenticadas:
 - Rate limiting en autenticación y recuperación.
 - Validación y sanitización en servidor.
 - Consultas parametrizadas.
+- Texto SQL estático en rutas y servicios, con comprobación automatizada contra composición en runtime.
+- Detección de entradas con forma de consulta como defensa en profundidad, sin sustituir parametrización, validación semántica ni privilegios mínimos.
 - Protección CSRF cuando corresponda al mecanismo de refresh.
 - CORS restringido.
 - Secrets fuera del repositorio.
