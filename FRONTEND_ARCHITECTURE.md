@@ -42,7 +42,7 @@ Hasta `BR-BL-001`, entrar en cualquier ruta privada ejecutaba un único `getSnap
 
 ### Límites y caché
 
-La rama `codex/feature/data-loading-splitting` incorpora TanStack Query 5.102.8 dentro del chunk privado y sustituye el snapshot global por consultas independientes. `AppDataProvider` conserva las acciones y el perfil compartido por el shell, mientras que cada página o pestaña solicita sus propios recursos:
+La implementación incorporada desde `codex/feature/data-loading-splitting` añade TanStack Query 5.102.8 dentro del chunk privado y sustituye el snapshot global por consultas independientes. `AppDataProvider` conserva las acciones y el perfil compartido por el shell, mientras que cada página o pestaña solicita sus propios recursos:
 
 | Área visible | Datos solicitados |
 | --- | --- |
@@ -76,7 +76,7 @@ Los repositorios HTTP y mock implementan el mismo contrato granular. No se deben
 - `apiClient` conserva en `window.__BUDGET_RUNNER_API_METRICS__` las últimas 200 peticiones con método, ruta normalizada, estado y duración. Los UUID y query strings no se guardan. Las mismas operaciones quedan registradas como medidas `budget-runner:api:*` en la Performance API.
 - Para una medición manual, vacía el array antes del recorrido y consulta después `console.table(window.__BUDGET_RUNNER_API_METRICS__)`. Combínalo con Network/Performance del navegador para payload, waterfalls y tiempo hasta contenido útil bajo la latencia real de Vercel y Neon.
 
-La validación automática y en mock de esta rama cubre build, lint, 13 tests de integración, contrato de chunks y navegación por todas las áreas y pestañas. La promoción a `dev` queda condicionada a la validación local del mantenedor y a observar las métricas con los proveedores reales.
+La validación cubrió build, lint, 13 tests de integración, contrato de chunks y navegación por todas las áreas y pestañas. El mantenedor aprobó la experiencia local el 27 de agosto de 2026. La observación de métricas con los proveedores reales queda como seguimiento operativo del próximo despliegue autorizado, no como una condición pendiente de implementación.
 
 ### Experiencia de carga
 

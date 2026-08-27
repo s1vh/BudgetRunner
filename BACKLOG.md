@@ -4,31 +4,6 @@ Este fichero registra trabajo futuro ya identificado, pero **no autoriza su impl
 
 ## Pendiente
 
-### BR-BL-001 — Dividir la carga de datos por áreas funcionales
-
-**Estado:** en curso
-
-**Prioridad:** alta
-
-**Rama de trabajo:** `codex/feature/data-loading-splitting`
-
-**Dependencia:** estabilizar primero el code splitting de JavaScript.
-
-Actualmente `AppDataProvider` obtiene al entrar en la zona privada un snapshot completo: dashboard, transacciones, categorías, presupuestos, perfil, progreso, cyberdeck, tienda, historial y bonus. Separar las peticiones y el estado para que cada área solicite solo lo necesario cuando se visite.
-
-El trabajo deberá estudiar como mínimo:
-
-- estados independientes de carga, error, refresco e invalidación;
-- carga diferida de Perfil/Ajustes, Cyberdeck y tienda;
-- coherencia después de crear gastos, cerrar presupuestos, comprar o reparar módulos;
-- comportamiento equivalente entre repositorios HTTP y mock;
-- impacto sobre el tour guiado y la navegación directa;
-- medición de peticiones, payload y tiempo hasta contenido útil antes y después;
-- pruebas con latencia representativa de Firebase, Vercel y Neon, prestando especial atención a la carga diferida de la tienda;
-- feedback progresivo de espera: evitar parpadeos en cargas rápidas y mostrar un mensaje accesible si la espera supera un umbral medido y documentado.
-
-**Implementación preparada en la rama auxiliar:** TanStack Query 5.102.8, consultas por ruta/pestaña, reutilización del perfil restaurado, invalidación selectiva, precarga de la tienda, errores locales reintentables, feedback a 700 ms/3 s e instrumentación de las últimas 200 peticiones. Build, lint, contrato de chunks, 13 tests de integración y recorrido completo en modo mock superados. Pendiente de validación del mantenedor en local y de observar Vercel/Neon antes de resolver y promover la entrada.
-
 ### BR-BL-002 — Corregir el título transparente en Chrome/Chromium
 
 **Estado:** pendiente
@@ -127,3 +102,32 @@ Las entradas completadas no se eliminan. Se mueven a esta sección, se marcan co
 - ramas, pull requests o commits pertinentes;
 - verificaciones realizadas;
 - documentación o deuda residual asociada.
+
+### BR-BL-001 — Dividir la carga de datos por áreas funcionales
+
+**Estado:** resuelta
+
+**Fecha de resolución:** 27 de agosto de 2026
+
+**Prioridad:** alta
+
+**Rama de trabajo:** `codex/feature/data-loading-splitting`, integrada en `dev` tras la validación del mantenedor.
+
+**Resultado:** se eliminó el snapshot privado global de nueve lecturas y se sustituyó por TanStack Query 5.102.8 con consultas independientes para perfil, dashboard, transacciones, categorías, presupuestos y cada recurso de Gamificación. La restauración de sesión reutiliza el perfil ya obtenido, y los repositorios HTTP y mock comparten el mismo contrato granular.
+
+**Decisiones relevantes:**
+
+- caché y estados de carga/error independientes por ruta y pestaña;
+- invalidaciones selectivas que aprovechan el dashboard recalculado de las mutaciones financieras;
+- código e inventario de Tienda precargables mediante hover, foco, selección o tour;
+- skeleton inmediato, texto accesible a partir de 700 ms y aviso de proveedor lento a los 3 s;
+- errores reintentables dentro de la sección afectada sin recargar toda la app;
+- telemetría limitada a las últimas 200 peticiones, con rutas normalizadas y sin UUID ni query strings.
+
+**Commits principales:** `567e956` (implementación) y `24e81ef` (arquitectura y plan de pruebas).
+
+**Verificación:** `npm test` con 13/13 tests, lint completo sin avisos, build de backend y frontend, contrato automatizado de chunks y recorrido local de Dashboard, Gastos, Presupuestos, Perfil, Ajustes y todas las pestañas de Gamificación. El mantenedor validó la experiencia local antes de autorizar la promoción.
+
+**Documentación:** `FRONTEND_ARCHITECTURE.md` define recursos, caché, invalidaciones, umbrales y métricas; `TEST_PLAN.md` recoge los casos T-107 a T-111.
+
+**Seguimiento operativo:** revisar `window.__BUDGET_RUNNER_API_METRICS__` después del próximo despliegue autorizado para observar Vercel y Neon y recalibrar los umbrales únicamente si las mediciones reales lo justifican. Esta observación no bloquea la resolución de la entrada.
