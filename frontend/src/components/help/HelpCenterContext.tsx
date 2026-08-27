@@ -177,7 +177,7 @@ function GuidedTour({ open, stepIndex, onStepChange, onExit, onFinish }: {
 }
 
 export function HelpCenterProvider({ children }: { children: ReactNode }) {
-  const { data, completeGuidedTour } = useAppData()
+  const { profile, completeGuidedTour } = useAppData()
   const navigate = useNavigate()
   const [tourOpen, setTourOpen] = useState(false)
   const [stepIndex, setStepIndex] = useState(0)
@@ -189,15 +189,14 @@ export function HelpCenterProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    const profile = data?.profile
     if (!profile || profile.guidedTourCompleted || autoStartedUsers.current.has(profile.id)) return
     autoStartedUsers.current.add(profile.id)
     startTour()
-  }, [data?.profile, startTour])
+  }, [profile, startTour])
 
   const markTourCompleted = useCallback(() => {
-    if (!data?.profile.guidedTourCompleted) void completeGuidedTour().catch(() => undefined)
-  }, [completeGuidedTour, data?.profile.guidedTourCompleted])
+    if (!profile?.guidedTourCompleted) void completeGuidedTour().catch(() => undefined)
+  }, [completeGuidedTour, profile?.guidedTourCompleted])
 
   const exitTour = useCallback(() => {
     setTourOpen(false)

@@ -9,6 +9,7 @@ import { localeOptions, resolveLocale, type SupportedLocale } from '@/i18n/local
 import { catalogs } from '@/i18n/messages'
 import type { UserPreferences } from '@/types/domain'
 import { useHelpCenter } from '@/components/help/HelpCenterContext'
+import { DataQueryState } from '@/components/routing/DataQueryState'
 
 function Toggle({ checked, onChange, label, description }: { checked: boolean; onChange: (value: boolean) => void; label: string; description: string }) {
   return <label className="flex cursor-pointer items-start justify-between gap-4 border-b border-outline-soft/45 py-4 last:border-0"><span><strong className="block text-sm">{label}</strong><small className="mt-1 block max-w-lg text-xs leading-5 text-text-muted">{description}</small></span><input className="peer sr-only" type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} /><span className="relative mt-1 h-6 w-11 shrink-0 rounded-full border border-outline-soft bg-panel-high transition peer-checked:border-neon-cyan/60 peer-checked:bg-neon-cyan/20 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-tertiary after:absolute after:left-1 after:top-1 after:size-4 after:rounded-full after:bg-text-muted after:transition peer-checked:after:translate-x-5 peer-checked:after:bg-neon-cyan peer-checked:after:shadow-[0_0_8px_#00ffff]" aria-hidden="true" /></label>
@@ -17,20 +18,20 @@ function Toggle({ checked, onChange, label, description }: { checked: boolean; o
 export function SettingsPage() {
   const { t, locale, setLocale } = useI18n()
   const { startTour } = useHelpCenter()
-  const { data, loading, updateLocale, updatePreferences } = useAppData()
+  const { profile, profileLoading, profileError, refreshProfile, updateLocale, updatePreferences } = useAppData()
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [preferences, setPreferences] = useState<UserPreferences | null>(null)
   const [languageBusy, setLanguageBusy] = useState(false)
   const [languageNotice, setLanguageNotice] = useState<{ message: string; failed: boolean } | null>(null)
-  if (loading || !data) return <PageSkeleton />
-  const profile = data.profile
+  if (profileLoading || profileError || !profile) return <DataQueryState pending={profileLoading} error={Boolean(profileError)} retry={() => void refreshProfile()}><PageSkeleton /></DataQueryState>
   const current = preferences ?? profile.preferences
+  const profileLocale = profile.locale
   const change = (key: keyof UserPreferences, value: boolean) => { setPreferences({ ...current, [key]: value }); setSaved(false) }
   async function save() { setSaving(true); try { await updatePreferences(current); setPreferences(null); setSaved(true) } finally { setSaving(false) } }
 
   async function changeLanguage(next: SupportedLocale) {
-    const previous = resolveLocale(profile.locale)
+    const previous = resolveLocale(profileLocale)
     setLanguageBusy(true)
     setLanguageNotice(null)
     setLocale(next)

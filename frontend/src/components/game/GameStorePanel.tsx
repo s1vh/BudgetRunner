@@ -6,26 +6,30 @@ import { Badge, Button, Modal, SynthCard } from '@/components/ui/primitives'
 import { useI18n } from '@/i18n/I18nContext'
 import type { StoreOffer } from '@/types/domain'
 import { formatDate } from '@/utils/format'
+import { useStoreOffersQuery } from '@/app/dataQueries'
+import { DataQueryState } from '@/components/routing/DataQueryState'
+import type { ProgressSummary } from '@/types/domain'
 
-export function GameStorePanel({ onNotice }: { onNotice: (message: string) => void }) {
+export function GameStorePanel({ progress, onNotice }: { progress: ProgressSummary; onNotice: (message: string) => void }) {
   const { t } = useI18n()
-  const { data, purchaseModule } = useAppData()
+  const { purchaseModule } = useAppData()
+  const offersQuery = useStoreOffersQuery()
   const [selectedOffer, setSelectedOffer] = useState<StoreOffer | null>(null)
   const [actionBusy, setActionBusy] = useState<string | null>(null)
 
-  if (!data) return null
-  const { game } = data
-  const offerCount = game.offers.length
+  if (offersQuery.isPending || offersQuery.isError || !offersQuery.data) return <DataQueryState mode="panel" pending={offersQuery.isPending} error={offersQuery.isError} retry={() => void offersQuery.refetch()} labelKey="loading.store"><span /></DataQueryState>
+  const currentOffers = offersQuery.data
+  const offerCount = currentOffers.length
 
   return (
     <>
       <section data-tour="game-store">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-text-muted">{offerCount > 0 ? t(offerCount === 1 ? 'game.rotation.one' : 'game.rotation.other', { count: offerCount, date: formatDate(game.offers[0]!.expiresAt) }) : t('game.rotationEmpty')}</p>
+          <p className="text-sm text-text-muted">{offerCount > 0 ? t(offerCount === 1 ? 'game.rotation.one' : 'game.rotation.other', { count: offerCount, date: formatDate(currentOffers[0]!.expiresAt) }) : t('game.rotationEmpty')}</p>
           <Badge tone={offerCount > 0 ? 'success' : 'purple'}><PackageOpen className="size-3" />{offerCount > 0 ? t('game.purchasesAvailable') : t('game.noOffers')}</Badge>
         </div>
         {offerCount > 0
-          ? <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{game.offers.map((offer) => <ModuleCard key={offer.id} module={offer.module} helpKey="help.game.storeModule" footer={<div className="flex items-center justify-between gap-3"><div><span className="block font-mono text-[9px] text-text-muted">{t('game.netCost')}</span><strong className="font-display text-lg text-sunset">{offer.netCost} SC</strong></div><Button className="px-3 text-[10px]" variant={offer.minLevel > game.progress.level ? 'ghost' : 'cyan'} disabled={offer.minLevel > game.progress.level} onClick={(event) => { event.stopPropagation(); setSelectedOffer(offer) }}>{offer.minLevel > game.progress.level ? t('common.level', { level: offer.minLevel }) : t('game.buy')}</Button></div>} />)}</div>
+          ? <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{currentOffers.map((offer) => <ModuleCard key={offer.id} module={offer.module} helpKey="help.game.storeModule" footer={<div className="flex items-center justify-between gap-3"><div><span className="block font-mono text-[9px] text-text-muted">{t('game.netCost')}</span><strong className="font-display text-lg text-sunset">{offer.netCost} SC</strong></div><Button className="px-3 text-[10px]" variant={offer.minLevel > progress.level ? 'ghost' : 'cyan'} disabled={offer.minLevel > progress.level} onClick={(event) => { event.stopPropagation(); setSelectedOffer(offer) }}>{offer.minLevel > progress.level ? t('common.level', { level: offer.minLevel }) : t('game.buy')}</Button></div>} />)}</div>
           : <SynthCard className="p-8 pr-14 text-center" helpKey="help.game.storeEmpty"><PackageOpen className="mx-auto mb-3 size-8 text-tertiary" /><h3 className="font-display text-sm uppercase">{t('game.rotationComplete')}</h3><p className="mt-2 text-sm text-text-muted">{t('game.rotationCompleteDesc')}</p></SynthCard>}
       </section>
 
