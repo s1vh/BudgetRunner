@@ -27,6 +27,8 @@ El trabajo deberá estudiar como mínimo:
 - pruebas con latencia representativa de Firebase, Vercel y Neon, prestando especial atención a la carga diferida de la tienda;
 - feedback progresivo de espera: evitar parpadeos en cargas rápidas y mostrar un mensaje accesible si la espera supera un umbral medido y documentado.
 
+**Implementación preparada en la rama auxiliar:** TanStack Query 5.102.8, consultas por ruta/pestaña, reutilización del perfil restaurado, invalidación selectiva, precarga de la tienda, errores locales reintentables, feedback a 700 ms/3 s e instrumentación de las últimas 200 peticiones. Build, lint, contrato de chunks, 13 tests de integración y recorrido completo en modo mock superados. Pendiente de validación del mantenedor en local y de observar Vercel/Neon antes de resolver y promover la entrada.
+
 ### BR-BL-002 — Corregir el título transparente en Chrome/Chromium
 
 **Estado:** pendiente
@@ -43,7 +45,7 @@ Investigar y corregir los defectos de visualización en navegadores basados en C
 
 Aplicar pequeños cambios de visualización a la sección de Gamificación. No se considera un rework funcional ni arquitectónico. El alcance concreto se definirá en su hilo de trabajo antes de modificar componentes, diseño o comportamiento.
 
-### BR-BL-004 — Remediar avisos de seguridad en dependencias npm del backend
+### BR-BL-004 — Remediar avisos de seguridad en dependencias npm
 
 **Estado:** pendiente
 
@@ -51,17 +53,22 @@ Aplicar pequeños cambios de visualización a la sección de Gamificación. No s
 
 **Detectado:** 27 de agosto de 2026 con `npm --prefix backend audit` sobre el lockfile vigente.
 
-El informe completo registra **0 avisos críticos, 2 altos y 10 moderados**: 12 nodos de paquetes afectados, no 12 vulnerabilidades independientes. Al excluir dependencias de desarrollo mediante `--omit=dev` permanecen **1 alto y 8 moderados** en 9 nodos de la cadena de producción.
+El informe completo del backend registra **0 avisos críticos, 2 altos y 10 moderados**: 12 nodos de paquetes afectados, no 12 vulnerabilidades independientes. Al excluir dependencias de desarrollo mediante `--omit=dev` permanecen **1 alto y 8 moderados** en 9 nodos de la cadena de producción.
+
+La revisión del frontend tras incorporar TanStack Query registra **0 críticos, 3 altos y 1 moderado** en cuatro nodos. Con `npm --prefix frontend audit --omit=dev` permanece únicamente **1 alto** de producción: `react-router@7.18.1`. TanStack Query 5.102.8 no figura afectado.
 
 #### Criticidad alta
 
 - **Producción — `fast-xml-parser@5.10.0`:** las declaraciones `DOCTYPE` repetidas pueden reiniciar los límites de expansión de entidades y provocar consumo de recursos. Entra por `firebase-functions@7.2.5 > firebase-admin@13.10.0 > @google-cloud/storage@7.21.0`. Afecta a versiones `>=5.9.3 <5.10.1`; npm identifica una corrección disponible. Referencia: [GHSA-8r6m-32jq-jx6q](https://github.com/advisories/GHSA-8r6m-32jq-jx6q).
 - **Desarrollo — `nanoid@3.3.16`:** un generador personalizado con tamaño cero puede entrar en un bucle infinito. Entra por `vitest@4.1.10 > vite@8.1.4 > postcss@8.5.19`. Afecta a versiones `<3.3.18`; npm identifica una corrección disponible. Referencia: [GHSA-2v37-7h3g-55p8](https://github.com/advisories/GHSA-2v37-7h3g-55p8).
+- **Producción frontend — `react-router@7.18.1`:** en modo RSC, determinadas acciones pueden ejecutarse antes de que una protección CSRF responda con 400. Afecta a `>=7.12.0 <7.18.2`; npm identifica una corrección compatible disponible. Budget Runner no utiliza actualmente RSC, pero la dependencia directa debe actualizarse y verificarse. Referencia: [GHSA-qwww-vcr4-c8h2](https://github.com/advisories/GHSA-qwww-vcr4-c8h2).
+- **Desarrollo frontend — `brace-expansion@5.0.0`:** dos avisos de denegación de servicio por expansión sin límites afectan al mismo nodo (`<5.0.9`). npm identifica una corrección disponible. Referencias: [GHSA-mh99-v99m-4gvg](https://github.com/advisories/GHSA-mh99-v99m-4gvg) y [GHSA-rgw5-rvv9-x895](https://github.com/advisories/GHSA-rgw5-rvv9-x895).
 
 #### Criticidad moderada
 
 - **Producción — `uuid@9.0.1`:** falta una comprobación de límites del buffer en UUID v3/v5/v6 cuando se proporciona `buf`. Entra por las dependencias de Google Cloud; afecta a versiones `<11.1.1`. Referencia: [GHSA-w5hq-g745-h8pq](https://github.com/advisories/GHSA-w5hq-g745-h8pq).
 - **Desarrollo — `postcss@8.5.19`:** un `sourceMappingURL` controlado por un atacante puede leer ficheros `.map` cuando no se define `from`. Afecta a versiones `<=8.5.22`. Referencia: [GHSA-fxqj-rqcc-2cmp](https://github.com/advisories/GHSA-fxqj-rqcc-2cmp).
+- **Frontend — `postcss@8.5.19`:** el mismo aviso moderado aparece en la cadena de desarrollo del frontend y dispone de corrección.
 - **Propagación de la cadena Firebase/Google Cloud:** npm eleva también como nodos moderados a `firebase-functions`, `firebase-admin`, `@google-cloud/firestore`, `@google-cloud/storage`, `google-gax`, `gaxios`, `retry-request` y `teeny-request`, porque dependen de los paquetes vulnerables anteriores.
 
 La remediación no debe aplicar automáticamente `npm audit fix --force`: el informe completo propone `firebase-functions@4.9.0`, lo que supondría un downgrade mayor desde `7.2.5` y podría romper el despliegue híbrido. El trabajo deberá evaluar primero versiones corregidas compatibles, actualizaciones transitivas u `overrides` acotados.
