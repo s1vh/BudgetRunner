@@ -13,12 +13,14 @@ Aplicación web responsive de finanzas personales y gamificación cyberdeck. El 
 - `DESIGN.md`: sistema visual Ultrawave.
 - `TEST_PLAN.md`: escenarios funcionales, económicos y responsive.
 - `I18N.md`: arquitectura multilingüe y guía de prueba local de idiomas.
+- `FRONTEND_ARCHITECTURE.md`: límites del frontend, code splitting y reglas de carga/error.
+- `BACKLOG.md`: trabajo futuro identificado e historial de resolución; sus entradas son informativas hasta que se prioricen.
 - `ROADMAP.md`: fases del MVP.
 - `CONTRIBUTING_Es.md`: función de las ramas, flujo de promoción y lista de comprobación para releases.
 
 ## Estrategia de ramas
 
-Utiliza `dev` para el desarrollo, `main` para el trabajo estable y `prod` para la configuración del despliegue híbrido. El flujo normal de promoción es `dev` → `main` → `prod`; consulta `CONTRIBUTING_Es.md` para conocer el proceso completo y sus excepciones.
+Utiliza `dev` para el desarrollo, `main` para el trabajo estable y `prod` para la configuración del despliegue híbrido. El flujo normal de promoción es `dev` → `main` → `prod`; Vercel solo construye `prod`. Consulta `CONTRIBUTING_Es.md` para conocer las reglas de publicación, validación, backlog y promoción.
 
 ## Arranque local
 

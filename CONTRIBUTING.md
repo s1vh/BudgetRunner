@@ -2,15 +2,16 @@
 
 [Versión en español](CONTRIBUTING_Es.md)
 
-This file is the canonical reference for repository workflow and branch promotion. Product behaviour and requirements belong in `PRD.md`; deployment details belong in `DEPLOYMENT_FREE_TIER.md`.
+This file is the canonical reference for repository workflow, branch promotion, and backlog maintenance. Product behaviour and requirements belong in `PRD.md`; identified future work belongs in `BACKLOG.md`; deployment details belong in `DEPLOYMENT_FREE_TIER.md` when that file is present on the deployment branch.
 
 ## Branch roles
 
 ### `dev`: primary development branch
 
 - Develop new features and bug fixes in `dev`.
-- For work that benefits from isolation, create a short-lived topic branch from `dev`, such as `feature/...` or `fix/...`.
+- For complex, delicate, or isolated work, create a short-lived topic branch from `dev`, preferably `codex/feature/...` or `codex/fix/...` for work performed with Codex.
 - Merge completed topic work back into `dev` after appropriate verification.
+- Code integrated into `dev` is tested locally and requires maintainer acceptance before promotion to `main`. Documentation may be updated and pushed without waiting for that functional validation.
 
 ### `main`: stable branch
 
@@ -38,6 +39,21 @@ topic branch (optional, created from dev)
 
 The normal path is `dev` → `main` → `prod`. Topic branches normally return to `dev`; direct promotion to `main` is reserved for a completed feature or an urgent fix that justifies it.
 
+## Publishing and deployment
+
+- Commits and topic branches may be pushed as part of normal development after confirming that they contain no secrets or unrelated changes.
+- Pushing a topic branch or `dev` does not authorize promotion to `main`; promotion requires complete, verified, and accepted code.
+- `main` contains stable work only. `prod` is updated only from `main` and never receives feature development directly.
+- Vercel uses `prod` as its Production Branch and ignores Git builds from every other branch. A push to `prod` can start a live deployment and requires the corresponding release approval.
+- Firebase is deployed only from `prod` using the documented procedure; a Git push does not replace that verification.
+
+## Backlog management
+
+- `BACKLOG.md` is the informational source for identified future work. An entry does not authorize implementation or expand the current thread's scope.
+- Before work begins, the maintainer confirms its priority, scope, and acceptance criteria. When started, mark it **in progress** and record the working branch.
+- Completed entries are never deleted: mark them **resolved**, move them to the history, and add the date, outcome, decisions, commits or pull requests, verification, and relevant residual debt.
+- New findings outside the current scope belong in the backlog instead of being silently added to the implementation.
+
 ## Readiness checklist
 
 Before promoting a change:
@@ -48,4 +64,4 @@ Before promoting a change:
 - Check that no credentials, local environment files, generated deployment metadata, or unrelated work are included.
 - When updating `prod`, confirm that its hybrid-deployment configuration still works and that the release is being prepared from `main`.
 
-Publishing to a remote repository and deploying are separate, explicit actions. A local merge or commit does not authorize either one.
+Remote synchronization during development is allowed, while promotion and deployment remain separate decisions with their own checks.

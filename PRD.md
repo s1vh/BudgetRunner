@@ -7,6 +7,8 @@
 **Licencia:** MIT  
 **Idioma inicial:** Español (es-ES)
 
+> **Guía para colaboradores y agentes:** este PRD define el producto, pero no el proceso operativo. Antes de modificar el repositorio, consulta [`CONTRIBUTING_Es.md`](CONTRIBUTING_Es.md) o [`CONTRIBUTING.md`](CONTRIBUTING.md) para conocer el flujo `dev → main → prod`, las reglas de publicación y despliegue, y la gestión de contribuciones. Revisa también [`BACKLOG.md`](BACKLOG.md): registra trabajo futuro identificado, pero ninguna entrada autoriza su implementación sin priorización y alcance confirmados.
+
 ## 1. Resumen ejecutivo
 
 Budget Runner es una aplicación web responsive de finanzas personales que combina un gestor de gastos y presupuestos con una capa de gamificación persistente. El usuario registra ingresos y gastos, crea presupuestos semanales y mensuales, consulta estadísticas y obtiene recompensas por mantenerse dentro de sus límites.

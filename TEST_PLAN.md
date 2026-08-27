@@ -354,6 +354,26 @@ Finalizar el último paso cierra el tour, vuelve al Dashboard y sitúa la págin
 
 Iniciar el tour desde Ajustes abre el Dashboard ya en el primer paso, sin añadir pasos al recorrido. Los pasos existentes de Flux y Cyberdeck explican en los ocho idiomas los umbrales de nivel, Flux base, Power, bonus, Shield × 10, Energy, destrucción, reparación, familia y rareza, manteniendo literales todos esos términos protegidos.
 
+### T-103 Carga pública por chunks
+
+Abrir `/login`, registro, recuperación, privacidad o licencia carga el núcleo público sin descargar los chunks de Finanzas, Cuenta, Cyberdeck o Tienda.
+
+### T-104 Carga privada por áreas
+
+Después de autenticar, Dashboard solicita el bloque financiero. Perfil/Ajustes y Cyberdeck solo descargan su código al entrar en sus rutas; la navegación directa y la recarga de cada URL funcionan sin pantallas en blanco.
+
+### T-105 Tienda bajo demanda
+
+Entrar en Gamificación carga el bloque principal del Cyberdeck, pero no la Tienda. Hover, foco de teclado o selección de la pestaña pueden anticipar/solicitar su chunk. El tour espera a que el panel exista antes de resaltar `game-store`.
+
+### T-106 Estados y recuperación de chunks
+
+Las cargas conservan el shell apropiado, utilizan skeletons Ultrawave, anuncian actividad de forma accesible y respetan movimiento reducido. Un fallo simulado de importación dinámica muestra una acción de reintento/recarga en vez de una pantalla vacía.
+
+### T-107 Alcance de datos
+
+El splitting de JavaScript no cambia el snapshot actual: las peticiones de datos privadas mantienen su comportamiento hasta resolver `BR-BL-001` en `BACKLOG.md`.
+
 ## 14. Seguridad básica
 
 - JWT inválido/expirado.
