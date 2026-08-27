@@ -7,6 +7,7 @@ import type { SupportedLocale } from '@/i18n/locales'
 import { FullPageLoader } from '@/components/routing/AsyncBoundary'
 import { clearProfileBootstrap, primeProfileBootstrap } from '@/services/profileBootstrap'
 import type { UserProfile } from '@/types/domain'
+import { enforceSafeUserInput } from '@/security/securityReset'
 
 interface AuthUser { id: string; email: string; displayName: string }
 interface RegisterInput { email: string; password: string; displayName: string; currency: string; timezone: string; locale: SupportedLocale }
@@ -56,6 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     loading,
     async login(email, password) {
+      enforceSafeUserInput({ email, password })
       if (!usesApi) { setUser({ id: 'mock-user', email, displayName: 'Nómada' }); return }
       clearProfileBootstrap()
       const result = await apiClient.request<{ accessToken: string; user: AuthUser }>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) })
@@ -63,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(result.user)
     },
     async register(input) {
+      enforceSafeUserInput(input)
       if (!usesApi) { setUser({ id: 'mock-user', email: input.email, displayName: input.displayName }); return }
       clearProfileBootstrap()
       const result = await apiClient.request<{ accessToken: string; user: AuthUser }>('/auth/register', { method: 'POST', body: JSON.stringify(input) })

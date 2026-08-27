@@ -75,23 +75,17 @@ La implementación deberá contemplar como mínimo:
 - invalidación selectiva de Dashboard, Presupuestos y Gamificación;
 - pruebas unitarias, de integración, scheduler, aislamiento y casos límite de calendario.
 
-### BR-BL-006 — Añadir una capa de hardening contra SQL injection
+### BR-BL-007 — Auditar el robo y la reutilización de sesión mediante cookies
 
 **Estado:** pendiente
 
 **Prioridad:** alta
 
-Reforzar de forma sistemática la protección frente a SQL injection sobre la base ya existente de consultas parametrizadas con `pg` y validación mediante Zod. El objetivo es convertir esas buenas prácticas en invariantes verificables y reducir el riesgo de regresión al incorporar filtros, ordenación, búsquedas, tareas internas o nuevas verticales.
+**Responsable de la prueba exploratoria:** mantenedor
 
-El hardening deberá estudiar como mínimo:
+Intentar comprometer una sesión propia de Budget Runner mediante cookies y mecanismos relacionados para identificar deuda en refresh tokens, rotación, revocación, atributos `HttpOnly`, `Secure` y `SameSite`, fijación o reutilización de sesión y exposición indirecta mediante XSS o CSRF. La prueba debe limitarse al entorno local o a cuentas de test expresamente autorizadas; nunca debe dirigirse contra usuarios reales ni infraestructura ajena.
 
-- inventario y revisión de consultas, migraciones y cualquier SQL construido dinámicamente;
-- prohibición de interpolar valores y allowlists explícitas para identificadores, orden y fragmentos que no admitan parámetros;
-- validación y límites de longitud, paginación, filtros y operadores antes de llegar a PostgreSQL;
-- usuario de base con privilegios mínimos, timeouts de consulta y límites defensivos apropiados;
-- errores externos neutros y logs internos suficientes sin exponer SQL sensible, credenciales ni datos personales;
-- comprobaciones estáticas o reglas de lint que detecten patrones inseguros;
-- pruebas automatizadas con payloads de inyección en autenticación, filtros, búsquedas, IDs y mutaciones, incluyendo verificación de aislamiento entre usuarios.
+Al abordar la entrada se documentarán el modelo de amenaza, los pasos reproducibles sin incluir secretos, la evidencia observada y las mitigaciones propuestas. Cualquier corrección se desarrollará en una rama auxiliar independiente creada desde `dev`.
 
 ## Historial resuelto
 
@@ -102,6 +96,26 @@ Las entradas completadas no se eliminan. Se mueven a esta sección, se marcan co
 - ramas, pull requests o commits pertinentes;
 - verificaciones realizadas;
 - documentación o deuda residual asociada.
+
+### BR-BL-006 — Añadir una capa de hardening contra SQL injection
+
+**Estado:** resuelta
+
+**Fecha de resolución:** 27 de agosto de 2026
+
+**Prioridad:** alta
+
+**Rama de trabajo:** `codex/feature/sql-injection-hardening`, validada por el mantenedor antes de promoverse.
+
+**Resultado:** todas las consultas ejecutadas por rutas y servicios usan texto SQL estático y parámetros de PostgreSQL. El único constructor dinámico de filtros fue sustituido por una consulta fija con parámetros anulables. La API inspecciona de forma centralizada los textos no confiables y el frontend aplica la misma detección a formularios, repositorios HTTP y mock; una transmisión rechazada cancela peticiones, purga las cachés accesibles, recarga la aplicación y muestra un aviso Ultrawave neutro sin describir la contramedida.
+
+**Decisiones relevantes:** la detección heurística normaliza codificación porcentual, Unicode, caracteres invisibles, comentarios y varias formas de concatenación, pero se considera exclusivamente defensa en profundidad. La garantía primaria continúa siendo no interpretar los valores del usuario como SQL. Las consultas tienen además límites de tiempo de sentencia, bloqueo, cliente y transacción inactiva.
+
+**Commit y revisión:** `97b664f`; pull request `#5` hacia `dev`.
+
+**Verificación:** 39/39 pruebas, incluyendo autenticación, búsquedas, categorías, conceptos, notas, ofuscación y falsos positivos; comprobación de que los rechazos no alteran filas; invariante estática contra SQL construido en runtime; lint completo; build de producción y contrato de code splitting.
+
+**Deuda residual:** ninguna detección textual puede reconocer todas las ofuscaciones posibles y no debe ampliarse como sustituto de la parametrización. La revisión ofensiva de sesiones y cookies continúa separadamente en `BR-BL-007`.
 
 ### BR-BL-001 — Dividir la carga de datos por áreas funcionales
 

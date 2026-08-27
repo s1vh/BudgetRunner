@@ -192,33 +192,45 @@ transactionRouter.delete('/categories/:id', asyncHandler(async (request, respons
 transactionRouter.get('/transactions', asyncHandler(async (request, response) => {
   const userId = (request as AppRequest).userId
   const filters = listSchema.parse(request.query)
-  const values: unknown[] = [userId]
-  const clauses = ['t.user_id = $1']
-  const add = (sql: string, value: unknown) => { values.push(value); clauses.push(sql.replace('?', `$${values.length}`)) }
-  if (filters.from) add('t.occurred_at >= ?', filters.from)
-  if (filters.to) add('t.occurred_at < ?', filters.to)
-  if (filters.type) add('t.type = ?::transaction_type', filters.type)
-  if (filters.categoryId) add('t.category_id = ?', filters.categoryId)
-  if (filters.status) add('t.status = ?::transaction_status', filters.status)
-  if (filters.minAmount) add('t.amount_minor >= ?', filters.minAmount)
-  if (filters.maxAmount) add('t.amount_minor <= ?', filters.maxAmount)
-  if (filters.query) add("(t.concept ILIKE ? OR coalesce(c.name, '') ILIKE ?)", `%${filters.query}%`)
-
-  if (filters.query) {
-    const last = values.length
-    clauses[clauses.length - 1] = `(t.concept ILIKE $${last} OR coalesce(c.name, '') ILIKE $${last})`
-  }
-  const where = clauses.join(' AND ')
+  const values: unknown[] = [
+    userId,
+    filters.from ?? null,
+    filters.to ?? null,
+    filters.type ?? null,
+    filters.categoryId ?? null,
+    filters.status ?? null,
+    filters.minAmount ?? null,
+    filters.maxAmount ?? null,
+    filters.query ? `%${filters.query}%` : null,
+  ]
   const count = await pool.query<{ total: string }>(`
     SELECT count(*)::text AS total FROM financial_transactions t
-    LEFT JOIN categories c ON c.id = t.category_id AND c.user_id = t.user_id WHERE ${where}
+    LEFT JOIN categories c ON c.id = t.category_id AND c.user_id = t.user_id
+    WHERE t.user_id = $1
+      AND ($2::timestamptz IS NULL OR t.occurred_at >= $2)
+      AND ($3::timestamptz IS NULL OR t.occurred_at < $3)
+      AND ($4::transaction_type IS NULL OR t.type = $4)
+      AND ($5::uuid IS NULL OR t.category_id = $5)
+      AND ($6::transaction_status IS NULL OR t.status = $6)
+      AND ($7::bigint IS NULL OR t.amount_minor >= $7)
+      AND ($8::bigint IS NULL OR t.amount_minor <= $8)
+      AND ($9::text IS NULL OR t.concept ILIKE $9 OR coalesce(c.name, '') ILIKE $9)
   `, values)
   values.push(filters.pageSize, (filters.page - 1) * filters.pageSize)
   const rows = await pool.query(`
     SELECT t.*, c.name AS category_name FROM financial_transactions t
     LEFT JOIN categories c ON c.id = t.category_id AND c.user_id = t.user_id
-    WHERE ${where} ORDER BY t.occurred_at DESC, t.created_at DESC
-    LIMIT $${values.length - 1} OFFSET $${values.length}
+    WHERE t.user_id = $1
+      AND ($2::timestamptz IS NULL OR t.occurred_at >= $2)
+      AND ($3::timestamptz IS NULL OR t.occurred_at < $3)
+      AND ($4::transaction_type IS NULL OR t.type = $4)
+      AND ($5::uuid IS NULL OR t.category_id = $5)
+      AND ($6::transaction_status IS NULL OR t.status = $6)
+      AND ($7::bigint IS NULL OR t.amount_minor >= $7)
+      AND ($8::bigint IS NULL OR t.amount_minor <= $8)
+      AND ($9::text IS NULL OR t.concept ILIKE $9 OR coalesce(c.name, '') ILIKE $9)
+    ORDER BY t.occurred_at DESC, t.created_at DESC
+    LIMIT $10 OFFSET $11
   `, values)
   const total = Number(count.rows[0]?.total ?? 0)
   response.json({ data: rows.rows.map((row) => transactionDto(row as Record<string, unknown>)), meta: { page: filters.page, pageSize: filters.pageSize, total, totalPages: Math.ceil(total / filters.pageSize) } })
