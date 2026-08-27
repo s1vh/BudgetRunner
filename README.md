@@ -26,23 +26,48 @@ Use `dev` for development, `main` for stable work, and `prod` for the hybrid dep
 
 Requirements: Node.js 22 or later and Docker Desktop.
 
+Run every command from the repository root, where the top-level `package.json` is located. A new PowerShell terminal can open in the Windows user profile even when the project is already open, so verify the location in each terminal first. Replace the example path with the path to your clone:
+
+```powershell
+Set-Location -LiteralPath 'C:\path\to\BudgetRunner'
+Test-Path .\package.json # Must print True
+git branch --show-current
+```
+
+On the first setup, or after dependency changes:
+
 ```bash
-npm --prefix backend install
-npm --prefix frontend install
+npm --prefix backend ci
+npm --prefix frontend ci
 npm run db:up
+docker compose ps
 npm run db:setup
 ```
 
-Start the API and frontend in two terminals:
+Wait until `docker compose ps` reports PostgreSQL as healthy before running `db:setup`. The setup applies pending migrations and runs an idempotent development seed: it creates the local demo user when missing and restores its canonical password and display name when it already exists. Local seed data is independent from the live Firebase/Neon demo account.
+
+For a normal full-stack start, keep PostgreSQL running and start the API and frontend from the repository root in two terminals:
 
 ```bash
+# API terminal
+npm run db:up
 npm run dev:api
+
+# Web terminal
 npm run dev:web
 ```
 
 - Web: `http://127.0.0.1:5173`
 - API: `http://127.0.0.1:3001/api/v1`
 - Readiness: `http://127.0.0.1:3001/api/v1/internal/readiness`
+
+After starting the API, this PowerShell check must return `status: ok` before attempting to log in:
+
+```powershell
+Invoke-RestMethod 'http://127.0.0.1:3001/api/v1/internal/readiness'
+```
+
+If login returns HTTP 500, check readiness and `docker compose ps`: the API cannot currently use PostgreSQL. Start the database, wait for it to be healthy, run `npm run db:setup`, and restart the API. HTTP 401 instead means the request reached the database but the credentials were rejected.
 
 Development identity created by the seed:
 

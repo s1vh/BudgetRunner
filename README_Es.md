@@ -26,23 +26,48 @@ Utiliza `dev` para el desarrollo, `main` para el trabajo estable y `prod` para l
 
 Requisitos: Node.js 22 o superior y Docker Desktop.
 
+Ejecuta todos los comandos desde la raíz del repositorio, donde se encuentra el `package.json` principal. Un terminal nuevo de PowerShell puede abrirse en el perfil de usuario de Windows aunque el proyecto ya esté abierto, así que comprueba la ubicación en cada terminal. Sustituye la ruta de ejemplo por la de tu clon:
+
+```powershell
+Set-Location -LiteralPath 'C:\ruta\a\BudgetRunner'
+Test-Path .\package.json # Debe mostrar True
+git branch --show-current
+```
+
+Durante la primera preparación, o después de cambiar dependencias:
+
 ```bash
-npm --prefix backend install
-npm --prefix frontend install
+npm --prefix backend ci
+npm --prefix frontend ci
 npm run db:up
+docker compose ps
 npm run db:setup
 ```
 
-Arrancar la API y el frontend en dos terminales:
+Espera a que `docker compose ps` muestre PostgreSQL como saludable antes de ejecutar `db:setup`. La preparación aplica las migraciones pendientes y ejecuta un seed de desarrollo idempotente: crea el usuario demo local si falta y restaura su contraseña y nombre canónicos si ya existe. Los datos del seed local son independientes de la cuenta demo publicada en Firebase/Neon.
+
+Para un arranque full-stack normal, mantén PostgreSQL activo e inicia la API y el frontend desde la raíz del repositorio en dos terminales:
 
 ```bash
+# Terminal de la API
+npm run db:up
 npm run dev:api
+
+# Terminal web
 npm run dev:web
 ```
 
 - Web: `http://127.0.0.1:5173`
 - API: `http://127.0.0.1:3001/api/v1`
 - Readiness: `http://127.0.0.1:3001/api/v1/internal/readiness`
+
+Después de iniciar la API, esta comprobación de PowerShell debe devolver `status: ok` antes de intentar iniciar sesión:
+
+```powershell
+Invoke-RestMethod 'http://127.0.0.1:3001/api/v1/internal/readiness'
+```
+
+Si el login devuelve HTTP 500, comprueba readiness y `docker compose ps`: la API no puede utilizar PostgreSQL en ese momento. Inicia la base, espera a que esté saludable, ejecuta `npm run db:setup` y reinicia la API. Un HTTP 401 indica en cambio que la petición llegó a la base, pero las credenciales fueron rechazadas.
 
 Identidad de desarrollo creada por el seed:
 
