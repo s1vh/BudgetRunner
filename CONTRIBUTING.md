@@ -10,7 +10,10 @@ This file is the canonical reference for repository workflow, branch promotion, 
 
 - Develop new features and bug fixes in `dev`.
 - For complex, delicate, or isolated work, create a short-lived topic branch from `dev`, preferably `codex/feature/...` or `codex/fix/...` for work performed with Codex.
-- Merge completed topic work back into `dev` after appropriate verification.
+- Keep the topic branch available locally and remotely throughout implementation, review, and maintainer validation.
+- Do not merge a topic branch into `dev`, or close or delete it, until the maintainer explicitly approves updating the persistent branch. Passing automated checks does not replace that approval.
+- After approval, merge the work into `dev`, confirm that the commit is available at its local and remote destination, and only then close the auxiliary branch. Use a different order only when the maintainer expressly requests it.
+- When a delivery is awaiting local validation, finish the work with a clean checkout on the exact branch the maintainer must test. If documentation, promotion, or deployment required switching to other branches, return to the validation branch before handing off unless instructed otherwise.
 - Code integrated into `dev` is tested locally and requires maintainer acceptance before promotion to `main`. Documentation may be updated and pushed without waiting for that functional validation.
 
 ### `main`: stable branch
@@ -37,12 +40,13 @@ topic branch (optional, created from dev)
                    dev ──────► main ──────► prod ──────► deployment
 ```
 
-The normal path is `dev` → `main` → `prod`. Topic branches normally return to `dev`; direct promotion to `main` is reserved for a completed feature or an urgent fix that justifies it.
+The normal path is `dev` → `main` → `prod`. Topic branches normally return to `dev` after the approval checkpoint described above; direct promotion to `main` is reserved for a completed feature or an urgent fix that justifies it.
 
 ## Publishing and deployment
 
 - Commits and topic branches may be pushed as part of normal development after confirming that they contain no secrets or unrelated changes.
-- Pushing a topic branch or `dev` does not authorize promotion to `main`; promotion requires complete, verified, and accepted code.
+- Pushing a topic branch makes it available for testing and review, but does not authorize merging it into `dev`, closing it, or promoting it. Each persistent-branch update requires its corresponding approval.
+- Pushing `dev` does not authorize promotion to `main`; promotion requires complete, verified, and accepted code.
 - `main` contains stable work only. `prod` is updated only from `main` and never receives feature development directly.
 - Vercel uses `prod` as its Production Branch and ignores Git builds from every other branch. A push to `prod` can start a live deployment and requires the corresponding release approval.
 - Firebase is deployed only from `prod` using the documented procedure; a Git push does not replace that verification.
@@ -62,6 +66,7 @@ Before promoting a change:
 - Run the tests, linting, and builds appropriate to the affected area.
 - Update user-facing and technical documentation when behaviour or operations change.
 - Check that no credentials, local environment files, generated deployment metadata, or unrelated work are included.
+- If maintainer validation is pending, confirm the active branch and leave a clean working tree on that branch.
 - When updating `prod`, confirm that its hybrid-deployment configuration still works and that the release is being prepared from `main`.
 
 Remote synchronization during development is allowed, while promotion and deployment remain separate decisions with their own checks.

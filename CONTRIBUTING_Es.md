@@ -10,7 +10,10 @@ Este fichero es la referencia canónica para el flujo de trabajo del repositorio
 
 - Desarrolla las nuevas funcionalidades y los fixes en `dev`.
 - Cuando un cambio sea complejo, delicado o necesite aislamiento, crea a partir de `dev` una rama temática de corta duración, preferentemente `codex/feature/...` o `codex/fix/...` para trabajo realizado con Codex.
-- Fusiona el trabajo terminado de nuevo en `dev` después de realizar las verificaciones apropiadas.
+- Mantén la rama temática disponible en local y en remoto durante la implementación, revisión y validación del mantenedor.
+- No fusiones una rama temática en `dev`, ni la cierres o elimines, hasta recibir el visto bueno explícito del mantenedor para actualizar la rama persistente. Superar las verificaciones automatizadas no sustituye esa aprobación.
+- Después de la aprobación, fusiona el trabajo en `dev`, confirma que el commit esté disponible en su destino local y remoto y solo entonces cierra la rama auxiliar. Se puede seguir un orden distinto únicamente cuando el mantenedor lo indique expresamente.
+- Cuando una entrega quede pendiente de validación local, termina el trabajo dejando el checkout limpio y situado en la rama exacta que debe comprobar el mantenedor. Si fue necesario cambiar a otras ramas por documentación, promoción o despliegue, vuelve a la rama de validación antes de entregar, salvo indicación contraria.
 - El código integrado en `dev` se prueba localmente y necesita aceptación del mantenedor antes de promoverse a `main`. La documentación puede actualizarse y publicarse sin esperar esa validación funcional.
 
 ### `main`: rama estable
@@ -37,12 +40,13 @@ rama temática (opcional, creada desde dev)
                    dev ──────► main ──────► prod ──────► despliegue
 ```
 
-El recorrido normal es `dev` → `main` → `prod`. Las ramas temáticas vuelven normalmente a `dev`; la promoción directa a `main` se reserva para una funcionalidad completa o un fix urgente que la justifique.
+El recorrido normal es `dev` → `main` → `prod`. Las ramas temáticas vuelven normalmente a `dev` después del punto de aprobación descrito arriba; la promoción directa a `main` se reserva para una funcionalidad completa o un fix urgente que la justifique.
 
 ## Publicación y despliegue
 
 - Se pueden publicar commits y ramas temáticas en remoto como parte del trabajo normal, después de revisar que no contienen secretos ni cambios ajenos a la tarea.
-- Publicar una rama temática o `dev` no autoriza promoverla a `main`; la promoción requiere que el código esté completo, verificado y aceptado.
+- Publicar una rama temática permite probarla y revisarla, pero no autoriza fusionarla en `dev`, cerrarla ni promoverla. Cada actualización de una rama persistente requiere el visto bueno correspondiente.
+- Publicar `dev` tampoco autoriza promoverla a `main`; la promoción requiere que el código esté completo, verificado y aceptado.
 - `main` conserva exclusivamente trabajo estable. `prod` se actualiza únicamente desde `main` y nunca recibe desarrollo directo.
 - Vercel tiene `prod` como Production Branch e ignora los builds Git de cualquier otra rama. Un push a `prod` puede iniciar un despliegue real y exige la aprobación de release correspondiente.
 - Firebase se despliega únicamente desde `prod` mediante su procedimiento documentado; un push Git por sí solo no sustituye esa verificación.
@@ -62,6 +66,7 @@ Antes de promocionar un cambio:
 - Ejecuta las pruebas, el linting y las compilaciones apropiadas para el área afectada.
 - Actualiza la documentación técnica y de usuario cuando cambien el comportamiento o las operaciones.
 - Comprueba que no se incluyan credenciales, ficheros de entorno local, metadatos de despliegue generados ni trabajo no relacionado.
+- Si esperas validación del mantenedor, confirma la rama activa y deja el árbol de trabajo limpio en esa rama.
 - Al actualizar `prod`, confirma que su configuración de despliegue híbrido sigue funcionando y que la release se prepara desde `main`.
 
 La sincronización remota durante el desarrollo está permitida, pero la promoción y el despliegue siguen siendo decisiones separadas con sus propias comprobaciones.
