@@ -316,6 +316,14 @@ Usar `SERIALIZABLE` o bloqueo explícito de filas para:
 
 Bloquear en orden estable: usuario/progreso → periodo/oferta → módulo → ledger, para reducir deadlocks.
 
+### 11.1 Construcción y límites defensivos de consultas
+
+- Las rutas y servicios solo pueden llamar a `query` con SQL literal estático. Los valores externos se envían mediante parámetros `$n`; no se concatenan ni interpolan.
+- Los filtros opcionales del listado financiero forman parte de una consulta fija y se habilitan mediante parámetros anulables. Cualquier identificador u orden dinámico futuro requerirá una allowlist explícita antes de incorporarse.
+- `sqlConstruction.unit.test.ts` recorre el backend y falla si una ruta o servicio intenta ejecutar SQL compuesto en runtime. Las migraciones son la única fuente SQL dinámica admitida y proceden exclusivamente de ficheros versionados del repositorio.
+- El pool limita las sentencias a 10 s, la espera de bloqueos a 5 s, el tiempo de cliente a 12 s y una transacción inactiva a 10 s. Un cambio de estos valores exige verificar migraciones, operaciones serializables y latencia real de Neon.
+- La detección de entradas con forma de consulta es una barrera complementaria. La seguridad no puede depender de palabras prohibidas ni de que todas las posibles ofuscaciones sean reconocibles.
+
 ## 12. Estado de ayuda y tour
 
 La migración `004_help_and_guided_tour.sql` incorpora `helpHints: true` a las preferencias que no lo tuvieran y actualiza el valor por defecto para las cuentas nuevas. No rellena `guided_tour_completed_at`: de este modo, tras aplicar la migración, todas las cuentas existentes de test y todas las cuentas nuevas reciben el tour en su primer login. La fecha se establece de forma idempotente al finalizarlo o salir de él.
