@@ -4,22 +4,6 @@ Este fichero registra trabajo futuro ya identificado, pero **no autoriza su impl
 
 ## Pendiente
 
-### BR-BL-002 — Corregir el título transparente en Chrome/Chromium
-
-**Estado:** pendiente
-
-**Prioridad:** por determinar
-
-Investigar y corregir los defectos de visualización en navegadores basados en Chrome/Chromium del título transparente situado en la parte superior izquierda. La implementación actual referencia `frontend/public/media/BudgetRunner_logo.svg`; al abordar el trabajo se deberá confirmar si el defecto procede del recurso, de su exportación original o del renderizado/CSS, y validar la solución también en Firefox y Safari cuando sea posible.
-
-### BR-BL-003 — Revamp visual de Gamificación
-
-**Estado:** pendiente
-
-**Prioridad:** por determinar
-
-Aplicar pequeños cambios de visualización a la sección de Gamificación. No se considera un rework funcional ni arquitectónico. El alcance concreto se definirá en su hilo de trabajo antes de modificar componentes, diseño o comportamiento.
-
 ### BR-BL-004 — Remediar avisos de seguridad en dependencias npm
 
 **Estado:** pendiente
@@ -96,6 +80,44 @@ Las entradas completadas no se eliminan. Se mueven a esta sección, se marcan co
 - ramas, pull requests o commits pertinentes;
 - verificaciones realizadas;
 - documentación o deuda residual asociada.
+
+### BR-BL-003 — Revamp visual de Gamificación
+
+**Estado:** resuelta
+
+**Fecha de resolución:** 29 de agosto de 2026
+
+**Prioridad:** por determinar
+
+**Rama de trabajo:** `codex/feature/cyberdeck-hud`, validada por el mantenedor antes de promoverse.
+
+**Resultado:** la sección se presenta ahora como **Cyberdeck** en la navegación y en el encabezado de los ocho idiomas. Resumen integra en una única pestaña las métricas de progresión y el esquema técnico. `WRIST CORE` permanece sin traducir y cada módulo enlaza visualmente su tarjeta, su traza discontinua y una pieza específica del modelo wireframe.
+
+La telemetría permite reparar módulos dañados desde el propio detalle, muestra el coste en SynthCoins y actualiza Energy y saldo inmediatamente. Los módulos íntegros y destruidos muestran la acción deshabilitada; los slots vacíos dejan de abrir el detalle. La pestaña Reparaciones continúa ofreciendo el listado especializado.
+
+En orientación vertical, el esquema sustituye el lienzo ancho por tarjetas compactas en una o dos columnas y sitúa una miniatura WebGL debajo, sin core ni conexiones. En horizontal se conserva el layout widescreen original. Solo se anima el canvas visible para no duplicar trabajo gráfico.
+
+**Commits principales:** `bd1a92f` (integración e interacciones del HUD) y `aca241c` (layout vertical responsive).
+
+**Verificación:** build y lint del frontend, contrato automatizado de code splitting y recorridos Chromium en 320, 390, 600 y 1280 píxeles. Se comprobaron hover coordinado, ausencia de desbordamiento interno en vertical, paridad del modal, coste y aplicación de reparaciones, estados deshabilitados, slots vacíos no interactivos y ausencia de errores de WebGL.
+
+**Deuda residual:** ninguna identificada. La visualización vertical conserva el resaltado por hover o foco, aunque la interacción primaria en dispositivos táctiles es la selección de la tarjeta.
+
+### BR-BL-002 — Corregir el título transparente en Chrome/Chromium
+
+**Estado:** resuelta
+
+**Fecha de resolución:** 29 de agosto de 2026
+
+**Prioridad:** por determinar
+
+**Resultado:** se simplificó `frontend/public/media/BudgetRunner_logo.svg`, eliminando la estructura heredada de Illustrator basada en máscaras y capas redundantes. El recurso usa ahora un viewport normalizado y un único recorte explícito para producir las franjas transparentes que atraviesan las palabras Budget y Runner, sin fondo ni capas raster ocultas adicionales.
+
+**Commit:** `c753255`.
+
+**Verificación:** inspección del SVG y validación visual del mantenedor en navegadores Chrome/Chromium, sin reproducción posterior de los artefactos originales.
+
+**Deuda residual:** no se ejecutó una comprobación automatizada en Safari desde Windows; el SVG conserva únicamente primitivas y atributos ampliamente compatibles.
 
 ### BR-BL-006 — Añadir una capa de hardening contra SQL injection
 

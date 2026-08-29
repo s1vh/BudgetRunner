@@ -71,7 +71,7 @@ function MobileNav() {
   const { t } = useI18n()
   return (
     <nav className="fixed inset-x-3 bottom-3 z-50 grid grid-cols-4 rounded-xl border border-outline-soft/70 bg-space-black/92 p-1.5 shadow-[0_0_30px_rgba(0,0,0,.55)] backdrop-blur-xl md:hidden" aria-label={t('nav.mobile')}>
-      {navItems.slice(0, 4).map(({ to, labelKey, icon: Icon, end }) => <NavLink key={to} to={to} end={end} className={({ isActive }) => cn('grid min-h-12 place-items-center rounded-lg font-mono text-[9px] font-bold uppercase transition', isActive ? 'bg-neon-cyan/10 text-neon-cyan' : 'text-text-muted')}><Icon className="size-[18px]" /><span>{labelKey === 'nav.game' ? 'Deck' : t(labelKey)}</span></NavLink>)}
+      {navItems.slice(0, 4).map(({ to, labelKey, icon: Icon, end }) => <NavLink key={to} to={to} end={end} className={({ isActive }) => cn('grid min-h-12 place-items-center rounded-lg font-mono text-[9px] font-bold uppercase transition', isActive ? 'bg-neon-cyan/10 text-neon-cyan' : 'text-text-muted')}><Icon className="size-[18px]" /><span>{t(labelKey)}</span></NavLink>)}
     </nav>
   )
 }
