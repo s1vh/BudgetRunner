@@ -26,6 +26,9 @@ export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
   private transactions = [...initialTransactions]
   private budgets = [...initialBudgets]
   private categories = structuredClone(initialCategories)
+  private gameProgress = structuredClone(progress)
+  private gameModules = structuredClone(modules)
+  private gameEvents = structuredClone(gameHistory)
   private currentProfile = {
     ...structuredClone(profile),
     locale: readStoredLocale() ?? detectSystemLocale(),
@@ -77,7 +80,7 @@ export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
       distribution: this.distribution(),
       cashflow,
       recentTransactions: [...this.transactions].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt)).slice(0, 5),
-      progress,
+      progress: this.gameProgress,
       alerts: [
         { id: 'alert-1', tone: 'warning', message: { key: 'alert.criticalModule', params: { name: 'Ghostlink Q7', energy: 18 } } },
         { id: 'alert-2', tone: 'info', message: { key: 'alert.storeRotation.other', params: { days: 5 } } },
@@ -87,10 +90,10 @@ export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
 
   private gameData(): GameData {
     return {
-      progress,
-      modules,
+      progress: this.gameProgress,
+      modules: this.gameModules,
       offers,
-      history: gameHistory,
+      history: this.gameEvents,
       familyBonuses: [
         { family: 'retrowave', count: 2, power: 310, bonus: 15 },
         { family: 'synthwave', count: 2, power: 325, bonus: 16 },
@@ -127,12 +130,12 @@ export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
 
   async getGameSummary(): Promise<ProgressSummary> {
     await wait()
-    return structuredClone(progress)
+    return structuredClone(this.gameProgress)
   }
 
   async getCyberdeck(): Promise<CyberModule[]> {
     await wait()
-    return structuredClone(modules)
+    return structuredClone(this.gameModules)
   }
 
   async getStoreOffers(): Promise<StoreOffer[]> {
@@ -142,7 +145,7 @@ export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
 
   async getGameHistory(): Promise<GameEvent[]> {
     await wait()
-    return structuredClone(gameHistory)
+    return structuredClone(this.gameEvents)
   }
 
   async getFamilyBonuses(): Promise<GameData['familyBonuses']> {
@@ -254,8 +257,35 @@ export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
     return structuredClone(this.gameData())
   }
 
-  async repairModule(): Promise<GameData> {
+  async repairModule(instanceId: string): Promise<GameData> {
     await wait()
+    const module = this.gameModules.find((candidate) => candidate.instanceId === instanceId)
+    if (!module) throw new Error('MODULE_NOT_FOUND')
+    if (module.state === 'destroyed' || module.energy === 0) throw new Error('MODULE_DESTROYED')
+    if (module.state !== 'equipped' || module.energy >= 100) throw new Error('MODULE_NOT_DAMAGED')
+    const repairCost = module.repairCost ?? Math.ceil(module.priceCoins * (100 - module.energy) / 100)
+    if (this.gameProgress.synthcoins < repairCost) throw new Error('INSUFFICIENT_SYNTHCOINS')
+
+    const energyBefore = module.energy
+    this.gameModules = this.gameModules.map((candidate) => {
+      if (candidate.instanceId !== instanceId) return candidate
+      const repaired = { ...candidate, energy: 100 }
+      delete repaired.repairCost
+      return repaired
+    })
+    this.gameProgress = { ...this.gameProgress, synthcoins: this.gameProgress.synthcoins - repairCost }
+    this.currentProfile = {
+      ...this.currentProfile,
+      progress: { ...this.currentProfile.progress, synthcoins: this.gameProgress.synthcoins },
+    }
+    this.gameEvents = [{
+      id: createId('game'),
+      type: 'repair',
+      title: { key: 'game.history.repairTitle', params: { name: module.name } },
+      detail: { key: 'game.history.repairDetail', params: { energy: energyBefore } },
+      amount: -repairCost,
+      occurredAt: new Date().toISOString(),
+    }, ...this.gameEvents]
     return structuredClone(this.gameData())
   }
 }
