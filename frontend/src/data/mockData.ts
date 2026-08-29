@@ -80,7 +80,11 @@ const moduleBase: CyberModule[] = [
   { instanceId: 'mod-power', slot: 'power', slotLabel: 'Fusion Cell', name: 'Helios Cell', family: 'retrowave', rarity: 'epic', power: 220, shield: 6, energy: 88, state: 'equipped', priceCoins: 840, description: 'Fuente de fusión estable con reserva sunset.' },
 ]
 
-export const modules = moduleBase.map((module) => ({ ...module, descriptionKey: `module.mock.${module.instanceId}.description` }))
+export const modules = moduleBase.map((module) => ({
+  ...module,
+  ...(module.energy > 0 && module.energy < 100 ? { repairCost: Math.ceil(module.priceCoins * (100 - module.energy) / 100) } : {}),
+  descriptionKey: `module.mock.${module.instanceId}.description`,
+}))
 
 const offerModules: CyberModule[] = [
   { instanceId: 'offer-1-module', slot: 'jammer', slotLabel: 'Frequency Jammer', name: 'Signal Reaper', family: 'synthwave', rarity: 'rare', power: 155, shield: 5, energy: 100, state: 'equipped', priceCoins: 420, description: 'Silencia el ruido financiero de banda ancha.' },
