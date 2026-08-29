@@ -1,4 +1,5 @@
 /* eslint-disable react-refresh/only-export-components -- family color tokens are colocated with the diagram */
+import { useEffect, useState } from 'react'
 import type { CyberModule, ModuleFamily } from '@/types/domain'
 import { WireframeDeviceCanvas } from './WireframeDeviceCanvas'
 import { useI18n } from '@/i18n/I18nContext'
@@ -10,12 +11,48 @@ const positions = [
   { x: 245, y: 520, side: 'bottom' }, { x: 445, y: 520, side: 'bottom' },
 ] as const
 
+function moduleColor(module: CyberModule) {
+  if (module.state === 'destroyed') return '#FF6E84'
+  if (module.state === 'empty') return '#663A52'
+  return familyColors[module.family]
+}
+
+function usePortraitOrientation() {
+  const [isPortrait, setIsPortrait] = useState(() => window.matchMedia('(orientation: portrait)').matches)
+
+  useEffect(() => {
+    const media = window.matchMedia('(orientation: portrait)')
+    const updateOrientation = () => setIsPortrait(media.matches)
+    updateOrientation()
+    media.addEventListener('change', updateOrientation)
+    return () => media.removeEventListener('change', updateOrientation)
+  }, [])
+
+  return isPortrait
+}
+
+function connectorPath(position: (typeof positions)[number]) {
+  const startX = position.side === 'left' ? position.x + 170 : position.side === 'right' ? position.x : position.x + 85
+  const startY = position.side === 'bottom' ? position.y : position.y + 47
+  const controlX = position.side === 'left' ? 250 : position.side === 'right' ? 610 : startX
+  const controlY = position.side === 'bottom' ? 475 : 315
+  return `M ${startX} ${startY} Q ${controlX} ${controlY} 430 315`
+}
+
 export function CyberdeckDiagram({ modules, selectedId, onSelect }: { modules: CyberModule[]; selectedId?: string; onSelect: (module: CyberModule) => void }) {
   const { t, td } = useI18n()
+  const isPortrait = usePortraitOrientation()
+  const [hoveredId, setHoveredId] = useState<string | null>(null)
+  const activeId = hoveredId ?? selectedId
+  const activeModule = modules.find((module) => module.instanceId === activeId)
+  const highlightedSlot = activeModule?.slot
+  const highlightedColor = activeModule ? moduleColor(activeModule) : undefined
+
   return (
-    <div className="relative overflow-x-auto rounded-xl border border-outline-soft/50 bg-void/72 p-2 shadow-[inset_0_0_60px_rgba(139,0,255,.12)]">
+    <>
+    <div className="relative overflow-x-auto rounded-xl border border-outline-soft/50 bg-void/72 p-2 shadow-[inset_0_0_60px_rgba(139,0,255,.12)] portrait:hidden">
       <div className="relative min-w-[820px] overflow-hidden rounded-lg">
-        <WireframeDeviceCanvas />
+        <WireframeDeviceCanvas active={!isPortrait} highlightedSlot={highlightedSlot} highlightColor={highlightedColor} />
         <svg viewBox="0 0 860 630" className="relative z-10 min-w-[820px]" role="group" aria-label={t('game.diagramAria')}>
           <defs>
             <filter id="deck-glow"><feGaussianBlur stdDeviation="3" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
@@ -25,13 +62,13 @@ export function CyberdeckDiagram({ modules, selectedId, onSelect }: { modules: C
           <rect width="860" height="630" rx="18" fill="#050508" fillOpacity="0.23" />
           <rect width="860" height="630" rx="18" fill="url(#micro-grid)" />
 
-          <g stroke="#8B00FF" strokeOpacity="0.36" strokeWidth="1.5" fill="none" strokeDasharray="5 7">
-            {positions.map((position, index) => {
-              const startX = position.side === 'left' ? position.x + 170 : position.side === 'right' ? position.x : position.x + 85
-              const startY = position.side === 'bottom' ? position.y : position.y + 47
-              const controlX = position.side === 'left' ? 250 : position.side === 'right' ? 610 : startX
-              const controlY = position.side === 'bottom' ? 475 : 315
-              return <path key={index} d={`M ${startX} ${startY} Q ${controlX} ${controlY} 430 315`} />
+          <g fill="none" strokeDasharray="5 7">
+            {modules.map((module, index) => {
+              const position = positions[index]
+              if (!position) return null
+              const color = moduleColor(module)
+              const active = activeId === module.instanceId
+              return <path key={module.instanceId} d={connectorPath(position)} stroke={active ? color : '#8B00FF'} strokeOpacity={active ? 0.95 : 0.36} strokeWidth={active ? 3 : 1.5} filter={active ? 'url(#deck-glow)' : undefined} className="transition-all duration-200" />
             })}
           </g>
           <g opacity="0.7">
@@ -46,21 +83,37 @@ export function CyberdeckDiagram({ modules, selectedId, onSelect }: { modules: C
             const position = positions[index]
             if (!position) return null
             const { x, y, side } = position
-            const color = module.state === 'destroyed' ? '#FF6E84' : module.state === 'empty' ? '#663A52' : familyColors[module.family]
+            const color = moduleColor(module)
+            const active = activeId === module.instanceId
             const selected = selectedId === module.instanceId
+            const selectable = module.state !== 'empty'
             const connectorX = side === 'left' ? x + 178 : side === 'right' ? x - 8 : x + 85
             const connectorY = side === 'bottom' ? y - 8 : y + 47
             const nodePath = `M ${x + 9} ${y} H ${x + 148} L ${x + 170} ${y + 22} V ${y + 85} L ${x + 161} ${y + 94} H ${x + 9} L ${x} ${y + 85} V ${y + 9} Z`
             return (
-              <g key={module.instanceId} role="button" tabIndex={0} aria-label={t('game.slotAria', { slot: td({ key: `slot.${module.slot}`, fallback: module.slotLabel }), name: module.name, energy: module.energy })} onClick={() => onSelect(module)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') onSelect(module) }} className="cursor-pointer outline-none">
-                <path d={nodePath} fill="url(#node-panel)" stroke={color} strokeWidth={selected ? 3 : 1.5} filter={selected ? 'url(#deck-glow)' : undefined} />
-                <path d={`M ${x + 12} ${y + 8} H ${x + 132} M ${x + 12} ${y + 13} H ${x + 78}`} stroke={color} strokeOpacity="0.45" strokeWidth="1" />
-                <path d={`M ${x + 146} ${y + 7} L ${x + 162} ${y + 23} M ${x + 151} ${y + 7} L ${x + 166} ${y + 22}`} stroke={color} strokeOpacity="0.8" />
+              <g
+                key={module.instanceId}
+                role={selectable ? 'button' : undefined}
+                tabIndex={selectable ? 0 : undefined}
+                aria-disabled={selectable ? undefined : true}
+                aria-label={t('game.slotAria', { slot: td({ key: `slot.${module.slot}`, fallback: module.slotLabel }), name: module.name, energy: module.energy })}
+                onClick={selectable ? () => onSelect(module) : undefined}
+                onKeyDown={selectable ? (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(module) } } : undefined}
+                onMouseEnter={() => setHoveredId(module.instanceId)}
+                onMouseLeave={() => setHoveredId((current) => current === module.instanceId ? null : current)}
+                onFocus={selectable ? () => setHoveredId(module.instanceId) : undefined}
+                onBlur={selectable ? () => setHoveredId((current) => current === module.instanceId ? null : current) : undefined}
+                className={`${selectable ? 'cursor-pointer' : 'cursor-default'} outline-none`}
+              >
+                <path d={nodePath} fill="url(#node-panel)" stroke={color} strokeWidth={active || selected ? 3 : 1.5} filter={active || selected ? 'url(#deck-glow)' : undefined} className="transition-all duration-200" />
+                {active && <path d={nodePath} fill={color} fillOpacity="0.12" stroke={color} strokeOpacity="0.45" strokeWidth="1" pointerEvents="none" />}
+                <path d={`M ${x + 12} ${y + 8} H ${x + 132} M ${x + 12} ${y + 13} H ${x + 78}`} stroke={color} strokeOpacity={active ? 0.9 : 0.45} strokeWidth="1" />
+                <path d={`M ${x + 146} ${y + 7} L ${x + 162} ${y + 23} M ${x + 151} ${y + 7} L ${x + 166} ${y + 22}`} stroke={color} strokeOpacity={active ? 1 : 0.8} />
                 <path d={`M ${x + 10} ${y + 73} H ${x + 160}`} stroke="#451232" strokeWidth="7" strokeLinecap="square" />
                 <path d={`M ${x + 10} ${y + 73} H ${x + 10 + 1.5 * module.energy}`} stroke={color} strokeWidth="7" strokeLinecap="square" />
-                <path d={`M ${x + 10} ${y + 84} H ${x + 42} M ${x + 48} ${y + 84} H ${x + 60} M ${x + 66} ${y + 84} H ${x + 90}`} stroke={color} strokeOpacity="0.4" strokeWidth="2" />
-                <circle cx={x + 154} cy={y + 84} r="3" fill={color} filter="url(#deck-glow)" />
-                <circle cx={connectorX} cy={connectorY} r="4" fill="#050508" stroke={color} strokeWidth="2" />
+                <path d={`M ${x + 10} ${y + 84} H ${x + 42} M ${x + 48} ${y + 84} H ${x + 60} M ${x + 66} ${y + 84} H ${x + 90}`} stroke={color} strokeOpacity={active ? 0.9 : 0.4} strokeWidth="2" />
+                <circle cx={x + 154} cy={y + 84} r={active ? 4 : 3} fill={color} filter="url(#deck-glow)" />
+                <circle cx={connectorX} cy={connectorY} r={active ? 6 : 4} fill="#050508" stroke={color} strokeWidth={active ? 3 : 2} filter={active ? 'url(#deck-glow)' : undefined} />
                 <text x={x + 12} y={y + 27} fill="#9B91AD" fontFamily="Courier Prime" fontSize="8" letterSpacing="1.4">{module.slot.toUpperCase()} // {t('game.slotTag')} {String(index + 1).padStart(2, '0')}</text>
                 <text x={x + 12} y={y + 48} fill={color} fontFamily="Orbitron" fontWeight="700" fontSize="10">{module.name.length > 20 ? `${module.name.slice(0, 18)}…` : module.name}</text>
                 <text x={x + 12} y={y + 62} fill="#F4F4F9" fontFamily="Courier Prime" fontSize="8">PWR {module.power}  /  SHD {module.shield}  /  ENG {module.energy}</text>
@@ -72,6 +125,60 @@ export function CyberdeckDiagram({ modules, selectedId, onSelect }: { modules: C
         <div className="pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2 rounded border border-neon-cyan/15 bg-void/70 px-3 py-1 font-mono text-[8px] tracking-[0.18em] text-neon-cyan/65 uppercase backdrop-blur">{t('game.passiveTelemetry')}</div>
       </div>
     </div>
+
+    <div className="hidden min-w-0 space-y-3 portrait:block" role="group" aria-label={t('game.diagramAria')}>
+      <div className="grid min-w-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
+        {modules.map((module, index) => {
+          const color = moduleColor(module)
+          const active = activeId === module.instanceId
+          const selectable = module.state !== 'empty'
+          const label = t('game.slotAria', { slot: td({ key: `slot.${module.slot}`, fallback: module.slotLabel }), name: module.name, energy: module.energy })
+          const cardClassName = `min-w-0 rounded-lg border bg-[linear-gradient(145deg,rgba(12,9,20,.96),rgba(34,2,22,.82))] p-3 text-left outline-none transition duration-200 ${selectable ? 'cursor-pointer focus-visible:ring-2 focus-visible:ring-neon-cyan/60' : 'cursor-default opacity-65'}`
+          const cardStyle = {
+            borderColor: active ? color : `${color}55`,
+            boxShadow: active ? `0 0 20px ${color}38, inset 0 0 18px ${color}14` : `inset 0 0 12px ${color}0A`,
+          }
+          const content = <>
+            <div className="flex items-center justify-between gap-2 font-mono text-[8px] tracking-[0.16em] text-text-muted uppercase">
+              <span className="truncate">{module.slot} // {t('game.slotTag')} {String(index + 1).padStart(2, '0')}</span>
+              <span className="shrink-0" style={{ color }}>{module.energy}%</span>
+            </div>
+            <div className="mt-2 flex min-w-0 items-center justify-between gap-2">
+              <strong className="truncate font-display text-xs" style={{ color }}>{module.name}</strong>
+              {module.state === 'destroyed' && <span className="shrink-0 font-mono text-[7px] text-[#FF6E84] uppercase">{t('game.signalLost')}</span>}
+            </div>
+            <p className="mt-2 font-mono text-[9px] text-text-glow">PWR {module.power} / SHD {module.shield} / ENG {module.energy}</p>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-sm bg-[#451232]">
+              <span className="block h-full transition-[width] duration-200" style={{ width: `${module.energy}%`, backgroundColor: color, boxShadow: active ? `0 0 8px ${color}` : undefined }} />
+            </div>
+          </>
+
+          return selectable
+            ? <button
+                key={module.instanceId}
+                type="button"
+                aria-label={label}
+                className={cardClassName}
+                style={cardStyle}
+                onClick={() => onSelect(module)}
+                onMouseEnter={() => setHoveredId(module.instanceId)}
+                onMouseLeave={() => setHoveredId((current) => current === module.instanceId ? null : current)}
+                onFocus={() => setHoveredId(module.instanceId)}
+                onBlur={() => setHoveredId((current) => current === module.instanceId ? null : current)}
+              >{content}</button>
+            : <div key={module.instanceId} aria-label={label} aria-disabled="true" className={cardClassName} style={cardStyle}>{content}</div>
+        })}
+      </div>
+
+      <div className="relative h-[210px] min-w-0 overflow-hidden rounded-xl border border-outline-soft/50 bg-void/80 shadow-[inset_0_0_45px_rgba(139,0,255,.16)] min-[480px]:h-[260px]">
+        <div className="pointer-events-none absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(102,58,82,.35)_1px,transparent_1px),linear-gradient(90deg,rgba(102,58,82,.35)_1px,transparent_1px)] [background-size:18px_18px]" />
+        <WireframeDeviceCanvas active={isPortrait} highlightedSlot={highlightedSlot} highlightColor={highlightedColor} />
+        <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
+          <span className="rounded border border-neon-cyan/15 bg-void/75 px-3 py-1 font-mono text-[7px] tracking-[0.16em] text-neon-cyan/65 uppercase backdrop-blur">{t('game.passiveTelemetry')}</span>
+        </div>
+      </div>
+    </div>
+    </>
   )
 }
 
