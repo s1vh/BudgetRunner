@@ -124,7 +124,7 @@ function buildDeviceGeometry() {
   return [...sections.entries()].map(([id, values]) => ({ id, vertices: new Float32Array(values) }))
 }
 
-export function WireframeDeviceCanvas({ highlightedSlot, highlightColor }: { highlightedSlot?: string; highlightColor?: string }) {
+export function WireframeDeviceCanvas({ active = true, highlightedSlot, highlightColor }: { active?: boolean; highlightedSlot?: string; highlightColor?: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const highlightedSlotRef = useRef(highlightedSlot)
   const highlightColorRef = useRef<Color>(hexColor(highlightColor))
@@ -137,6 +137,7 @@ export function WireframeDeviceCanvas({ highlightedSlot, highlightColor }: { hig
   }, [highlightColor, highlightedSlot])
 
   useEffect(() => {
+    if (!active) return
     const canvas = canvasRef.current
     if (!canvas) return
     const gl = canvas.getContext('webgl', { alpha: true, antialias: true })
@@ -251,7 +252,7 @@ export function WireframeDeviceCanvas({ highlightedSlot, highlightColor }: { hig
       gl.deleteShader(vertexShader)
       gl.deleteShader(fragmentShader)
     }
-  }, [])
+  }, [active])
 
   return <canvas ref={canvasRef} className="pointer-events-none absolute inset-0 h-full w-full opacity-70 [filter:drop-shadow(0_0_8px_rgba(0,255,255,.28))]" aria-hidden="true" />
 }

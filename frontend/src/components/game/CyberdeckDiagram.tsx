@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components -- family color tokens are colocated with the diagram */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { CyberModule, ModuleFamily } from '@/types/domain'
 import { WireframeDeviceCanvas } from './WireframeDeviceCanvas'
 import { useI18n } from '@/i18n/I18nContext'
@@ -11,6 +11,26 @@ const positions = [
   { x: 245, y: 520, side: 'bottom' }, { x: 445, y: 520, side: 'bottom' },
 ] as const
 
+function moduleColor(module: CyberModule) {
+  if (module.state === 'destroyed') return '#FF6E84'
+  if (module.state === 'empty') return '#663A52'
+  return familyColors[module.family]
+}
+
+function usePortraitOrientation() {
+  const [isPortrait, setIsPortrait] = useState(() => window.matchMedia('(orientation: portrait)').matches)
+
+  useEffect(() => {
+    const media = window.matchMedia('(orientation: portrait)')
+    const updateOrientation = () => setIsPortrait(media.matches)
+    updateOrientation()
+    media.addEventListener('change', updateOrientation)
+    return () => media.removeEventListener('change', updateOrientation)
+  }, [])
+
+  return isPortrait
+}
+
 function connectorPath(position: (typeof positions)[number]) {
   const startX = position.side === 'left' ? position.x + 170 : position.side === 'right' ? position.x : position.x + 85
   const startY = position.side === 'bottom' ? position.y : position.y + 47
@@ -21,16 +41,18 @@ function connectorPath(position: (typeof positions)[number]) {
 
 export function CyberdeckDiagram({ modules, selectedId, onSelect }: { modules: CyberModule[]; selectedId?: string; onSelect: (module: CyberModule) => void }) {
   const { t, td } = useI18n()
+  const isPortrait = usePortraitOrientation()
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const activeId = hoveredId ?? selectedId
   const activeModule = modules.find((module) => module.instanceId === activeId)
   const highlightedSlot = activeModule?.slot
-  const highlightedColor = activeModule?.state === 'destroyed' ? '#FF6E84' : activeModule?.state === 'empty' ? '#663A52' : activeModule ? familyColors[activeModule.family] : undefined
+  const highlightedColor = activeModule ? moduleColor(activeModule) : undefined
 
   return (
-    <div className="relative overflow-x-auto rounded-xl border border-outline-soft/50 bg-void/72 p-2 shadow-[inset_0_0_60px_rgba(139,0,255,.12)]">
+    <>
+    <div className="relative overflow-x-auto rounded-xl border border-outline-soft/50 bg-void/72 p-2 shadow-[inset_0_0_60px_rgba(139,0,255,.12)] portrait:hidden">
       <div className="relative min-w-[820px] overflow-hidden rounded-lg">
-        <WireframeDeviceCanvas highlightedSlot={highlightedSlot} highlightColor={highlightedColor} />
+        <WireframeDeviceCanvas active={!isPortrait} highlightedSlot={highlightedSlot} highlightColor={highlightedColor} />
         <svg viewBox="0 0 860 630" className="relative z-10 min-w-[820px]" role="group" aria-label={t('game.diagramAria')}>
           <defs>
             <filter id="deck-glow"><feGaussianBlur stdDeviation="3" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
@@ -44,7 +66,7 @@ export function CyberdeckDiagram({ modules, selectedId, onSelect }: { modules: C
             {modules.map((module, index) => {
               const position = positions[index]
               if (!position) return null
-              const color = module.state === 'destroyed' ? '#FF6E84' : module.state === 'empty' ? '#663A52' : familyColors[module.family]
+              const color = moduleColor(module)
               const active = activeId === module.instanceId
               return <path key={module.instanceId} d={connectorPath(position)} stroke={active ? color : '#8B00FF'} strokeOpacity={active ? 0.95 : 0.36} strokeWidth={active ? 3 : 1.5} filter={active ? 'url(#deck-glow)' : undefined} className="transition-all duration-200" />
             })}
@@ -61,7 +83,7 @@ export function CyberdeckDiagram({ modules, selectedId, onSelect }: { modules: C
             const position = positions[index]
             if (!position) return null
             const { x, y, side } = position
-            const color = module.state === 'destroyed' ? '#FF6E84' : module.state === 'empty' ? '#663A52' : familyColors[module.family]
+            const color = moduleColor(module)
             const active = activeId === module.instanceId
             const selected = selectedId === module.instanceId
             const selectable = module.state !== 'empty'
@@ -103,6 +125,60 @@ export function CyberdeckDiagram({ modules, selectedId, onSelect }: { modules: C
         <div className="pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2 rounded border border-neon-cyan/15 bg-void/70 px-3 py-1 font-mono text-[8px] tracking-[0.18em] text-neon-cyan/65 uppercase backdrop-blur">{t('game.passiveTelemetry')}</div>
       </div>
     </div>
+
+    <div className="hidden min-w-0 space-y-3 portrait:block" role="group" aria-label={t('game.diagramAria')}>
+      <div className="grid min-w-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
+        {modules.map((module, index) => {
+          const color = moduleColor(module)
+          const active = activeId === module.instanceId
+          const selectable = module.state !== 'empty'
+          const label = t('game.slotAria', { slot: td({ key: `slot.${module.slot}`, fallback: module.slotLabel }), name: module.name, energy: module.energy })
+          const cardClassName = `min-w-0 rounded-lg border bg-[linear-gradient(145deg,rgba(12,9,20,.96),rgba(34,2,22,.82))] p-3 text-left outline-none transition duration-200 ${selectable ? 'cursor-pointer focus-visible:ring-2 focus-visible:ring-neon-cyan/60' : 'cursor-default opacity-65'}`
+          const cardStyle = {
+            borderColor: active ? color : `${color}55`,
+            boxShadow: active ? `0 0 20px ${color}38, inset 0 0 18px ${color}14` : `inset 0 0 12px ${color}0A`,
+          }
+          const content = <>
+            <div className="flex items-center justify-between gap-2 font-mono text-[8px] tracking-[0.16em] text-text-muted uppercase">
+              <span className="truncate">{module.slot} // {t('game.slotTag')} {String(index + 1).padStart(2, '0')}</span>
+              <span className="shrink-0" style={{ color }}>{module.energy}%</span>
+            </div>
+            <div className="mt-2 flex min-w-0 items-center justify-between gap-2">
+              <strong className="truncate font-display text-xs" style={{ color }}>{module.name}</strong>
+              {module.state === 'destroyed' && <span className="shrink-0 font-mono text-[7px] text-[#FF6E84] uppercase">{t('game.signalLost')}</span>}
+            </div>
+            <p className="mt-2 font-mono text-[9px] text-text-glow">PWR {module.power} / SHD {module.shield} / ENG {module.energy}</p>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-sm bg-[#451232]">
+              <span className="block h-full transition-[width] duration-200" style={{ width: `${module.energy}%`, backgroundColor: color, boxShadow: active ? `0 0 8px ${color}` : undefined }} />
+            </div>
+          </>
+
+          return selectable
+            ? <button
+                key={module.instanceId}
+                type="button"
+                aria-label={label}
+                className={cardClassName}
+                style={cardStyle}
+                onClick={() => onSelect(module)}
+                onMouseEnter={() => setHoveredId(module.instanceId)}
+                onMouseLeave={() => setHoveredId((current) => current === module.instanceId ? null : current)}
+                onFocus={() => setHoveredId(module.instanceId)}
+                onBlur={() => setHoveredId((current) => current === module.instanceId ? null : current)}
+              >{content}</button>
+            : <div key={module.instanceId} aria-label={label} aria-disabled="true" className={cardClassName} style={cardStyle}>{content}</div>
+        })}
+      </div>
+
+      <div className="relative h-[210px] min-w-0 overflow-hidden rounded-xl border border-outline-soft/50 bg-void/80 shadow-[inset_0_0_45px_rgba(139,0,255,.16)] min-[480px]:h-[260px]">
+        <div className="pointer-events-none absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(102,58,82,.35)_1px,transparent_1px),linear-gradient(90deg,rgba(102,58,82,.35)_1px,transparent_1px)] [background-size:18px_18px]" />
+        <WireframeDeviceCanvas active={isPortrait} highlightedSlot={highlightedSlot} highlightColor={highlightedColor} />
+        <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
+          <span className="rounded border border-neon-cyan/15 bg-void/75 px-3 py-1 font-mono text-[7px] tracking-[0.16em] text-neon-cyan/65 uppercase backdrop-blur">{t('game.passiveTelemetry')}</span>
+        </div>
+      </div>
+    </div>
+    </>
   )
 }
 
