@@ -17,6 +17,10 @@ function moduleColor(module: CyberModule) {
   return familyColors[module.family]
 }
 
+function isSelectableModule(module: CyberModule) {
+  return module.state === 'equipped' && module.energy > 0
+}
+
 function usePortraitOrientation() {
   const [isPortrait, setIsPortrait] = useState(() => window.matchMedia('(orientation: portrait)').matches)
 
@@ -43,8 +47,9 @@ export function CyberdeckDiagram({ modules, selectedId, onSelect }: { modules: C
   const { t, td } = useI18n()
   const isPortrait = usePortraitOrientation()
   const [hoveredId, setHoveredId] = useState<string | null>(null)
-  const activeId = hoveredId ?? selectedId
-  const activeModule = modules.find((module) => module.instanceId === activeId)
+  const requestedActiveId = hoveredId ?? selectedId
+  const activeModule = modules.find((module) => module.instanceId === requestedActiveId && isSelectableModule(module))
+  const activeId = activeModule?.instanceId
   const highlightedSlot = activeModule?.slot
   const highlightedColor = activeModule ? moduleColor(activeModule) : undefined
 
@@ -67,7 +72,7 @@ export function CyberdeckDiagram({ modules, selectedId, onSelect }: { modules: C
               const position = positions[index]
               if (!position) return null
               const color = moduleColor(module)
-              const active = activeId === module.instanceId
+              const active = isSelectableModule(module) && activeId === module.instanceId
               return <path key={module.instanceId} d={connectorPath(position)} stroke={active ? color : '#8B00FF'} strokeOpacity={active ? 0.95 : 0.36} strokeWidth={active ? 3 : 1.5} filter={active ? 'url(#deck-glow)' : undefined} className="transition-all duration-200" />
             })}
           </g>
@@ -84,9 +89,11 @@ export function CyberdeckDiagram({ modules, selectedId, onSelect }: { modules: C
             if (!position) return null
             const { x, y, side } = position
             const color = moduleColor(module)
-            const active = activeId === module.instanceId
-            const selected = selectedId === module.instanceId
-            const selectable = module.state !== 'empty'
+            const selectable = isSelectableModule(module)
+            const active = selectable && activeId === module.instanceId
+            const selected = selectable && selectedId === module.instanceId
+            const empty = module.state === 'empty'
+            const displayName = empty ? t('game.emptySlot') : module.name
             const connectorX = side === 'left' ? x + 178 : side === 'right' ? x - 8 : x + 85
             const connectorY = side === 'bottom' ? y - 8 : y + 47
             const nodePath = `M ${x + 9} ${y} H ${x + 148} L ${x + 170} ${y + 22} V ${y + 85} L ${x + 161} ${y + 94} H ${x + 9} L ${x} ${y + 85} V ${y + 9} Z`
@@ -96,11 +103,11 @@ export function CyberdeckDiagram({ modules, selectedId, onSelect }: { modules: C
                 role={selectable ? 'button' : undefined}
                 tabIndex={selectable ? 0 : undefined}
                 aria-disabled={selectable ? undefined : true}
-                aria-label={t('game.slotAria', { slot: td({ key: `slot.${module.slot}`, fallback: module.slotLabel }), name: module.name, energy: module.energy })}
+                aria-label={empty ? `${td({ key: `slot.${module.slot}`, fallback: module.slotLabel })}: ${displayName}` : t('game.slotAria', { slot: td({ key: `slot.${module.slot}`, fallback: module.slotLabel }), name: displayName, energy: module.energy })}
                 onClick={selectable ? () => onSelect(module) : undefined}
                 onKeyDown={selectable ? (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(module) } } : undefined}
-                onMouseEnter={() => setHoveredId(module.instanceId)}
-                onMouseLeave={() => setHoveredId((current) => current === module.instanceId ? null : current)}
+                onMouseEnter={selectable ? () => setHoveredId(module.instanceId) : undefined}
+                onMouseLeave={selectable ? () => setHoveredId((current) => current === module.instanceId ? null : current) : undefined}
                 onFocus={selectable ? () => setHoveredId(module.instanceId) : undefined}
                 onBlur={selectable ? () => setHoveredId((current) => current === module.instanceId ? null : current) : undefined}
                 className={`${selectable ? 'cursor-pointer' : 'cursor-default'} outline-none`}
@@ -109,14 +116,14 @@ export function CyberdeckDiagram({ modules, selectedId, onSelect }: { modules: C
                 {active && <path d={nodePath} fill={color} fillOpacity="0.12" stroke={color} strokeOpacity="0.45" strokeWidth="1" pointerEvents="none" />}
                 <path d={`M ${x + 12} ${y + 8} H ${x + 132} M ${x + 12} ${y + 13} H ${x + 78}`} stroke={color} strokeOpacity={active ? 0.9 : 0.45} strokeWidth="1" />
                 <path d={`M ${x + 146} ${y + 7} L ${x + 162} ${y + 23} M ${x + 151} ${y + 7} L ${x + 166} ${y + 22}`} stroke={color} strokeOpacity={active ? 1 : 0.8} />
-                <path d={`M ${x + 10} ${y + 73} H ${x + 160}`} stroke="#451232" strokeWidth="7" strokeLinecap="square" />
-                <path d={`M ${x + 10} ${y + 73} H ${x + 10 + 1.5 * module.energy}`} stroke={color} strokeWidth="7" strokeLinecap="square" />
-                <path d={`M ${x + 10} ${y + 84} H ${x + 42} M ${x + 48} ${y + 84} H ${x + 60} M ${x + 66} ${y + 84} H ${x + 90}`} stroke={color} strokeOpacity={active ? 0.9 : 0.4} strokeWidth="2" />
-                <circle cx={x + 154} cy={y + 84} r={active ? 4 : 3} fill={color} filter="url(#deck-glow)" />
+                {!empty && <path d={`M ${x + 10} ${y + 73} H ${x + 160}`} stroke="#451232" strokeWidth="7" strokeLinecap="square" />}
+                {!empty && module.energy > 0 && <path d={`M ${x + 10} ${y + 73} H ${x + 10 + 1.5 * module.energy}`} stroke={color} strokeWidth="7" strokeLinecap="square" />}
+                {!empty && <path d={`M ${x + 10} ${y + 84} H ${x + 42} M ${x + 48} ${y + 84} H ${x + 60} M ${x + 66} ${y + 84} H ${x + 90}`} stroke={color} strokeOpacity={active ? 0.9 : 0.4} strokeWidth="2" />}
+                {!empty && <circle cx={x + 154} cy={y + 84} r={active ? 4 : 3} fill={color} filter="url(#deck-glow)" />}
                 <circle cx={connectorX} cy={connectorY} r={active ? 6 : 4} fill="#050508" stroke={color} strokeWidth={active ? 3 : 2} filter={active ? 'url(#deck-glow)' : undefined} />
                 <text x={x + 12} y={y + 27} fill="#9B91AD" fontFamily="Courier Prime" fontSize="8" letterSpacing="1.4">{module.slot.toUpperCase()} // {t('game.slotTag')} {String(index + 1).padStart(2, '0')}</text>
-                <text x={x + 12} y={y + 48} fill={color} fontFamily="Orbitron" fontWeight="700" fontSize="10">{module.name.length > 20 ? `${module.name.slice(0, 18)}…` : module.name}</text>
-                <text x={x + 12} y={y + 62} fill="#F4F4F9" fontFamily="Courier Prime" fontSize="8">PWR {module.power}  /  SHD {module.shield}  /  ENG {module.energy}</text>
+                <text x={x + 12} y={y + 48} fill={color} fontFamily="Orbitron" fontWeight="700" fontSize="10">{displayName.length > 20 ? `${displayName.slice(0, 18)}…` : displayName}</text>
+                {!empty && <text x={x + 12} y={y + 62} fill="#F4F4F9" fontFamily="Courier Prime" fontSize="8">PWR {module.power}  /  SHD {module.shield}  /  ENG {module.energy}</text>}
                 {module.state === 'destroyed' && <><path d={`M ${x + 5} ${y + 5} L ${x + 165} ${y + 89}`} stroke="#FF6E84" strokeWidth="2" strokeOpacity="0.72" /><text x={x + 85} y={y + 88} textAnchor="middle" fill="#FF6E84" fontFamily="Courier Prime" fontSize="7">{t('game.signalLost')}</text></>}
               </g>
             )
@@ -130,27 +137,30 @@ export function CyberdeckDiagram({ modules, selectedId, onSelect }: { modules: C
       <div className="grid min-w-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
         {modules.map((module, index) => {
           const color = moduleColor(module)
-          const active = activeId === module.instanceId
-          const selectable = module.state !== 'empty'
-          const label = t('game.slotAria', { slot: td({ key: `slot.${module.slot}`, fallback: module.slotLabel }), name: module.name, energy: module.energy })
-          const cardClassName = `min-w-0 rounded-lg border bg-[linear-gradient(145deg,rgba(12,9,20,.96),rgba(34,2,22,.82))] p-3 text-left outline-none transition duration-200 ${selectable ? 'cursor-pointer focus-visible:ring-2 focus-visible:ring-neon-cyan/60' : 'cursor-default opacity-65'}`
+          const selectable = isSelectableModule(module)
+          const active = selectable && activeId === module.instanceId
+          const empty = module.state === 'empty'
+          const displayName = empty ? t('game.emptySlot') : module.name
+          const slotLabel = td({ key: `slot.${module.slot}`, fallback: module.slotLabel })
+          const label = empty ? `${slotLabel}: ${displayName}` : t('game.slotAria', { slot: slotLabel, name: displayName, energy: module.energy })
+          const cardClassName = `min-w-0 rounded-lg border bg-[linear-gradient(145deg,rgba(12,9,20,.96),rgba(34,2,22,.82))] p-3 text-left outline-none transition duration-200 ${selectable ? 'cursor-pointer focus-visible:ring-2 focus-visible:ring-neon-cyan/60' : `cursor-default ${empty ? 'opacity-65' : ''}`}`
           const cardStyle = {
             borderColor: active ? color : `${color}55`,
             boxShadow: active ? `0 0 20px ${color}38, inset 0 0 18px ${color}14` : `inset 0 0 12px ${color}0A`,
           }
           const content = <>
             <div className="flex items-center justify-between gap-2 font-mono text-[8px] tracking-[0.16em] text-text-muted uppercase">
-              <span className="truncate">{module.slot} // {t('game.slotTag')} {String(index + 1).padStart(2, '0')}</span>
-              <span className="shrink-0" style={{ color }}>{module.energy}%</span>
+              <span className="truncate">{empty ? slotLabel : module.slot} // {t('game.slotTag')} {String(index + 1).padStart(2, '0')}</span>
+              {!empty && <span className="shrink-0" style={{ color }}>{module.energy}%</span>}
             </div>
             <div className="mt-2 flex min-w-0 items-center justify-between gap-2">
-              <strong className="truncate font-display text-xs" style={{ color }}>{module.name}</strong>
+              <strong className="truncate font-display text-xs" style={{ color }}>{displayName}</strong>
               {module.state === 'destroyed' && <span className="shrink-0 font-mono text-[7px] text-[#FF6E84] uppercase">{t('game.signalLost')}</span>}
             </div>
-            <p className="mt-2 font-mono text-[9px] text-text-glow">PWR {module.power} / SHD {module.shield} / ENG {module.energy}</p>
-            <div className="mt-2 h-1.5 overflow-hidden rounded-sm bg-[#451232]">
-              <span className="block h-full transition-[width] duration-200" style={{ width: `${module.energy}%`, backgroundColor: color, boxShadow: active ? `0 0 8px ${color}` : undefined }} />
-            </div>
+            {!empty && <p className="mt-2 font-mono text-[9px] text-text-glow">PWR {module.power} / SHD {module.shield} / ENG {module.energy}</p>}
+            {!empty && <div className="mt-2 h-1.5 overflow-hidden rounded-sm bg-[#451232]">
+              {module.energy > 0 && <span className="block h-full transition-[width] duration-200" style={{ width: `${module.energy}%`, backgroundColor: color, boxShadow: active ? `0 0 8px ${color}` : undefined }} />}
+            </div>}
           </>
 
           return selectable

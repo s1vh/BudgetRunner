@@ -34,6 +34,22 @@ Attempt to compromise a Budget Runner session owned by the tester through cookie
 
 When addressing this entry, document the threat model, reproducible steps without secrets, observed evidence, and proposed mitigations. Any fix must be developed in an independent auxiliary branch created from `dev`.
 
+### BR-BL-008 — Polish inactive Cyberdeck slots and navigation logo glare
+
+**Status:** awaiting maintainer validation
+
+**Priority:** low
+
+**Working branch:** `dev`
+
+**Recorded:** September 10, 2026
+
+**Prepared outcome:** empty and destroyed Cyberdeck modules no longer accept pointer or keyboard selection and cannot activate card, connector, or wireframe highlighting. Destroyed modules render a genuinely empty integrity track without the residual zero-length SVG stroke. Empty slots show only their localized “No module” message plus the slot identity and number, omitting Energy, Power, Shield, and the integrity track in both landscape and portrait layouts. The desktop navigation logo adds a red radial glare behind its transparent artwork on hover without changing its link behavior or layout.
+
+**Automated verification:** frontend lint, production build, and the code-splitting contract pass.
+
+**Maintainer validation:** confirm inactive hover/click/focus behavior and integrity rendering in both portrait and landscape layouts; sample the empty-slot message in the supported locales; and confirm the logo hover has no layout shift and remains purely visual. After approval, move this entry to resolved history before promoting the combined `dev` changes to `main`.
+
 ## Resolved history
 
 Completed entries are never deleted. They are moved to this section, marked as resolved, and expanded with:
