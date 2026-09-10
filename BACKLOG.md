@@ -52,6 +52,24 @@ When addressing this entry, document the threat model, reproducible steps withou
 
 **Remaining action:** update `prod` only as part of the authorized end-of-day production bundle, verify the resulting remote history and deployment, and then move this entry to resolved history.
 
+### BR-BL-010 — Warn before leaving Settings with unsaved preferences
+
+**Status:** awaiting maintainer validation
+
+**Priority:** low
+
+**Working branch:** `dev`
+
+**Recorded:** September 10, 2026
+
+**Prepared outcome:** Settings now detects real differences between the six persisted preference switches and the profile values. Internal navigation, including browser back and forward actions, opens an accessible confirmation dialog with localized “Save and leave” and “Discard and leave” actions. Saving continues only after persistence succeeds; failures retain the draft and display a localized error. Discarding restores the saved profile values. Reloading or closing the tab is protected by the browser-native unsaved-changes prompt. The immediately persisted language selector does not create a false dirty state, and its current locale controls the confirmation copy in all eight supported languages.
+
+**Implementation decision:** the application now uses React Router's data router so navigation blocking relies on the supported router state machine instead of intercepting links or patching browser history. Existing route paths, lazy feature boundaries, authentication, and layout nesting are preserved.
+
+**Verification:** frontend lint, production build, and the code-splitting contract pass. Local UI smoke tests confirmed save-and-leave persistence, discard-and-leave restoration, browser Back protection, navigation without a prompt after returning to the saved value, all eight localized dialog variants, and no console errors.
+
+**Maintainer validation:** change one or more visual or help preferences, try leaving Settings through navigation and browser Back, and review both dialog actions in the desired languages. After approval, move this entry to resolved history before promoting it to `main`; production remains deferred to the end-of-day bundle.
+
 ## Resolved history
 
 Completed entries are never deleted. They are moved to this section, marked as resolved, and expanded with:
