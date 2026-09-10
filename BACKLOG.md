@@ -4,43 +4,6 @@ This file records future work that has already been identified, but **does not a
 
 ## Pending
 
-### BR-BL-004 — Remediate npm dependency security advisories
-
-**Status:** pending
-
-**Priority:** high
-
-**Detected:** August 27, 2026, with `npm --prefix backend audit` against the current lockfile.
-
-The complete backend report records **0 critical, 2 high, and 10 moderate advisories**: 12 affected package nodes, not 12 independent vulnerabilities. When development dependencies are excluded with `--omit=dev`, **1 high and 8 moderate advisories** remain across 9 nodes in the production dependency tree.
-
-The frontend review after adding TanStack Query records **0 critical, 3 high, and 1 moderate advisories** across four nodes. With `npm --prefix frontend audit --omit=dev`, only **1 high-severity production advisory** remains: `react-router@7.18.1`. TanStack Query 5.102.8 is not affected.
-
-#### High severity
-
-- **Production — `fast-xml-parser@5.10.0`:** repeated `DOCTYPE` declarations can reset entity-expansion limits and cause resource exhaustion. It enters through `firebase-functions@7.2.5 > firebase-admin@13.10.0 > @google-cloud/storage@7.21.0`. Versions `>=5.9.3 <5.10.1` are affected; npm identifies an available fix. Reference: [GHSA-8r6m-32jq-jx6q](https://github.com/advisories/GHSA-8r6m-32jq-jx6q).
-- **Development — `nanoid@3.3.16`:** a custom generator with a zero size can enter an infinite loop. It enters through `vitest@4.1.10 > vite@8.1.4 > postcss@8.5.19`. Versions `<3.3.18` are affected; npm identifies an available fix. Reference: [GHSA-2v37-7h3g-55p8](https://github.com/advisories/GHSA-2v37-7h3g-55p8).
-- **Frontend production — `react-router@7.18.1`:** in RSC mode, certain actions can execute before a CSRF protection responds with 400. Versions `>=7.12.0 <7.18.2` are affected; npm identifies an available compatible fix. Budget Runner does not currently use RSC, but the direct dependency must be updated and verified. Reference: [GHSA-qwww-vcr4-c8h2](https://github.com/advisories/GHSA-qwww-vcr4-c8h2).
-- **Frontend development — `brace-expansion@5.0.0`:** two denial-of-service advisories caused by unbounded expansion affect the same node (`<5.0.9`). npm identifies an available fix. References: [GHSA-mh99-v99m-4gvg](https://github.com/advisories/GHSA-mh99-v99m-4gvg) and [GHSA-rgw5-rvv9-x895](https://github.com/advisories/GHSA-rgw5-rvv9-x895).
-
-#### Moderate severity
-
-- **Production — `uuid@9.0.1`:** UUID v3/v5/v6 lacks a buffer bounds check when `buf` is provided. It enters through Google Cloud dependencies; versions `<11.1.1` are affected. Reference: [GHSA-w5hq-g745-h8pq](https://github.com/advisories/GHSA-w5hq-g745-h8pq).
-- **Development — `postcss@8.5.19`:** an attacker-controlled `sourceMappingURL` can read `.map` files when `from` is not defined. Versions `<=8.5.22` are affected. Reference: [GHSA-fxqj-rqcc-2cmp](https://github.com/advisories/GHSA-fxqj-rqcc-2cmp).
-- **Frontend — `postcss@8.5.19`:** the same moderate advisory appears in the frontend development tree and has an available fix.
-- **Firebase/Google Cloud dependency-tree propagation:** npm also raises `firebase-functions`, `firebase-admin`, `@google-cloud/firestore`, `@google-cloud/storage`, `google-gax`, `gaxios`, `retry-request`, and `teeny-request` as moderate-severity nodes because they depend on the vulnerable packages above.
-
-The remediation must not automatically apply `npm audit fix --force`: the full report proposes `firebase-functions@4.9.0`, which would be a major downgrade from `7.2.5` and could break the hybrid deployment. The work must first evaluate compatible fixed versions, transitive updates, or narrowly scoped `overrides`.
-
-To resolve this entry:
-
-- update dependencies and lockfiles without introducing incompatible downgrades;
-- leave `npm audit` with no high or critical advisories and explicitly justify any remaining moderate advisory;
-- repeat `npm audit --omit=dev` to distinguish production risk;
-- pass lint, build, and the complete test suite with local PostgreSQL;
-- validate Firebase Functions compilation and behavior before promoting the change to `main` and `prod`;
-- when closing the entry, record the final versions, resolved advisories, verification, and any accepted risk.
-
 ### BR-BL-005 — Implement real Budget persistence
 
 **Status:** pending
@@ -71,6 +34,22 @@ Attempt to compromise a Budget Runner session owned by the tester through cookie
 
 When addressing this entry, document the threat model, reproducible steps without secrets, observed evidence, and proposed mitigations. Any fix must be developed in an independent auxiliary branch created from `dev`.
 
+### BR-BL-008 — Polish inactive Cyberdeck slots and navigation logo glare
+
+**Status:** awaiting maintainer validation
+
+**Priority:** low
+
+**Working branch:** `dev`
+
+**Recorded:** September 10, 2026
+
+**Prepared outcome:** empty and destroyed Cyberdeck modules no longer accept pointer or keyboard selection and cannot activate card, connector, or wireframe highlighting. Destroyed modules render a genuinely empty integrity track without the residual zero-length SVG stroke. Empty slots show only their localized “No module” message plus the slot identity and number, omitting Energy, Power, Shield, and the integrity track in both landscape and portrait layouts. The ambient layer now adds a restrained, lagged glow that follows the mouse across the application. Over the desktop navigation logo, the same interaction becomes brighter through a lens flare and brief red/cyan glitch echoes while the original artwork remains continuously visible. Both pointer effects are governed by the existing Ambient effects preference and suppress their motion when reduced motion is active.
+
+**Verification:** frontend lint, production build, and the code-splitting contract pass. A local UI smoke test confirmed that saving Ambient effects off hides the global pointer layer and disables the logo treatment, and that saving it on restores both.
+
+**Maintainer validation:** confirm inactive hover/click/focus behavior and integrity rendering in both portrait and landscape layouts; sample the empty-slot message in the supported locales; verify that the restrained ambient glow follows the pointer across views; confirm that the stronger logo lens/glitch treatment preserves legibility and causes no layout shift; and switch Ambient effects off and on to ensure all related layers respond together. After approval, move this entry to resolved history before promoting the combined `dev` changes to `main`.
+
 ## Resolved history
 
 Completed entries are never deleted. They are moved to this section, marked as resolved, and expanded with:
@@ -80,6 +59,26 @@ Completed entries are never deleted. They are moved to this section, marked as r
 - pertinent branches, pull requests, or commits;
 - verification performed;
 - associated documentation or residual debt.
+
+### BR-BL-004 — Remediate npm dependency security advisories
+
+**Status:** resolved
+
+**Resolution date:** September 10, 2026
+
+**Priority:** high
+
+**Working branch:** `codex/fix/npm-security-advisories`, validated by the maintainer before integration into `dev`.
+
+**Commit:** `9861766`.
+
+**Root cause:** both lockfiles retained vulnerable transitive releases despite compatible patched ranges. In addition, `firebase-functions@7.2.5` resolved an implicit Firebase Admin 13 peer whose older Google Cloud Storage and Firestore trees contained vulnerable `fast-xml-parser` and `uuid` nodes. New Vitest, `qs`, Browserslist, and baseline-browser-mapping advisories had also appeared since the original August audit.
+
+**Outcome:** backend direct floors are now `firebase-functions@^7.3.2`, explicit `firebase-admin@^14.3.0`, and `vitest@^4.1.11`; frontend floors are `react-router@^7.18.3` and `vite@^8.3.0`. Compatible transitive versions were refreshed in both lockfiles. Narrow overrides move only `gaxios@6` and `teeny-request@9` to `uuid@11.1.1`; both consumers use the compatible `uuid.v4()` API. No forced audit fix, global override, or Firebase downgrade was used.
+
+**Verification:** clean backend and frontend `npm ci`; full and `--omit=dev` audits for both projects with **0 vulnerabilities**; **39/39 PostgreSQL-backed tests**; root lint and production build; frontend code-splitting contract; and a local smoke test confirming that the compiled Firebase `api` export remains a callable GCF v2 function in `europe-west1` with successful PostgreSQL readiness.
+
+**Residual debt:** backend installation still prints an upstream deprecation notice for `glob@10.5.0`, reached through `firebase-admin > @google-cloud/firestore > google-gax > rimraf`. npm reports no advisory for the resolved tree, so an unsupported forced major override was rejected. Promotion from `dev` to `main` and inclusion in the end-of-day `prod` bundle remain separate approvals.
 
 ### BR-BL-003 — Revamp the Gamification visuals
 
