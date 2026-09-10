@@ -42,11 +42,14 @@ function DesktopNav() {
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-outline-soft/70 bg-space-black/88 px-3 py-4 shadow-[5px_0_30px_rgba(139,0,255,0.12)] backdrop-blur-xl md:flex">
       <NavLink to="/" className="flex items-center gap-3 border-b border-outline-soft/60 px-2 pb-5">
         <span className="grid size-11 place-items-center rounded-full border-2 border-neon-cyan text-neon-cyan shadow-[0_0_14px_rgba(0,255,255,.35)]"><CircleDollarSign className="size-6" /></span>
-        <img
-          src="/media/BudgetRunner_logo.svg"
-          alt="Budget Runner"
-          className="h-auto max-h-14 w-[150px] object-contain object-left"
-        />
+        <span className="group relative isolate block w-[150px]">
+          <span aria-hidden="true" className="pointer-events-none absolute -inset-x-3 inset-y-1 z-0 rounded-[50%] bg-[radial-gradient(ellipse_at_center,rgba(255,72,92,.72)_0%,rgba(255,0,127,.34)_36%,rgba(139,0,35,.12)_58%,transparent_76%)] opacity-0 blur-[10px] transition-[opacity,transform] duration-300 ease-out group-hover:scale-110 group-hover:opacity-100" />
+          <img
+            src="/media/BudgetRunner_logo.svg"
+            alt="Budget Runner"
+            className="relative z-10 h-auto max-h-14 w-full object-contain object-left"
+          />
+        </span>
       </NavLink>
       <nav className="mt-5 flex flex-1 flex-col gap-1.5" aria-label={t('nav.main')}>
         {navItems.map(({ to, labelKey, icon: Icon, end }) => (

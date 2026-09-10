@@ -337,6 +337,7 @@ const rows = [
   ['game.wrist', 'WRIST', 'WRIST', 'WRIST', 'WRIST', 'WRIST', 'WRIST', 'WRIST', 'WRIST'],
   ['game.core', 'CORE', 'CORE', 'CORE', 'CORE', 'CORE', 'CORE', 'CORE', 'CORE'],
   ['game.slotTag', 'SLOT', 'SLOT', 'EMPLACEMENT', 'SLOT', 'СЛОТ', '插槽', 'スロット', '슬롯'],
+  ['game.emptySlot', 'No module', 'Sin módulo', 'Aucun module', 'Kein Modul', 'Нет модуля', '未安装模块', 'モジュールなし', '모듈 없음'],
   ['game.signalLost', 'SIGNAL LOST', 'SEÑAL PERDIDA', 'SIGNAL PERDU', 'SIGNAL VERLOREN', 'СИГНАЛ ПОТЕРЯН', '信号丢失', '信号消失', '신호 끊김'],
   ['game.passiveTelemetry', 'OpenGL wireframe · passive telemetry', 'Wireframe OpenGL · telemetría pasiva', 'Wireframe OpenGL · télémétrie passive', 'OpenGL-Wireframe · passive Telemetrie', 'Каркас OpenGL · пассивная телеметрия', 'OpenGL 线框 · 被动遥测', 'OpenGL ワイヤーフレーム · パッシブテレメトリ', 'OpenGL 와이어프레임 · 수동 텔레메트리'],
   ['game.shield', 'SHIELD', 'SHIELD', 'BOUCLIER', 'SCHILD', 'ЩИТ', '护盾', 'シールド', '실드'],
