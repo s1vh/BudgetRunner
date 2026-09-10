@@ -160,7 +160,7 @@ export function SettingsPage() {
           <SynthCard className="p-5 sm:p-6" tone="danger" data-tour="settings-privacy"><div className="mb-3 flex items-center gap-2"><Shield className="size-4 text-neon-magenta" /><h2 className="font-display text-sm font-bold uppercase">{t('settings.privacy')}</h2></div><p className="text-sm leading-6 text-text-muted">{t('settings.deleteDesc')}</p><div className="mt-4 flex gap-3"><Field label={t('auth.confirmation')} htmlFor="delete-account"><Input id="delete-account" placeholder={t('settings.deletePlaceholder')} /></Field><Button className="self-end" variant="magenta" icon={Trash2} disabled>{t('common.delete')}</Button></div></SynthCard>
         </div>
       </div>
-      <Modal open={blocker.state === 'blocked'} title={t('settings.unsavedTitle')} description={t('settings.unsavedDescription')} onClose={keepEditing}>
+      <Modal centered open={blocker.state === 'blocked'} title={t('settings.unsavedTitle')} description={t('settings.unsavedDescription')} onClose={keepEditing}>
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <Button variant="ghost" disabled={saving} onClick={discardAndLeave}>{t('settings.discardAndLeave')}</Button>
           <Button icon={Save} loading={saving} onClick={() => void saveAndLeave()}>{t('settings.saveAndLeave')}</Button>
