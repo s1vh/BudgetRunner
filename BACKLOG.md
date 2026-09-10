@@ -62,7 +62,7 @@ When addressing this entry, document the threat model, reproducible steps withou
 
 **Recorded:** September 10, 2026
 
-**Prepared outcome:** desktop devices with a fine pointer now use a lightweight triangular SVG cursor with magenta neon edges, a cyan inner reflection, and an exact hotspot near the tip. The feature is enabled by default for new and existing profiles and can be disabled through a new Settings switch translated into all eight supported languages. Its value participates in the existing unsaved-changes workflow and persists through both the HTTP repository and the local mock experience.
+**Prepared outcome:** desktop devices with a fine pointer now use a lightweight, tail-free triangular SVG cursor. Its hollow silhouette combines a split magenta-and-cyan neon outline with a lightly translucent glass core and an exact hotspot at the leading tip. The feature is enabled by default for new and existing profiles and can be disabled through a new Settings switch translated into all eight supported languages. Its value participates in the existing unsaved-changes workflow and persists through both the HTTP repository and the local mock experience.
 
 **Implementation decision:** the protected application shell reflects the preference on the document root so the cursor also covers portaled dialogs and help layers. Its CSS is guarded by `(hover: hover) and (pointer: fine)`, leaving touch devices unchanged. Text fields retain the text cursor and disabled controls retain their unavailable cursor. Migration `005_custom_cursor_preference.sql` backfills `customCursor: true` without overwriting other preference keys and updates the database default.
 

@@ -1,7 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
-  <path d="M3 2.5 5.4 25.4l5.5-6.3 4.9 10 4.5-2.2-4.9-9.8 9.4-1.1L3 2.5Z" fill="#ff007f" opacity=".3" stroke="#ff007f" stroke-linejoin="round" stroke-width="4"/>
-  <path d="M3 2.5 5.4 25.4l5.5-6.3 4.9 10 4.5-2.2-4.9-9.8 9.4-1.1L3 2.5Z" fill="#0c0914" stroke="#ff4da6" stroke-linejoin="round" stroke-width="1.7"/>
-  <path d="m5.6 6.2 1.5 14.1 3.2-3.7 8.1-1-12.8-9.4Z" fill="#00ffff" opacity=".22"/>
-  <path d="m5.6 6.2 1.5 14.1" stroke="#f4f4f9" stroke-linecap="round" stroke-width=".9"/>
-  <path d="m10.9 19.1 4.9 10 4.5-2.2" stroke="#00ffff" stroke-linecap="round" stroke-linejoin="round" stroke-width=".8"/>
+  <defs>
+    <linearGradient id="neon-edge" x1="3" y1="3" x2="25.5" y2="26.5" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ff2da9"/>
+      <stop offset=".46" stop-color="#ff65d5"/>
+      <stop offset=".58" stop-color="#66f9ff"/>
+      <stop offset="1" stop-color="#00d9f5"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="5" y1="5" x2="21" y2="23" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ff4fbd" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#00f5ff" stop-opacity=".04"/>
+    </linearGradient>
+    <filter id="neon-glow" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur stdDeviation="1.25"/>
+    </filter>
+  </defs>
+  <path d="M3 3 27 13.1 12.7 28 3 3Z" stroke="url(#neon-edge)" stroke-linejoin="round" stroke-width="4" opacity=".42" filter="url(#neon-glow)"/>
+  <path d="M3 3 27 13.1 12.7 28 3 3Z" fill="url(#glass)" stroke="url(#neon-edge)" stroke-linejoin="round" stroke-width="1.7"/>
+  <path d="M4.7 4.6 25.1 13.3" stroke="#ffb8e8" stroke-linecap="round" stroke-width=".65" opacity=".8"/>
+  <path d="M25.4 14.1 13.2 26.8" stroke="#b9fdff" stroke-linecap="round" stroke-width=".65" opacity=".75"/>
 </svg>
