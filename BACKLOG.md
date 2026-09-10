@@ -34,21 +34,23 @@ Attempt to compromise a Budget Runner session owned by the tester through cookie
 
 When addressing this entry, document the threat model, reproducible steps without secrets, observed evidence, and proposed mitigations. Any fix must be developed in an independent auxiliary branch created from `dev`.
 
-### BR-BL-008 — Polish inactive Cyberdeck slots and navigation logo glare
+### BR-BL-009 — Complete the AI co-author history cleanup on `prod`
 
-**Status:** awaiting maintainer validation
+**Status:** awaiting the authorized production history update
 
 **Priority:** low
 
-**Working branch:** `dev`
+**Working branch:** `prod`
 
 **Recorded:** September 10, 2026
 
-**Prepared outcome:** empty and destroyed Cyberdeck modules no longer accept pointer or keyboard selection and cannot activate card, connector, or wireframe highlighting. Destroyed modules render a genuinely empty integrity track without the residual zero-length SVG stroke. Empty slots show only their localized “No module” message plus the slot identity and number, omitting Energy, Power, Shield, and the integrity track in both landscape and portrait layouts. The ambient layer now adds a restrained, lagged glow that follows the mouse across the application. Over the desktop navigation logo, the same interaction becomes brighter through a lens flare and brief red/cyan glitch echoes while the original artwork remains continuously visible. Both pointer effects are governed by the existing Ambient effects preference and suppress their motion when reduced motion is active.
+**Root cause:** commit `733a90c` included a Copilot co-author trailer even though M. Fieldins remained the human author and committer and Codex was the intended symbolic collaborator. A complete audit found no other Copilot attribution in the repository history.
 
-**Verification:** frontend lint, production build, and the code-splitting contract pass. A local UI smoke test confirmed that saving Ambient effects off hides the global pointer layer and disables the logo treatment, and that saving it on restores both.
+**Prepared outcome:** the published histories of `main`, `dev`, `codex/feature/cyberdeck-hud`, and `firebase-mock-deployment` were atomically rewritten with force-with-lease. Rewritten commit `8af4174` replaces the Copilot trailer with the canonical `Co-authored-by: Codex <noreply@openai.com>` trailer. Rewritten commit `cd79b2a`, which prepared the Firebase-hosted mock release for the Devpost hackathon, records the same symbolic Codex co-authorship. Human authorship, commit trees, branch topology, commit counts, and merge counts were preserved.
 
-**Maintainer validation:** confirm inactive hover/click/focus behavior and integrity rendering in both portrait and landscape layouts; sample the empty-slot message in the supported locales; verify that the restrained ambient glow follows the pointer across views; confirm that the stronger logo lens/glitch treatment preserves legibility and causes no layout shift; and switch Ambient effects off and on to ensure all related layers respond together. After approval, move this entry to resolved history before promoting the combined `dev` changes to `main`.
+**Verification:** a complete pre-rewrite bundle was created and verified at `.git/codex-backups/pre-copilot-cleanup-733a90c.bundle`; the rewritten published refs contain no Copilot attribution and the two intended Codex trailers; old and new branch tips have identical trees; and `git fsck` reported no structural errors. Remote `prod` intentionally remains at `203d372` to avoid an unauthorized deployment, while the tree-identical rewritten history is prepared locally at `b07382d`.
+
+**Remaining action:** update `prod` only as part of the authorized end-of-day production bundle, verify the resulting remote history and deployment, and then move this entry to resolved history.
 
 ## Resolved history
 
@@ -60,6 +62,24 @@ Completed entries are never deleted. They are moved to this section, marked as r
 - verification performed;
 - associated documentation or residual debt.
 
+### BR-BL-008 — Polish inactive Cyberdeck slots and navigation logo glare
+
+**Status:** resolved
+
+**Resolution date:** September 10, 2026
+
+**Priority:** low
+
+**Working branch:** `dev`, validated by the maintainer before promotion to `main`.
+
+**Main commits:** `de97a95` (inactive Cyberdeck states), `03ee8fb` (lagged navigation-logo glare), and `aff10f3` (application-wide ambient pointer glow); promoted to `main` by merge commit `3011634`.
+
+**Outcome:** empty and destroyed Cyberdeck modules no longer accept pointer or keyboard selection and cannot activate card, connector, or wireframe highlighting. Destroyed modules render a genuinely empty integrity track without the residual zero-length SVG stroke. Empty slots show only their localized “No module” message plus the slot identity and number, omitting Energy, Power, Shield, and the integrity track in both landscape and portrait layouts. The ambient layer adds a restrained, lagged glow that follows the pointer across the application. Over the desktop navigation logo, the same interaction becomes brighter through a lens flare and brief red/cyan glitch echoes while the original artwork remains continuously visible. Both pointer effects follow the existing Ambient effects preference and suppress their motion when reduced motion is active.
+
+**Verification:** frontend lint, production build, and the code-splitting contract passed. Local UI smoke testing confirmed the linked inactive states, empty integrity rendering, logo legibility without layout shift, pointer tracking across views, and coordinated enable/disable behavior through Ambient effects. The maintainer validated the finished experience before merging it into `main`.
+
+**Residual debt:** none identified. Production promotion remains intentionally deferred to the end-of-day bundle.
+
 ### BR-BL-004 — Remediate npm dependency security advisories
 
 **Status:** resolved
@@ -70,7 +90,7 @@ Completed entries are never deleted. They are moved to this section, marked as r
 
 **Working branch:** `codex/fix/npm-security-advisories`, validated by the maintainer before integration into `dev`.
 
-**Commit:** `9861766`.
+**Commit:** `29fb694`.
 
 **Root cause:** both lockfiles retained vulnerable transitive releases despite compatible patched ranges. In addition, `firebase-functions@7.2.5` resolved an implicit Firebase Admin 13 peer whose older Google Cloud Storage and Firestore trees contained vulnerable `fast-xml-parser` and `uuid` nodes. New Vitest, `qs`, Browserslist, and baseline-browser-mapping advisories had also appeared since the original August audit.
 
@@ -78,7 +98,7 @@ Completed entries are never deleted. They are moved to this section, marked as r
 
 **Verification:** clean backend and frontend `npm ci`; full and `--omit=dev` audits for both projects with **0 vulnerabilities**; **39/39 PostgreSQL-backed tests**; root lint and production build; frontend code-splitting contract; and a local smoke test confirming that the compiled Firebase `api` export remains a callable GCF v2 function in `europe-west1` with successful PostgreSQL readiness.
 
-**Residual debt:** backend installation still prints an upstream deprecation notice for `glob@10.5.0`, reached through `firebase-admin > @google-cloud/firestore > google-gax > rimraf`. npm reports no advisory for the resolved tree, so an unsupported forced major override was rejected. Promotion from `dev` to `main` and inclusion in the end-of-day `prod` bundle remain separate approvals.
+**Residual debt:** backend installation still prints an upstream deprecation notice for `glob@10.5.0`, reached through `firebase-admin > @google-cloud/firestore > google-gax > rimraf`. npm reports no advisory for the resolved tree, so an unsupported forced major override was rejected. The fix is present on `main`; inclusion in the end-of-day `prod` bundle remains a separate approval.
 
 ### BR-BL-003 — Revamp the Gamification visuals
 
@@ -96,7 +116,7 @@ Telemetry allows damaged modules to be repaired from their detail view, displays
 
 In portrait orientation, the diagram replaces the wide canvas with compact cards in one or two columns and places a WebGL thumbnail below, without the core or connections. The original widescreen layout is retained in landscape orientation. Only the visible canvas is animated to avoid duplicate graphics work.
 
-**Main commits:** `bd1a92f` (HUD integration and interactions) and `aca241c` (responsive portrait layout).
+**Main commits:** `d2137c0` (HUD integration and interactions) and `90e4b99` (responsive portrait layout).
 
 **Verification:** frontend build and lint, the automated code-splitting contract, and Chromium walkthroughs at 320, 390, 600, and 1280 pixels. Coordinated hover, absence of internal overflow in portrait orientation, modal parity, repair cost and application, disabled states, non-interactive empty slots, and absence of WebGL errors were verified.
 
@@ -112,7 +132,7 @@ In portrait orientation, the diagram replaces the wide canvas with compact cards
 
 **Outcome:** `frontend/public/media/BudgetRunner_logo.svg` was simplified, removing the inherited Illustrator structure based on masks and redundant layers. The asset now uses a normalized viewport and a single explicit clip to produce the transparent stripes crossing the words Budget and Runner, without a background or additional hidden raster layers.
 
-**Commit:** `c753255`.
+**Commit:** `234322c`.
 
 **Verification:** SVG inspection and maintainer visual validation in Chrome/Chromium browsers, with no subsequent reproduction of the original artifacts.
 
@@ -132,7 +152,7 @@ In portrait orientation, the diagram replaces the wide canvas with compact cards
 
 **Relevant decisions:** heuristic detection normalizes percent encoding, Unicode, invisible characters, comments, and several concatenation forms, but is considered defense in depth only. The primary guarantee remains that user values are not interpreted as SQL. Queries also have statement, lock, client, and idle-in-transaction timeouts.
 
-**Commit and review:** `97b664f`; pull request `#5` into `dev`.
+**Commit and review:** `65584c0`; pull request `#5` into `dev`.
 
 **Verification:** 39/39 tests, including authentication, searches, categories, concepts, notes, obfuscation, and false positives; verification that rejections do not alter rows; static invariant against SQL built at runtime; complete lint; production build; and code-splitting contract.
 
@@ -159,7 +179,7 @@ In portrait orientation, the diagram replaces the wide canvas with compact cards
 - retryable errors within the affected section without reloading the application;
 - telemetry limited to the latest 200 requests, with normalized routes and no UUIDs or query strings.
 
-**Main commits:** `567e956` (implementation) and `24e81ef` (architecture and test plan).
+**Main commits:** `2ddda70` (implementation) and `45dc275` (architecture and test plan).
 
 **Verification:** `npm test` with 13/13 tests, complete lint with no warnings, backend and frontend builds, automated chunk contract, and local walkthrough of Dashboard, Expenses, Budgets, Profile, Settings, and every Gamification tab. The maintainer validated the local experience before authorizing promotion.
 
