@@ -184,6 +184,7 @@ export interface UserPreferences {
   scanlines: boolean
   compactMode: boolean
   helpHints: boolean
+  customCursor: boolean
 }
 
 export interface AppSnapshot {

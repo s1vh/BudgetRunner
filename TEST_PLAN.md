@@ -392,11 +392,17 @@ En modo API, recorrer las áreas y revisar `window.__BUDGET_RUNNER_API_METRICS__
 
 ### T-112 Hardening de entradas y construcción SQL
 
+Las rutas y servicios mantienen SQL literal parametrizado, los filtros dinámicos se limitan a allowlists o consultas fijas, y las entradas con forma de consulta se rechazan sin revelar la barrera ni modificar datos.
+
 1. Enviar secuencias con forma de consulta mediante login, alta, nombres de categoría, concepto, notas y búsqueda; incluir comentarios intercalados, codificación porcentual, Unicode de ancho completo, caracteres invisibles, concatenación, tautologías y funciones temporizadas.
 2. Confirmar `422`, mensaje externo neutro, ausencia de detalles del detector y cabeceras de no-cache; comprobar antes y después que no se hayan creado ni modificado filas.
 3. Repetir con textos legítimos que contengan apóstrofes, guiones o palabras similares a verbos SQL y confirmar que se conservan exactamente.
 4. En navegador, provocar el rechazo desde un campo de texto y verificar cancelación de peticiones, purga de cachés de aplicación, recarga y aviso localizado «Integridad de señal restaurada».
 5. Ejecutar `sqlConstruction.unit.test.ts` y confirmar que ninguna ruta o servicio construye SQL en runtime; las consultas con filtros deben seguir funcionando con todos los parámetros opcionales.
+
+### T-113 Puntero de neón opcional
+
+En dispositivos con `hover` y puntero fino, `customCursor: true` aplica el SVG triangular hueco de neón, sin cola, con vértices suavemente redondeados, transición cromática asimétrica y el hotspot en la punta; los campos editables conservan el cursor de texto y los controles no disponibles mantienen `not-allowed`. La preferencia parte activa para cuentas nuevas y migradas, se puede desactivar y reactivar desde Ajustes, persiste en API y mock tras recargar, y muestra su etiqueta y descripción en los ocho idiomas. Los dispositivos táctiles no cambian de cursor.
 
 ## 14. Seguridad básica
 

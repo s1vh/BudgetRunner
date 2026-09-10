@@ -47,6 +47,7 @@ const preferencesSchema = z.object({
     scanlines: z.boolean(),
     compactMode: z.boolean(),
     helpHints: z.boolean(),
+    customCursor: z.boolean(),
   }).optional(),
   locale: z.enum(['es-ES', 'en-US', 'fr-FR', 'de-DE', 'ru-RU', 'zh-CN', 'ja-JP', 'ko-KR']).optional(),
 }).refine((input) => input.preferences !== undefined || input.locale !== undefined, { message: 'At least one profile field is required.' })
