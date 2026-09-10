@@ -6,40 +6,46 @@ This file records future work that has already been identified, but **does not a
 
 ### BR-BL-004 — Remediate npm dependency security advisories
 
-**Status:** pending
+**Status:** awaiting maintainer validation
 
 **Priority:** high
 
-**Detected:** August 27, 2026, with `npm --prefix backend audit` against the current lockfile.
+**Working branch:** `codex/fix/npm-security-advisories`
 
-The complete backend report records **0 critical, 2 high, and 10 moderate advisories**: 12 affected package nodes, not 12 independent vulnerabilities. When development dependencies are excluded with `--omit=dev`, **1 high and 8 moderate advisories** remain across 9 nodes in the production dependency tree.
+**Originally detected:** August 27, 2026, with `npm --prefix backend audit` against the then-current lockfile.
 
-The frontend review after adding TanStack Query records **0 critical, 3 high, and 1 moderate advisories** across four nodes. With `npm --prefix frontend audit --omit=dev`, only **1 high-severity production advisory** remains: `react-router@7.18.1`. TanStack Query 5.102.8 is not affected.
+**Revalidated:** September 10, 2026. Before remediation, the backend reported **0 critical, 2 high, and 14 moderate affected package nodes**; `--omit=dev` retained **1 high and 12 moderate nodes**. The frontend reported **0 critical, 4 high, and 2 moderate nodes**; `--omit=dev` retained the single high-severity `react-router` advisory. These are affected dependency nodes, not independent vulnerability counts.
 
-#### High severity
+#### Root cause
 
-- **Production — `fast-xml-parser@5.10.0`:** repeated `DOCTYPE` declarations can reset entity-expansion limits and cause resource exhaustion. It enters through `firebase-functions@7.2.5 > firebase-admin@13.10.0 > @google-cloud/storage@7.21.0`. Versions `>=5.9.3 <5.10.1` are affected; npm identifies an available fix. Reference: [GHSA-8r6m-32jq-jx6q](https://github.com/advisories/GHSA-8r6m-32jq-jx6q).
-- **Development — `nanoid@3.3.16`:** a custom generator with a zero size can enter an infinite loop. It enters through `vitest@4.1.10 > vite@8.1.4 > postcss@8.5.19`. Versions `<3.3.18` are affected; npm identifies an available fix. Reference: [GHSA-2v37-7h3g-55p8](https://github.com/advisories/GHSA-2v37-7h3g-55p8).
-- **Frontend production — `react-router@7.18.1`:** in RSC mode, certain actions can execute before a CSRF protection responds with 400. Versions `>=7.12.0 <7.18.2` are affected; npm identifies an available compatible fix. Budget Runner does not currently use RSC, but the direct dependency must be updated and verified. Reference: [GHSA-qwww-vcr4-c8h2](https://github.com/advisories/GHSA-qwww-vcr4-c8h2).
-- **Frontend development — `brace-expansion@5.0.0`:** two denial-of-service advisories caused by unbounded expansion affect the same node (`<5.0.9`). npm identifies an available fix. References: [GHSA-mh99-v99m-4gvg](https://github.com/advisories/GHSA-mh99-v99m-4gvg) and [GHSA-rgw5-rvv9-x895](https://github.com/advisories/GHSA-rgw5-rvv9-x895).
+- Both lockfiles retained vulnerable transitive releases even where parent semver ranges already allowed patched versions. This covered `qs`, `postcss`, `nanoid`, `brace-expansion`, `browserslist`, and `baseline-browser-mapping`.
+- The direct `react-router@7.18.1` floor still admitted the RSC CSRF advisory fixed after 7.18.1.
+- `firebase-functions@7.2.5` automatically resolved its Firebase Admin peer to 13.10.0. That release brought older Google Cloud Storage and Firestore trees containing vulnerable `fast-xml-parser@5.10.0` and `uuid@9.0.1` nodes.
+- New `@vitest/mocker`, `qs`, Browserslist, and baseline-browser-mapping advisories had been published since the original August snapshot, which explains the increased September counts.
 
-#### Moderate severity
+#### Prepared remediation
 
-- **Production — `uuid@9.0.1`:** UUID v3/v5/v6 lacks a buffer bounds check when `buf` is provided. It enters through Google Cloud dependencies; versions `<11.1.1` are affected. Reference: [GHSA-w5hq-g745-h8pq](https://github.com/advisories/GHSA-w5hq-g745-h8pq).
-- **Development — `postcss@8.5.19`:** an attacker-controlled `sourceMappingURL` can read `.map` files when `from` is not defined. Versions `<=8.5.22` are affected. Reference: [GHSA-fxqj-rqcc-2cmp](https://github.com/advisories/GHSA-fxqj-rqcc-2cmp).
-- **Frontend — `postcss@8.5.19`:** the same moderate advisory appears in the frontend development tree and has an available fix.
-- **Firebase/Google Cloud dependency-tree propagation:** npm also raises `firebase-functions`, `firebase-admin`, `@google-cloud/firestore`, `@google-cloud/storage`, `google-gax`, `gaxios`, `retry-request`, and `teeny-request` as moderate-severity nodes because they depend on the vulnerable packages above.
+- Backend direct floors are `firebase-functions@^7.3.2`, `firebase-admin@^14.3.0`, and `vitest@^4.1.11`. Firebase Admin is now explicit rather than an implicit peer and is compatible with Functions 7.3 and the declared Node 22 runtime.
+- The resolved backend tree uses `@google-cloud/firestore@8.7.1`, `@google-cloud/storage@7.22.0`, `fast-xml-parser@5.11.1`, `qs@6.16.0`, `@vitest/mocker@4.1.11`, `vite@8.3.0`, `postcss@8.5.28`, and `nanoid@3.3.18`.
+- Google Cloud Storage still constrains `gaxios@6` and `teeny-request@9` to `uuid@^9`. Narrow overrides set only those two legacy consumers to `uuid@11.1.1`; inspection confirms they call the compatible `uuid.v4()` API. No global override and no Firebase downgrade is used.
+- Frontend direct floors are `react-router@^7.18.3` and `vite@^8.3.0`. The lockfile resolves `brace-expansion@5.0.9`, `browserslist@4.28.9`, `baseline-browser-mapping@2.11.21`, `postcss@8.5.28`, and `nanoid@3.3.18`.
 
-The remediation must not automatically apply `npm audit fix --force`: the full report proposes `firebase-functions@4.9.0`, which would be a major downgrade from `7.2.5` and could break the hybrid deployment. The work must first evaluate compatible fixed versions, transitive updates, or narrowly scoped `overrides`.
+#### Verification completed
 
-To resolve this entry:
+- Clean `npm ci` installations for backend and frontend succeeded without compatibility flags.
+- Full and `--omit=dev` audits for both projects report **0 vulnerabilities**.
+- Backend `npm ci` still prints an upstream deprecation notice for `glob@10.5.0`, reached through `firebase-admin > @google-cloud/firestore > google-gax > rimraf`. npm reports no advisory for the resolved tree; forcing an unsupported `glob` major would add more risk, so this notice is left for the upstream chain to remove.
+- The complete PostgreSQL-backed suite passes: **39/39 tests** across four files.
+- Root lint and production build pass; the frontend code-splitting contract also passes.
+- The compiled Firebase `api` export is callable, retains the GCF v2 `europe-west1` metadata, and returns a successful PostgreSQL readiness response through the Functions wrapper.
 
-- update dependencies and lockfiles without introducing incompatible downgrades;
-- leave `npm audit` with no high or critical advisories and explicitly justify any remaining moderate advisory;
-- repeat `npm audit --omit=dev` to distinguish production risk;
-- pass lint, build, and the complete test suite with local PostgreSQL;
-- validate Firebase Functions compilation and behavior before promoting the change to `main` and `prod`;
-- when closing the entry, record the final versions, resolved advisories, verification, and any accepted risk.
+#### Maintainer validation plan
+
+1. Check out `codex/fix/npm-security-advisories` and run clean installs with `npm --prefix backend ci` and `npm --prefix frontend ci`.
+2. Run full and production-only audits in each project; all four commands should report 0 vulnerabilities.
+3. Start local PostgreSQL, run `npm run db:setup`, then run `npm test`, `npm run lint`, `npm run build`, and `npm --prefix frontend run verify:chunks`.
+4. Start the local API and frontend, confirm `/api/v1/internal/readiness`, sign in, and smoke-test Dashboard, Expenses, and Cyberdeck to catch any runtime regression from the Firebase, React Router, or Vite updates.
+5. After maintainer approval, merge the topic branch into `dev`, mark this entry resolved with the final commit, and leave promotion to `main` and the end-of-day `prod` bundle as separate approvals.
 
 ### BR-BL-005 — Implement real Budget persistence
 
