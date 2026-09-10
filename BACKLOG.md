@@ -4,49 +4,6 @@ This file records future work that has already been identified, but **does not a
 
 ## Pending
 
-### BR-BL-004 — Remediate npm dependency security advisories
-
-**Status:** awaiting maintainer validation
-
-**Priority:** high
-
-**Working branch:** `codex/fix/npm-security-advisories`
-
-**Originally detected:** August 27, 2026, with `npm --prefix backend audit` against the then-current lockfile.
-
-**Revalidated:** September 10, 2026. Before remediation, the backend reported **0 critical, 2 high, and 14 moderate affected package nodes**; `--omit=dev` retained **1 high and 12 moderate nodes**. The frontend reported **0 critical, 4 high, and 2 moderate nodes**; `--omit=dev` retained the single high-severity `react-router` advisory. These are affected dependency nodes, not independent vulnerability counts.
-
-#### Root cause
-
-- Both lockfiles retained vulnerable transitive releases even where parent semver ranges already allowed patched versions. This covered `qs`, `postcss`, `nanoid`, `brace-expansion`, `browserslist`, and `baseline-browser-mapping`.
-- The direct `react-router@7.18.1` floor still admitted the RSC CSRF advisory fixed after 7.18.1.
-- `firebase-functions@7.2.5` automatically resolved its Firebase Admin peer to 13.10.0. That release brought older Google Cloud Storage and Firestore trees containing vulnerable `fast-xml-parser@5.10.0` and `uuid@9.0.1` nodes.
-- New `@vitest/mocker`, `qs`, Browserslist, and baseline-browser-mapping advisories had been published since the original August snapshot, which explains the increased September counts.
-
-#### Prepared remediation
-
-- Backend direct floors are `firebase-functions@^7.3.2`, `firebase-admin@^14.3.0`, and `vitest@^4.1.11`. Firebase Admin is now explicit rather than an implicit peer and is compatible with Functions 7.3 and the declared Node 22 runtime.
-- The resolved backend tree uses `@google-cloud/firestore@8.7.1`, `@google-cloud/storage@7.22.0`, `fast-xml-parser@5.11.1`, `qs@6.16.0`, `@vitest/mocker@4.1.11`, `vite@8.3.0`, `postcss@8.5.28`, and `nanoid@3.3.18`.
-- Google Cloud Storage still constrains `gaxios@6` and `teeny-request@9` to `uuid@^9`. Narrow overrides set only those two legacy consumers to `uuid@11.1.1`; inspection confirms they call the compatible `uuid.v4()` API. No global override and no Firebase downgrade is used.
-- Frontend direct floors are `react-router@^7.18.3` and `vite@^8.3.0`. The lockfile resolves `brace-expansion@5.0.9`, `browserslist@4.28.9`, `baseline-browser-mapping@2.11.21`, `postcss@8.5.28`, and `nanoid@3.3.18`.
-
-#### Verification completed
-
-- Clean `npm ci` installations for backend and frontend succeeded without compatibility flags.
-- Full and `--omit=dev` audits for both projects report **0 vulnerabilities**.
-- Backend `npm ci` still prints an upstream deprecation notice for `glob@10.5.0`, reached through `firebase-admin > @google-cloud/firestore > google-gax > rimraf`. npm reports no advisory for the resolved tree; forcing an unsupported `glob` major would add more risk, so this notice is left for the upstream chain to remove.
-- The complete PostgreSQL-backed suite passes: **39/39 tests** across four files.
-- Root lint and production build pass; the frontend code-splitting contract also passes.
-- The compiled Firebase `api` export is callable, retains the GCF v2 `europe-west1` metadata, and returns a successful PostgreSQL readiness response through the Functions wrapper.
-
-#### Maintainer validation plan
-
-1. Check out `codex/fix/npm-security-advisories` and run clean installs with `npm --prefix backend ci` and `npm --prefix frontend ci`.
-2. Run full and production-only audits in each project; all four commands should report 0 vulnerabilities.
-3. Start local PostgreSQL, run `npm run db:setup`, then run `npm test`, `npm run lint`, `npm run build`, and `npm --prefix frontend run verify:chunks`.
-4. Start the local API and frontend, confirm `/api/v1/internal/readiness`, sign in, and smoke-test Dashboard, Expenses, and Cyberdeck to catch any runtime regression from the Firebase, React Router, or Vite updates.
-5. After maintainer approval, merge the topic branch into `dev`, mark this entry resolved with the final commit, and leave promotion to `main` and the end-of-day `prod` bundle as separate approvals.
-
 ### BR-BL-005 — Implement real Budget persistence
 
 **Status:** pending
@@ -86,6 +43,26 @@ Completed entries are never deleted. They are moved to this section, marked as r
 - pertinent branches, pull requests, or commits;
 - verification performed;
 - associated documentation or residual debt.
+
+### BR-BL-004 — Remediate npm dependency security advisories
+
+**Status:** resolved
+
+**Resolution date:** September 10, 2026
+
+**Priority:** high
+
+**Working branch:** `codex/fix/npm-security-advisories`, validated by the maintainer before integration into `dev`.
+
+**Commit:** `9861766`.
+
+**Root cause:** both lockfiles retained vulnerable transitive releases despite compatible patched ranges. In addition, `firebase-functions@7.2.5` resolved an implicit Firebase Admin 13 peer whose older Google Cloud Storage and Firestore trees contained vulnerable `fast-xml-parser` and `uuid` nodes. New Vitest, `qs`, Browserslist, and baseline-browser-mapping advisories had also appeared since the original August audit.
+
+**Outcome:** backend direct floors are now `firebase-functions@^7.3.2`, explicit `firebase-admin@^14.3.0`, and `vitest@^4.1.11`; frontend floors are `react-router@^7.18.3` and `vite@^8.3.0`. Compatible transitive versions were refreshed in both lockfiles. Narrow overrides move only `gaxios@6` and `teeny-request@9` to `uuid@11.1.1`; both consumers use the compatible `uuid.v4()` API. No forced audit fix, global override, or Firebase downgrade was used.
+
+**Verification:** clean backend and frontend `npm ci`; full and `--omit=dev` audits for both projects with **0 vulnerabilities**; **39/39 PostgreSQL-backed tests**; root lint and production build; frontend code-splitting contract; and a local smoke test confirming that the compiled Firebase `api` export remains a callable GCF v2 function in `europe-west1` with successful PostgreSQL readiness.
+
+**Residual debt:** backend installation still prints an upstream deprecation notice for `glob@10.5.0`, reached through `firebase-admin > @google-cloud/firestore > google-gax > rimraf`. npm reports no advisory for the resolved tree, so an unsupported forced major override was rejected. Promotion from `dev` to `main` and inclusion in the end-of-day `prod` bundle remain separate approvals.
 
 ### BR-BL-003 — Revamp the Gamification visuals
 
