@@ -1,169 +1,169 @@
 # Budget Runner — Backlog
 
-Este fichero registra trabajo futuro ya identificado, pero **no autoriza su implementación**. La prioridad y el alcance de cada entrada deben confirmarse antes de comenzar. La operativa completa se define en `CONTRIBUTING_Es.md` y `CONTRIBUTING.md`.
+This file records future work that has already been identified, but **does not authorize its implementation**. The priority and scope of each entry must be confirmed before work begins. The complete workflow is defined in `CONTRIBUTING.md` and `CONTRIBUTING_Es.md`.
 
-## Pendiente
+## Pending
 
-### BR-BL-004 — Remediar avisos de seguridad en dependencias npm
+### BR-BL-004 — Remediate npm dependency security advisories
 
-**Estado:** pendiente
+**Status:** pending
 
-**Prioridad:** alta
+**Priority:** high
 
-**Detectado:** 27 de agosto de 2026 con `npm --prefix backend audit` sobre el lockfile vigente.
+**Detected:** August 27, 2026, with `npm --prefix backend audit` against the current lockfile.
 
-El informe completo del backend registra **0 avisos críticos, 2 altos y 10 moderados**: 12 nodos de paquetes afectados, no 12 vulnerabilidades independientes. Al excluir dependencias de desarrollo mediante `--omit=dev` permanecen **1 alto y 8 moderados** en 9 nodos de la cadena de producción.
+The complete backend report records **0 critical, 2 high, and 10 moderate advisories**: 12 affected package nodes, not 12 independent vulnerabilities. When development dependencies are excluded with `--omit=dev`, **1 high and 8 moderate advisories** remain across 9 nodes in the production dependency tree.
 
-La revisión del frontend tras incorporar TanStack Query registra **0 críticos, 3 altos y 1 moderado** en cuatro nodos. Con `npm --prefix frontend audit --omit=dev` permanece únicamente **1 alto** de producción: `react-router@7.18.1`. TanStack Query 5.102.8 no figura afectado.
+The frontend review after adding TanStack Query records **0 critical, 3 high, and 1 moderate advisories** across four nodes. With `npm --prefix frontend audit --omit=dev`, only **1 high-severity production advisory** remains: `react-router@7.18.1`. TanStack Query 5.102.8 is not affected.
 
-#### Criticidad alta
+#### High severity
 
-- **Producción — `fast-xml-parser@5.10.0`:** las declaraciones `DOCTYPE` repetidas pueden reiniciar los límites de expansión de entidades y provocar consumo de recursos. Entra por `firebase-functions@7.2.5 > firebase-admin@13.10.0 > @google-cloud/storage@7.21.0`. Afecta a versiones `>=5.9.3 <5.10.1`; npm identifica una corrección disponible. Referencia: [GHSA-8r6m-32jq-jx6q](https://github.com/advisories/GHSA-8r6m-32jq-jx6q).
-- **Desarrollo — `nanoid@3.3.16`:** un generador personalizado con tamaño cero puede entrar en un bucle infinito. Entra por `vitest@4.1.10 > vite@8.1.4 > postcss@8.5.19`. Afecta a versiones `<3.3.18`; npm identifica una corrección disponible. Referencia: [GHSA-2v37-7h3g-55p8](https://github.com/advisories/GHSA-2v37-7h3g-55p8).
-- **Producción frontend — `react-router@7.18.1`:** en modo RSC, determinadas acciones pueden ejecutarse antes de que una protección CSRF responda con 400. Afecta a `>=7.12.0 <7.18.2`; npm identifica una corrección compatible disponible. Budget Runner no utiliza actualmente RSC, pero la dependencia directa debe actualizarse y verificarse. Referencia: [GHSA-qwww-vcr4-c8h2](https://github.com/advisories/GHSA-qwww-vcr4-c8h2).
-- **Desarrollo frontend — `brace-expansion@5.0.0`:** dos avisos de denegación de servicio por expansión sin límites afectan al mismo nodo (`<5.0.9`). npm identifica una corrección disponible. Referencias: [GHSA-mh99-v99m-4gvg](https://github.com/advisories/GHSA-mh99-v99m-4gvg) y [GHSA-rgw5-rvv9-x895](https://github.com/advisories/GHSA-rgw5-rvv9-x895).
+- **Production — `fast-xml-parser@5.10.0`:** repeated `DOCTYPE` declarations can reset entity-expansion limits and cause resource exhaustion. It enters through `firebase-functions@7.2.5 > firebase-admin@13.10.0 > @google-cloud/storage@7.21.0`. Versions `>=5.9.3 <5.10.1` are affected; npm identifies an available fix. Reference: [GHSA-8r6m-32jq-jx6q](https://github.com/advisories/GHSA-8r6m-32jq-jx6q).
+- **Development — `nanoid@3.3.16`:** a custom generator with a zero size can enter an infinite loop. It enters through `vitest@4.1.10 > vite@8.1.4 > postcss@8.5.19`. Versions `<3.3.18` are affected; npm identifies an available fix. Reference: [GHSA-2v37-7h3g-55p8](https://github.com/advisories/GHSA-2v37-7h3g-55p8).
+- **Frontend production — `react-router@7.18.1`:** in RSC mode, certain actions can execute before a CSRF protection responds with 400. Versions `>=7.12.0 <7.18.2` are affected; npm identifies an available compatible fix. Budget Runner does not currently use RSC, but the direct dependency must be updated and verified. Reference: [GHSA-qwww-vcr4-c8h2](https://github.com/advisories/GHSA-qwww-vcr4-c8h2).
+- **Frontend development — `brace-expansion@5.0.0`:** two denial-of-service advisories caused by unbounded expansion affect the same node (`<5.0.9`). npm identifies an available fix. References: [GHSA-mh99-v99m-4gvg](https://github.com/advisories/GHSA-mh99-v99m-4gvg) and [GHSA-rgw5-rvv9-x895](https://github.com/advisories/GHSA-rgw5-rvv9-x895).
 
-#### Criticidad moderada
+#### Moderate severity
 
-- **Producción — `uuid@9.0.1`:** falta una comprobación de límites del buffer en UUID v3/v5/v6 cuando se proporciona `buf`. Entra por las dependencias de Google Cloud; afecta a versiones `<11.1.1`. Referencia: [GHSA-w5hq-g745-h8pq](https://github.com/advisories/GHSA-w5hq-g745-h8pq).
-- **Desarrollo — `postcss@8.5.19`:** un `sourceMappingURL` controlado por un atacante puede leer ficheros `.map` cuando no se define `from`. Afecta a versiones `<=8.5.22`. Referencia: [GHSA-fxqj-rqcc-2cmp](https://github.com/advisories/GHSA-fxqj-rqcc-2cmp).
-- **Frontend — `postcss@8.5.19`:** el mismo aviso moderado aparece en la cadena de desarrollo del frontend y dispone de corrección.
-- **Propagación de la cadena Firebase/Google Cloud:** npm eleva también como nodos moderados a `firebase-functions`, `firebase-admin`, `@google-cloud/firestore`, `@google-cloud/storage`, `google-gax`, `gaxios`, `retry-request` y `teeny-request`, porque dependen de los paquetes vulnerables anteriores.
+- **Production — `uuid@9.0.1`:** UUID v3/v5/v6 lacks a buffer bounds check when `buf` is provided. It enters through Google Cloud dependencies; versions `<11.1.1` are affected. Reference: [GHSA-w5hq-g745-h8pq](https://github.com/advisories/GHSA-w5hq-g745-h8pq).
+- **Development — `postcss@8.5.19`:** an attacker-controlled `sourceMappingURL` can read `.map` files when `from` is not defined. Versions `<=8.5.22` are affected. Reference: [GHSA-fxqj-rqcc-2cmp](https://github.com/advisories/GHSA-fxqj-rqcc-2cmp).
+- **Frontend — `postcss@8.5.19`:** the same moderate advisory appears in the frontend development tree and has an available fix.
+- **Firebase/Google Cloud dependency-tree propagation:** npm also raises `firebase-functions`, `firebase-admin`, `@google-cloud/firestore`, `@google-cloud/storage`, `google-gax`, `gaxios`, `retry-request`, and `teeny-request` as moderate-severity nodes because they depend on the vulnerable packages above.
 
-La remediación no debe aplicar automáticamente `npm audit fix --force`: el informe completo propone `firebase-functions@4.9.0`, lo que supondría un downgrade mayor desde `7.2.5` y podría romper el despliegue híbrido. El trabajo deberá evaluar primero versiones corregidas compatibles, actualizaciones transitivas u `overrides` acotados.
+The remediation must not automatically apply `npm audit fix --force`: the full report proposes `firebase-functions@4.9.0`, which would be a major downgrade from `7.2.5` and could break the hybrid deployment. The work must first evaluate compatible fixed versions, transitive updates, or narrowly scoped `overrides`.
 
-Para resolver esta entrada se deberá:
+To resolve this entry:
 
-- actualizar dependencias y lockfile sin introducir downgrades incompatibles;
-- dejar `npm audit` sin avisos altos o críticos y justificar expresamente cualquier moderado residual;
-- repetir `npm audit --omit=dev` para distinguir el riesgo de producción;
-- superar lint, build y la batería completa de tests con PostgreSQL local;
-- validar la compilación y el comportamiento de Firebase Functions antes de promover el cambio a `main` y `prod`;
-- registrar al cerrar la entrada las versiones finales, avisos resueltos, verificaciones y posible riesgo aceptado.
+- update dependencies and lockfiles without introducing incompatible downgrades;
+- leave `npm audit` with no high or critical advisories and explicitly justify any remaining moderate advisory;
+- repeat `npm audit --omit=dev` to distinguish production risk;
+- pass lint, build, and the complete test suite with local PostgreSQL;
+- validate Firebase Functions compilation and behavior before promoting the change to `main` and `prod`;
+- when closing the entry, record the final versions, resolved advisories, verification, and any accepted risk.
 
-### BR-BL-005 — Implementar la persistencia real de Presupuestos
+### BR-BL-005 — Implement real Budget persistence
 
-**Estado:** pendiente
+**Status:** pending
 
-**Prioridad:** por determinar
+**Priority:** to be determined
 
-Sustituir los presupuestos de demostración del frontend por la vertical persistente completa definida en `PRD.md`, `DATABASE.md`, `API.md` y `GAME_SYSTEM.md`. El trabajo abarcará la API, PostgreSQL, el scheduler de periodos, cierres, recompensas y penalizaciones, además de la experiencia de creación y seguimiento en el frontend.
+Replace the frontend's demonstration budgets with the complete persistent vertical defined in `PRD.md`, `DATABASE.md`, `API.md`, and `GAME_SYSTEM.md`. The work will cover the API, PostgreSQL, the period scheduler, closures, rewards and penalties, as well as the frontend creation and tracking experience.
 
-La implementación deberá contemplar como mínimo:
+The implementation must include at least:
 
-- aislamiento por usuario y contratos CRUD completos;
-- frecuencias, zonas horarias, pausas, reanudaciones, archivado y periodos derivados;
-- cierres idempotentes, concurrencia, transacciones serializables y recuperación ante fallos;
-- cálculo auditable de cumplimiento, Flux, SynthCoins, daño y cualquier ajuste compensatorio;
-- migración desde los datos mock sin presentar presupuestos ficticios como persistidos;
-- invalidación selectiva de Dashboard, Presupuestos y Gamificación;
-- pruebas unitarias, de integración, scheduler, aislamiento y casos límite de calendario.
+- per-user isolation and complete CRUD contracts;
+- frequencies, time zones, pauses, resumptions, archiving, and derived periods;
+- idempotent closures, concurrency, serializable transactions, and failure recovery;
+- auditable calculation of compliance, Flux, SynthCoins, damage, and any compensating adjustment;
+- migration from mock data without presenting fictitious budgets as persisted;
+- selective invalidation of Dashboard, Budgets, and Gamification;
+- unit, integration, scheduler, isolation, and calendar edge-case tests.
 
-### BR-BL-007 — Auditar el robo y la reutilización de sesión mediante cookies
+### BR-BL-007 — Audit session theft and reuse through cookies
 
-**Estado:** pendiente
+**Status:** pending
 
-**Prioridad:** alta
+**Priority:** high
 
-**Responsable de la prueba exploratoria:** mantenedor
+**Exploratory test owner:** maintainer
 
-Intentar comprometer una sesión propia de Budget Runner mediante cookies y mecanismos relacionados para identificar deuda en refresh tokens, rotación, revocación, atributos `HttpOnly`, `Secure` y `SameSite`, fijación o reutilización de sesión y exposición indirecta mediante XSS o CSRF. La prueba debe limitarse al entorno local o a cuentas de test expresamente autorizadas; nunca debe dirigirse contra usuarios reales ni infraestructura ajena.
+Attempt to compromise a Budget Runner session owned by the tester through cookies and related mechanisms to identify debt in refresh tokens, rotation, revocation, `HttpOnly`, `Secure`, and `SameSite` attributes, session fixation or reuse, and indirect exposure through XSS or CSRF. Testing must be limited to the local environment or expressly authorized test accounts; it must never target real users or third-party infrastructure.
 
-Al abordar la entrada se documentarán el modelo de amenaza, los pasos reproducibles sin incluir secretos, la evidencia observada y las mitigaciones propuestas. Cualquier corrección se desarrollará en una rama auxiliar independiente creada desde `dev`.
+When addressing this entry, document the threat model, reproducible steps without secrets, observed evidence, and proposed mitigations. Any fix must be developed in an independent auxiliary branch created from `dev`.
 
-## Historial resuelto
+## Resolved history
 
-Las entradas completadas no se eliminan. Se mueven a esta sección, se marcan como resueltas y se amplían con:
+Completed entries are never deleted. They are moved to this section, marked as resolved, and expanded with:
 
-- fecha de resolución;
-- resumen del resultado y de cualquier decisión relevante;
-- ramas, pull requests o commits pertinentes;
-- verificaciones realizadas;
-- documentación o deuda residual asociada.
+- resolution date;
+- a summary of the outcome and any relevant decision;
+- pertinent branches, pull requests, or commits;
+- verification performed;
+- associated documentation or residual debt.
 
-### BR-BL-003 — Revamp visual de Gamificación
+### BR-BL-003 — Revamp the Gamification visuals
 
-**Estado:** resuelta
+**Status:** resolved
 
-**Fecha de resolución:** 29 de agosto de 2026
+**Resolution date:** August 29, 2026
 
-**Prioridad:** por determinar
+**Priority:** to be determined
 
-**Rama de trabajo:** `codex/feature/cyberdeck-hud`, validada por el mantenedor antes de promoverse.
+**Working branch:** `codex/feature/cyberdeck-hud`, validated by the maintainer before promotion.
 
-**Resultado:** la sección se presenta ahora como **Cyberdeck** en la navegación y en el encabezado de los ocho idiomas. Resumen integra en una única pestaña las métricas de progresión y el esquema técnico. `WRIST CORE` permanece sin traducir y cada módulo enlaza visualmente su tarjeta, su traza discontinua y una pieza específica del modelo wireframe.
+**Outcome:** the section now appears as **Cyberdeck** in the navigation and heading in all eight languages. Overview combines progression metrics and the technical diagram in a single tab. `WRIST CORE` remains untranslated, and each module visually links its card, dashed trace, and a specific part of the wireframe model.
 
-La telemetría permite reparar módulos dañados desde el propio detalle, muestra el coste en SynthCoins y actualiza Energy y saldo inmediatamente. Los módulos íntegros y destruidos muestran la acción deshabilitada; los slots vacíos dejan de abrir el detalle. La pestaña Reparaciones continúa ofreciendo el listado especializado.
+Telemetry allows damaged modules to be repaired from their detail view, displays the SynthCoin cost, and immediately updates Energy and the balance. Intact and destroyed modules show the action as disabled; empty slots no longer open the detail view. The Repairs tab continues to provide the specialized listing.
 
-En orientación vertical, el esquema sustituye el lienzo ancho por tarjetas compactas en una o dos columnas y sitúa una miniatura WebGL debajo, sin core ni conexiones. En horizontal se conserva el layout widescreen original. Solo se anima el canvas visible para no duplicar trabajo gráfico.
+In portrait orientation, the diagram replaces the wide canvas with compact cards in one or two columns and places a WebGL thumbnail below, without the core or connections. The original widescreen layout is retained in landscape orientation. Only the visible canvas is animated to avoid duplicate graphics work.
 
-**Commits principales:** `bd1a92f` (integración e interacciones del HUD) y `aca241c` (layout vertical responsive).
+**Main commits:** `bd1a92f` (HUD integration and interactions) and `aca241c` (responsive portrait layout).
 
-**Verificación:** build y lint del frontend, contrato automatizado de code splitting y recorridos Chromium en 320, 390, 600 y 1280 píxeles. Se comprobaron hover coordinado, ausencia de desbordamiento interno en vertical, paridad del modal, coste y aplicación de reparaciones, estados deshabilitados, slots vacíos no interactivos y ausencia de errores de WebGL.
+**Verification:** frontend build and lint, the automated code-splitting contract, and Chromium walkthroughs at 320, 390, 600, and 1280 pixels. Coordinated hover, absence of internal overflow in portrait orientation, modal parity, repair cost and application, disabled states, non-interactive empty slots, and absence of WebGL errors were verified.
 
-**Deuda residual:** ninguna identificada. La visualización vertical conserva el resaltado por hover o foco, aunque la interacción primaria en dispositivos táctiles es la selección de la tarjeta.
+**Residual debt:** none identified. The portrait visualization retains hover or focus highlighting, although selecting a card is the primary interaction on touch devices.
 
-### BR-BL-002 — Corregir el título transparente en Chrome/Chromium
+### BR-BL-002 — Fix the transparent title in Chrome/Chromium
 
-**Estado:** resuelta
+**Status:** resolved
 
-**Fecha de resolución:** 29 de agosto de 2026
+**Resolution date:** August 29, 2026
 
-**Prioridad:** por determinar
+**Priority:** to be determined
 
-**Resultado:** se simplificó `frontend/public/media/BudgetRunner_logo.svg`, eliminando la estructura heredada de Illustrator basada en máscaras y capas redundantes. El recurso usa ahora un viewport normalizado y un único recorte explícito para producir las franjas transparentes que atraviesan las palabras Budget y Runner, sin fondo ni capas raster ocultas adicionales.
+**Outcome:** `frontend/public/media/BudgetRunner_logo.svg` was simplified, removing the inherited Illustrator structure based on masks and redundant layers. The asset now uses a normalized viewport and a single explicit clip to produce the transparent stripes crossing the words Budget and Runner, without a background or additional hidden raster layers.
 
 **Commit:** `c753255`.
 
-**Verificación:** inspección del SVG y validación visual del mantenedor en navegadores Chrome/Chromium, sin reproducción posterior de los artefactos originales.
+**Verification:** SVG inspection and maintainer visual validation in Chrome/Chromium browsers, with no subsequent reproduction of the original artifacts.
 
-**Deuda residual:** no se ejecutó una comprobación automatizada en Safari desde Windows; el SVG conserva únicamente primitivas y atributos ampliamente compatibles.
+**Residual debt:** an automated Safari check was not run from Windows; the SVG now retains only broadly compatible primitives and attributes.
 
-### BR-BL-006 — Añadir una capa de hardening contra SQL injection
+### BR-BL-006 — Add a SQL injection hardening layer
 
-**Estado:** resuelta
+**Status:** resolved
 
-**Fecha de resolución:** 27 de agosto de 2026
+**Resolution date:** August 27, 2026
 
-**Prioridad:** alta
+**Priority:** high
 
-**Rama de trabajo:** `codex/feature/sql-injection-hardening`, validada por el mantenedor antes de promoverse.
+**Working branch:** `codex/feature/sql-injection-hardening`, validated by the maintainer before promotion.
 
-**Resultado:** todas las consultas ejecutadas por rutas y servicios usan texto SQL estático y parámetros de PostgreSQL. El único constructor dinámico de filtros fue sustituido por una consulta fija con parámetros anulables. La API inspecciona de forma centralizada los textos no confiables y el frontend aplica la misma detección a formularios, repositorios HTTP y mock; una transmisión rechazada cancela peticiones, purga las cachés accesibles, recarga la aplicación y muestra un aviso Ultrawave neutro sin describir la contramedida.
+**Outcome:** all queries executed by routes and services use static SQL text and PostgreSQL parameters. The only dynamic filter builder was replaced with a fixed query containing nullable parameters. The API centrally inspects untrusted text, and the frontend applies the same detection to forms and the HTTP and mock repositories; a rejected transmission cancels requests, purges accessible caches, reloads the application, and displays a neutral Ultrawave notice without describing the countermeasure.
 
-**Decisiones relevantes:** la detección heurística normaliza codificación porcentual, Unicode, caracteres invisibles, comentarios y varias formas de concatenación, pero se considera exclusivamente defensa en profundidad. La garantía primaria continúa siendo no interpretar los valores del usuario como SQL. Las consultas tienen además límites de tiempo de sentencia, bloqueo, cliente y transacción inactiva.
+**Relevant decisions:** heuristic detection normalizes percent encoding, Unicode, invisible characters, comments, and several concatenation forms, but is considered defense in depth only. The primary guarantee remains that user values are not interpreted as SQL. Queries also have statement, lock, client, and idle-in-transaction timeouts.
 
-**Commit y revisión:** `97b664f`; pull request `#5` hacia `dev`.
+**Commit and review:** `97b664f`; pull request `#5` into `dev`.
 
-**Verificación:** 39/39 pruebas, incluyendo autenticación, búsquedas, categorías, conceptos, notas, ofuscación y falsos positivos; comprobación de que los rechazos no alteran filas; invariante estática contra SQL construido en runtime; lint completo; build de producción y contrato de code splitting.
+**Verification:** 39/39 tests, including authentication, searches, categories, concepts, notes, obfuscation, and false positives; verification that rejections do not alter rows; static invariant against SQL built at runtime; complete lint; production build; and code-splitting contract.
 
-**Deuda residual:** ninguna detección textual puede reconocer todas las ofuscaciones posibles y no debe ampliarse como sustituto de la parametrización. La revisión ofensiva de sesiones y cookies continúa separadamente en `BR-BL-007`.
+**Residual debt:** no textual detection can recognize every possible obfuscation and it must not be expanded as a substitute for parameterization. The offensive review of sessions and cookies remains separate under `BR-BL-007`.
 
-### BR-BL-001 — Dividir la carga de datos por áreas funcionales
+### BR-BL-001 — Split data loading by functional area
 
-**Estado:** resuelta
+**Status:** resolved
 
-**Fecha de resolución:** 27 de agosto de 2026
+**Resolution date:** August 27, 2026
 
-**Prioridad:** alta
+**Priority:** high
 
-**Rama de trabajo:** `codex/feature/data-loading-splitting`, integrada en `dev` tras la validación del mantenedor.
+**Working branch:** `codex/feature/data-loading-splitting`, integrated into `dev` after maintainer validation.
 
-**Resultado:** se eliminó el snapshot privado global de nueve lecturas y se sustituyó por TanStack Query 5.102.8 con consultas independientes para perfil, dashboard, transacciones, categorías, presupuestos y cada recurso de Gamificación. La restauración de sesión reutiliza el perfil ya obtenido, y los repositorios HTTP y mock comparten el mismo contrato granular.
+**Outcome:** the private global snapshot of nine reads was removed and replaced with TanStack Query 5.102.8 using independent queries for profile, dashboard, transactions, categories, budgets, and each Gamification resource. Session restoration reuses the profile already fetched, and the HTTP and mock repositories share the same granular contract.
 
-**Decisiones relevantes:**
+**Relevant decisions:**
 
-- caché y estados de carga/error independientes por ruta y pestaña;
-- invalidaciones selectivas que aprovechan el dashboard recalculado de las mutaciones financieras;
-- código e inventario de Tienda precargables mediante hover, foco, selección o tour;
-- skeleton inmediato, texto accesible a partir de 700 ms y aviso de proveedor lento a los 3 s;
-- errores reintentables dentro de la sección afectada sin recargar toda la app;
-- telemetría limitada a las últimas 200 peticiones, con rutas normalizadas y sin UUID ni query strings.
+- independent cache and loading/error states for each route and tab;
+- selective invalidations that use the dashboard recalculated by financial mutations;
+- Store code and inventory that can be prefetched through hover, focus, selection, or tour;
+- immediate skeleton, accessible text after 700 ms, and a slow-provider warning after 3 s;
+- retryable errors within the affected section without reloading the application;
+- telemetry limited to the latest 200 requests, with normalized routes and no UUIDs or query strings.
 
-**Commits principales:** `567e956` (implementación) y `24e81ef` (arquitectura y plan de pruebas).
+**Main commits:** `567e956` (implementation) and `24e81ef` (architecture and test plan).
 
-**Verificación:** `npm test` con 13/13 tests, lint completo sin avisos, build de backend y frontend, contrato automatizado de chunks y recorrido local de Dashboard, Gastos, Presupuestos, Perfil, Ajustes y todas las pestañas de Gamificación. El mantenedor validó la experiencia local antes de autorizar la promoción.
+**Verification:** `npm test` with 13/13 tests, complete lint with no warnings, backend and frontend builds, automated chunk contract, and local walkthrough of Dashboard, Expenses, Budgets, Profile, Settings, and every Gamification tab. The maintainer validated the local experience before authorizing promotion.
 
-**Documentación:** `FRONTEND_ARCHITECTURE.md` define recursos, caché, invalidaciones, umbrales y métricas; `TEST_PLAN.md` recoge los casos T-107 a T-111.
+**Documentation:** `FRONTEND_ARCHITECTURE.md` defines resources, cache, invalidations, thresholds, and metrics; `TEST_PLAN.md` records cases T-107 through T-111.
 
-**Seguimiento operativo:** revisar `window.__BUDGET_RUNNER_API_METRICS__` después del próximo despliegue autorizado para observar Vercel y Neon y recalibrar los umbrales únicamente si las mediciones reales lo justifican. Esta observación no bloquea la resolución de la entrada.
+**Operational follow-up:** review `window.__BUDGET_RUNNER_API_METRICS__` after the next authorized deployment to observe Vercel and Neon and recalibrate thresholds only if real measurements justify it. This observation does not block resolution of the entry.
