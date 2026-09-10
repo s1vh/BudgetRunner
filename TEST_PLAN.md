@@ -402,7 +402,7 @@ Las rutas y servicios mantienen SQL literal parametrizado, los filtros dinámico
 
 ### T-113 Puntero de neón opcional
 
-En dispositivos con `hover` y puntero fino, `customCursor: true` aplica el SVG triangular hueco de neón, sin cola y con el hotspot en la punta; los campos editables conservan el cursor de texto y los controles no disponibles mantienen `not-allowed`. La preferencia parte activa para cuentas nuevas y migradas, se puede desactivar y reactivar desde Ajustes, persiste en API y mock tras recargar, y muestra su etiqueta y descripción en los ocho idiomas. Los dispositivos táctiles no cambian de cursor.
+En dispositivos con `hover` y puntero fino, `customCursor: true` aplica el SVG triangular hueco de neón, sin cola, con vértices suavemente redondeados, transición cromática asimétrica y el hotspot en la punta; los campos editables conservan el cursor de texto y los controles no disponibles mantienen `not-allowed`. La preferencia parte activa para cuentas nuevas y migradas, se puede desactivar y reactivar desde Ajustes, persiste en API y mock tras recargar, y muestra su etiqueta y descripción en los ocho idiomas. Los dispositivos táctiles no cambian de cursor.
 
 ## 14. Seguridad básica
 

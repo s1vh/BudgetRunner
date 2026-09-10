@@ -1,21 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
   <defs>
-    <linearGradient id="neon-edge" x1="3" y1="3" x2="25.5" y2="26.5" gradientUnits="userSpaceOnUse">
+    <linearGradient id="neon-edge" x1="1.5" y1="5" x2="29" y2="22" gradientUnits="userSpaceOnUse">
       <stop stop-color="#ff2da9"/>
-      <stop offset=".46" stop-color="#ff65d5"/>
-      <stop offset=".58" stop-color="#66f9ff"/>
-      <stop offset="1" stop-color="#00d9f5"/>
+      <stop offset=".24" stop-color="#ff58c7"/>
+      <stop offset=".51" stop-color="#b86bea"/>
+      <stop offset=".76" stop-color="#45e4f7"/>
+      <stop offset="1" stop-color="#00f0df"/>
     </linearGradient>
     <linearGradient id="glass" x1="5" y1="5" x2="21" y2="23" gradientUnits="userSpaceOnUse">
       <stop stop-color="#ff4fbd" stop-opacity=".12"/>
       <stop offset="1" stop-color="#00f5ff" stop-opacity=".04"/>
     </linearGradient>
-    <filter id="neon-glow" x="-35%" y="-35%" width="170%" height="170%">
-      <feGaussianBlur stdDeviation="1.25"/>
+    <filter id="neon-glow" x="-45%" y="-45%" width="190%" height="190%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="1.55"/>
     </filter>
   </defs>
-  <path d="M3 3 27 13.1 12.7 28 3 3Z" stroke="url(#neon-edge)" stroke-linejoin="round" stroke-width="4" opacity=".42" filter="url(#neon-glow)"/>
-  <path d="M3 3 27 13.1 12.7 28 3 3Z" fill="url(#glass)" stroke="url(#neon-edge)" stroke-linejoin="round" stroke-width="1.7"/>
-  <path d="M4.7 4.6 25.1 13.3" stroke="#ffb8e8" stroke-linecap="round" stroke-width=".65" opacity=".8"/>
-  <path d="M25.4 14.1 13.2 26.8" stroke="#b9fdff" stroke-linecap="round" stroke-width=".65" opacity=".75"/>
+  <path d="M4.1 3.25Q2.85 2.75 3.35 4.05L12.1 27.1Q12.65 28.65 13.75 27.4L26.45 14Q27.85 12.75 26.2 12.2L4.1 3.25Z" stroke="url(#neon-edge)" stroke-linejoin="round" stroke-width="5.2" opacity=".36" filter="url(#neon-glow)"/>
+  <path d="M4.1 3.25Q2.85 2.75 3.35 4.05L12.1 27.1Q12.65 28.65 13.75 27.4L26.45 14Q27.85 12.75 26.2 12.2L4.1 3.25Z" fill="url(#glass)" stroke="url(#neon-edge)" stroke-linejoin="round" stroke-width="2.15"/>
+  <path d="M4.65 4.25 23.4 11.85" stroke="#ffd0ee" stroke-linecap="round" stroke-width=".7" opacity=".62"/>
+  <path d="M25.65 14.25 14.1 26.5" stroke="#c8feff" stroke-linecap="round" stroke-width=".7" opacity=".55"/>
 </svg>
