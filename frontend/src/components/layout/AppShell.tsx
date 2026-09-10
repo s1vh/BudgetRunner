@@ -159,6 +159,12 @@ export function AppShell() {
   const preferences = profile?.preferences
   const ambientEffects = preferences?.ambientEffects ?? true
   const reducedMotion = preferences?.reducedMotion ?? false
+  const customCursor = preferences?.customCursor ?? true
+  useEffect(() => {
+    document.documentElement.classList.toggle('custom-cursor', customCursor)
+    return () => document.documentElement.classList.remove('custom-cursor')
+  }, [customCursor])
+
   return (
     <div className={cn('min-h-screen', reducedMotion && 'reduce-motion', preferences?.compactMode && 'compact-mode')}>
       <AmbientBackground ambientEffects={ambientEffects} scanlines={preferences?.scanlines} reducedMotion={reducedMotion} />

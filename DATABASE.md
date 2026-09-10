@@ -43,7 +43,7 @@
 | locale | VARCHAR(10) | uno de `es-ES`, `en-US`, `fr-FR`, `de-DE`, `ru-RU`, `zh-CN`, `ja-JP`, `ko-KR`; por defecto `en-US` |
 | timezone | VARCHAR(64) | IANA |
 | week_starts_on | SMALLINT | 1–7 |
-| preferences | JSONB | preferencias de interfaz; `helpHints` vale `true` por defecto |
+| preferences | JSONB | preferencias de interfaz; `helpHints` y `customCursor` valen `true` por defecto |
 | email_verified_at | TIMESTAMPTZ NULL | |
 | guided_tour_completed_at | TIMESTAMPTZ NULL | primera finalización o abandono del tour; `NULL` significa pendiente |
 | created_at | TIMESTAMPTZ | |
@@ -327,3 +327,5 @@ Bloquear en orden estable: usuario/progreso → periodo/oferta → módulo → l
 ## 12. Estado de ayuda y tour
 
 La migración `004_help_and_guided_tour.sql` incorpora `helpHints: true` a las preferencias que no lo tuvieran y actualiza el valor por defecto para las cuentas nuevas. No rellena `guided_tour_completed_at`: de este modo, tras aplicar la migración, todas las cuentas existentes de test y todas las cuentas nuevas reciben el tour en su primer login. La fecha se establece de forma idempotente al finalizarlo o salir de él.
+
+La migración `005_custom_cursor_preference.sql` incorpora `customCursor: true` únicamente cuando la clave todavía no existe y actualiza el valor por defecto para las cuentas nuevas. El resto del objeto JSONB se conserva sin cambios.

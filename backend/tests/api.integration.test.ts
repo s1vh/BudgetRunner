@@ -158,7 +158,20 @@ describe.sequential('Budget Runner API', () => {
     const initial = await request(app).get('/api/v1/me').set('Authorization', `Bearer ${token}`)
     expect(initial.status).toBe(200)
     expect(initial.body.data.preferences.helpHints).toBe(true)
+    expect(initial.body.data.preferences.customCursor).toBe(true)
     expect(initial.body.data.guidedTourCompleted).toBe(false)
+
+    const disabledCursor = await request(app).patch('/api/v1/me')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ preferences: { ...initial.body.data.preferences, customCursor: false } })
+    expect(disabledCursor.status).toBe(200)
+    expect(disabledCursor.body.data.preferences.customCursor).toBe(false)
+
+    const restoredCursor = await request(app).patch('/api/v1/me')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ preferences: { ...initial.body.data.preferences, customCursor: true } })
+    expect(restoredCursor.status).toBe(200)
+    expect(restoredCursor.body.data.preferences.customCursor).toBe(true)
 
     const first = await request(app).post('/api/v1/me/guided-tour/complete').set('Authorization', `Bearer ${token}`)
     const replay = await request(app).post('/api/v1/me/guided-tour/complete').set('Authorization', `Bearer ${token}`)

@@ -19,6 +19,7 @@ const preferenceKeys: readonly (keyof UserPreferences)[] = [
   'reducedMotion',
   'compactMode',
   'helpHints',
+  'customCursor',
 ]
 
 function Toggle({ checked, onChange, label, description }: { checked: boolean; onChange: (value: boolean) => void; label: string; description: string }) {
@@ -141,6 +142,7 @@ export function SettingsPage() {
             <Toggle checked={current.audioReactive} onChange={(value) => change('audioReactive', value)} label={t('settings.audioReactive')} description={t('settings.audioReactiveDesc')} />
             <Toggle checked={current.reducedMotion} onChange={(value) => change('reducedMotion', value)} label={t('settings.reducedMotion')} description={t('settings.reducedMotionDesc')} />
             <Toggle checked={current.compactMode} onChange={(value) => change('compactMode', value)} label={t('settings.compact')} description={t('settings.compactDesc')} />
+            <Toggle checked={current.customCursor} onChange={(value) => change('customCursor', value)} label={t('settings.customCursor')} description={t('settings.customCursorDesc')} />
           </div>
         </SynthCard>
         <SynthCard className="p-5 sm:p-6" data-tour="settings-help">

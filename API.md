@@ -71,7 +71,7 @@ Valida `state`, vincula/crea cuenta y redirige.
 ### `GET /me`
 ### `PATCH /me`
 
-La implementación actual permite actualizar `locale` y/o las preferencias visuales. `locale` usa la misma lista cerrada del registro. El objeto completo `preferences` incluye `reducedMotion`, `ambientEffects`, `audioReactive`, `scanlines`, `compactMode` y `helpHints`; esta última propiedad controla la visibilidad de los iconos de ayuda y vale `true` por defecto.
+La implementación actual permite actualizar `locale` y/o las preferencias visuales. `locale` usa la misma lista cerrada del registro. El objeto completo `preferences` incluye `reducedMotion`, `ambientEffects`, `audioReactive`, `scanlines`, `compactMode`, `helpHints` y `customCursor`. `helpHints` controla la visibilidad de los iconos de ayuda; `customCursor` activa el puntero triangular de neón en dispositivos de escritorio con puntero preciso. Ambas propiedades valen `true` por defecto.
 
 ### `POST /me/guided-tour/complete`
 

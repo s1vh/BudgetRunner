@@ -36,6 +36,7 @@ export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
     preferences: {
       ...structuredClone(profile.preferences),
       helpHints: window.localStorage.getItem('budget-runner.mock.help-hints') !== 'false',
+      customCursor: window.localStorage.getItem('budget-runner.mock.custom-cursor') !== 'false',
     },
   }
 
@@ -236,6 +237,7 @@ export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
   async updatePreferences(input: UserPreferences): Promise<UserProfile> {
     await wait(180)
     window.localStorage.setItem('budget-runner.mock.help-hints', String(input.helpHints))
+    window.localStorage.setItem('budget-runner.mock.custom-cursor', String(input.customCursor))
     this.currentProfile = { ...this.currentProfile, preferences: input }
     return structuredClone(this.currentProfile)
   }
