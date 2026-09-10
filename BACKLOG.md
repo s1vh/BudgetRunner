@@ -44,11 +44,11 @@ When addressing this entry, document the threat model, reproducible steps withou
 
 **Recorded:** September 10, 2026
 
-**Prepared outcome:** empty and destroyed Cyberdeck modules no longer accept pointer or keyboard selection and cannot activate card, connector, or wireframe highlighting. Destroyed modules render a genuinely empty integrity track without the residual zero-length SVG stroke. Empty slots show only their localized “No module” message plus the slot identity and number, omitting Energy, Power, Shield, and the integrity track in both landscape and portrait layouts. The desktop navigation logo adds a red radial glare behind its transparent artwork on hover without changing its link behavior or layout.
+**Prepared outcome:** empty and destroyed Cyberdeck modules no longer accept pointer or keyboard selection and cannot activate card, connector, or wireframe highlighting. Destroyed modules render a genuinely empty integrity track without the residual zero-length SVG stroke. Empty slots show only their localized “No module” message plus the slot identity and number, omitting Energy, Power, Shield, and the integrity track in both landscape and portrait layouts. The desktop navigation logo adds a subtle red radial glare behind its transparent artwork that eases after the pointer, fades in and out with a short delay, and gently varies its luminance while active, without changing the link behavior or layout.
 
 **Automated verification:** frontend lint, production build, and the code-splitting contract pass.
 
-**Maintainer validation:** confirm inactive hover/click/focus behavior and integrity rendering in both portrait and landscape layouts; sample the empty-slot message in the supported locales; and confirm the logo hover has no layout shift and remains purely visual. After approval, move this entry to resolved history before promoting the combined `dev` changes to `main`.
+**Maintainer validation:** confirm inactive hover/click/focus behavior and integrity rendering in both portrait and landscape layouts; sample the empty-slot message in the supported locales; and confirm the logo glare follows the pointer smoothly, stays visually subdued, fades cleanly, causes no layout shift, and remains purely visual. After approval, move this entry to resolved history before promoting the combined `dev` changes to `main`.
 
 ## Resolved history
 
