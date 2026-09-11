@@ -4,6 +4,7 @@ import { type AppRequest, requireAuth } from '../auth.js'
 import { type DbClient, pool, withTransaction } from '../db.js'
 import { ApiError, asyncHandler } from '../errors.js'
 import { getFamilyBonuses, getProgressSummary, recalculateProgress } from '../progress.js'
+import { ensureStoreRotationWithClient } from '../storeRotation.js'
 
 const slotLabels: Record<string, string> = {
   cpu: 'Neural Chip', gpu: 'Holographic Core', ram: 'Memory Module', display: 'Neon Display',
@@ -67,7 +68,7 @@ async function getStore(client: DbClient, userId: string) {
          WHERE i.user_id = r.user_id AND i.slot = d.slot AND i.state = 'equipped' AND i.energy > 0
          LIMIT 1
       ) current ON true
-     WHERE r.user_id = $1 AND r.status = 'active' AND r.ends_at > now()
+     WHERE r.user_id = $1 AND r.status = 'active' AND r.starts_at <= now() AND r.ends_at > now()
        AND o.purchased_at IS NULL AND o.expires_at > now()
      ORDER BY o.created_at, o.id
   `, [userId])
@@ -164,7 +165,12 @@ gameRouter.get('/cyberdeck', asyncHandler(async (request, response) => {
   response.json({ data: await getCyberdeck(pool, (request as AppRequest).userId), meta: {} })
 }))
 gameRouter.get('/store', asyncHandler(async (request, response) => {
-  response.json({ data: await getStore(pool, (request as AppRequest).userId), meta: {} })
+  const userId = (request as AppRequest).userId
+  const data = await withTransaction(async (client) => {
+    await ensureStoreRotationWithClient(client, userId)
+    return getStore(client, userId)
+  })
+  response.json({ data, meta: {} })
 }))
 gameRouter.get('/history', asyncHandler(async (request, response) => {
   response.json({ data: await getHistory(pool, (request as AppRequest).userId), meta: {} })

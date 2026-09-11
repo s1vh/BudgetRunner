@@ -94,6 +94,10 @@ export const authRouter = Router()
 authRouter.post('/register', asyncHandler(async (request, response) => {
   const input = registerSchema.parse(request.body)
   const result = await withTransaction(async (client) => {
+    const timezone = await client.query('SELECT 1 FROM pg_timezone_names WHERE name = $1', [input.timezone])
+    if (!timezone.rowCount) {
+      throw new ApiError(422, 'INVALID_TIMEZONE', 'La zona horaria debe ser un identificador IANA válido.')
+    }
     const passwordHash = await bcrypt.hash(input.password, 12)
     const inserted = await client.query<{ id: string }>(`
       INSERT INTO users (email, password_hash, display_name, primary_currency, timezone, locale)

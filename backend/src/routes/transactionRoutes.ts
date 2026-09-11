@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import { type AppRequest, requireAuth } from '../auth.js'
+import { activateDueBudgets, closeDueBudgetPeriods } from '../budgetEngine.js'
 import { getDashboard, transactionDto } from '../dashboard.js'
 import { pool, type DbClient, withTransaction } from '../db.js'
 import { ApiError, asyncHandler } from '../errors.js'
@@ -15,6 +16,11 @@ const transactionSchema = z.object({
   occurredAt: z.string().datetime({ offset: true }),
   notes: z.string().trim().max(2000).optional(),
   status: z.enum(['posted', 'scheduled']).default('posted'),
+})
+
+const adjustmentSchema = z.object({
+  reason: z.string().trim().min(3).max(500),
+  occurredAt: z.string().datetime({ offset: true }),
 })
 
 const categorySchema = z.object({
@@ -170,12 +176,26 @@ transactionRouter.delete('/categories/:id', asyncHandler(async (request, respons
     if (!category) throw new ApiError(404, 'CATEGORY_NOT_FOUND', 'No se ha encontrado la categoría.')
 
     const references = await client.query<{ count: string }>(`
-      SELECT count(*)::text AS count FROM financial_transactions
-       WHERE category_id = $1 AND user_id = $2
+      SELECT (
+        (SELECT count(*) FROM financial_transactions WHERE category_id = $1 AND user_id = $2)
+        +
+        (SELECT count(*) FROM budgets WHERE category_id = $1 AND user_id = $2)
+        +
+        (SELECT count(*) FROM budget_periods WHERE category_id_snapshot = $1 AND user_id = $2)
+      )::text AS count
     `, [categoryId, userId])
     const archived = Number(references.rows[0]?.count ?? 0) > 0
     if (archived) {
       await client.query('UPDATE categories SET is_archived = true WHERE id = $1 AND user_id = $2', [categoryId, userId])
+      // Category budgets keep their already committed period, but pausing the
+      // template prevents an archived category from renewing forever.
+      await client.query(`
+        UPDATE budgets
+           SET status = 'paused'
+         WHERE category_id = $1
+           AND user_id = $2
+           AND status IN ('active', 'scheduled')
+      `, [categoryId, userId])
     } else {
       await client.query('DELETE FROM categories WHERE id = $1 AND user_id = $2', [categoryId, userId])
     }
@@ -237,8 +257,11 @@ transactionRouter.get('/transactions', asyncHandler(async (request, response) =>
 }))
 
 transactionRouter.get('/dashboard', asyncHandler(async (request, response) => {
-  const userId = (request as AppRequest).userId
-  response.json({ data: await getDashboard(pool, userId), meta: { period: String(request.query.period ?? 'month') } })
+  const appRequest = request as AppRequest
+  const period = z.enum(['month']).default('month').parse(request.query.period)
+  await closeDueBudgetPeriods({ userId: appRequest.userId, limit: 100, requestId: appRequest.requestId })
+  await activateDueBudgets(appRequest.userId)
+  response.json({ data: await getDashboard(pool, appRequest.userId), meta: { period } })
 }))
 
 transactionRouter.post('/transactions', asyncHandler(async (request, response) => {
@@ -273,6 +296,82 @@ transactionRouter.post('/transactions', asyncHandler(async (request, response) =
   response.status(result.status).json(result.body)
 }))
 
+transactionRouter.post('/transactions/:id/adjustments', asyncHandler(async (request, response) => {
+  const appRequest = request as AppRequest
+  const userId = appRequest.userId
+  const key = idempotencyKey(appRequest)
+  const originalId = z.string().uuid().parse(request.params.id)
+  const input = adjustmentSchema.parse(request.body)
+  if (new Date(input.occurredAt).getTime() > Date.now()) {
+    throw new ApiError(422, 'FUTURE_ADJUSTMENT_FORBIDDEN', 'Un ajuste compensatorio no puede tener una fecha futura.')
+  }
+  const scope = `transactions:adjust:${originalId}`
+  const result = await withTransaction(async (client) => {
+    const previous = await previousResponse(client, userId, scope, key)
+    if (previous) return { status: previous.response_status, body: previous.response_body }
+    const original = await client.query<{
+      id: string
+      type: 'expense' | 'income'
+      concept: string
+      amount_minor: string
+      currency: string
+      category_id: string
+      locked_by_reward: boolean
+    }>(`
+      SELECT id, type::text, concept, amount_minor::text, currency, category_id, locked_by_reward
+        FROM financial_transactions
+       WHERE id = $1 AND user_id = $2
+       FOR UPDATE
+    `, [originalId, userId])
+    const source = original.rows[0]
+    if (!source) throw new ApiError(404, 'TRANSACTION_NOT_FOUND', 'No se ha encontrado la operación.')
+    // Recheck after acquiring the source lock. Updating the source below also
+    // makes concurrent serializable retries restart and observe this record.
+    const replayAfterLock = await previousResponse(client, userId, scope, key)
+    if (replayAfterLock) return { status: replayAfterLock.response_status, body: replayAfterLock.response_body }
+    if (!source.locked_by_reward) {
+      throw new ApiError(409, 'TRANSACTION_NOT_REWARD_PROTECTED', 'La operación se puede corregir con la edición normal.')
+    }
+    const existing = await client.query('SELECT 1 FROM financial_transactions WHERE adjusts_transaction_id = $1', [originalId])
+    if (existing.rowCount) {
+      throw new ApiError(409, 'TRANSACTION_ALREADY_ADJUSTED', 'La operación ya tiene un ajuste compensatorio.')
+    }
+    const concept = `↺ ${source.concept}`.slice(0, 160)
+    const inserted = await client.query<{ id: string }>(`
+      INSERT INTO financial_transactions
+        (user_id, category_id, type, status, concept, amount_minor, currency, occurred_at,
+         notes, adjusts_transaction_id, adjustment_reason)
+      VALUES ($1, $2, $3, 'posted', $4, $5, $6, $7, $8::text, $9, $8::varchar(500))
+      RETURNING id
+    `, [
+      userId,
+      source.category_id,
+      source.type === 'expense' ? 'income' : 'expense',
+      concept,
+      source.amount_minor,
+      source.currency,
+      input.occurredAt,
+      input.reason,
+      originalId,
+    ])
+    const adjustmentId = inserted.rows[0]?.id
+    if (!adjustmentId) throw new Error('Compensating adjustment insert failed')
+    await client.query('UPDATE financial_transactions SET updated_at = now() WHERE id = $1 AND user_id = $2', [originalId, userId])
+    const transaction = await savedTransaction(client, userId, adjustmentId)
+    const dashboard = await getDashboard(client, userId)
+    const body = { data: { transaction, dashboard }, meta: {} }
+    await client.query(`
+      INSERT INTO audit_events
+        (user_id, actor_type, action, entity_type, entity_id, request_id, metadata)
+      VALUES ($1, 'user', 'transaction.adjusted', 'financial_transaction', $2, $3,
+        jsonb_build_object('originalTransactionId', $4::uuid))
+    `, [userId, adjustmentId, appRequest.requestId, originalId])
+    await storeResponse(client, userId, scope, key, 201, body)
+    return { status: 201, body }
+  })
+  response.status(result.status).json(result.body)
+}))
+
 transactionRouter.patch('/transactions/:id', asyncHandler(async (request, response) => {
   const appRequest = request as AppRequest
   const userId = appRequest.userId
@@ -283,9 +382,13 @@ transactionRouter.patch('/transactions/:id', asyncHandler(async (request, respon
   const result = await withTransaction(async (client) => {
     const previous = await previousResponse(client, userId, scope, key)
     if (previous) return { status: previous.response_status, body: previous.response_body }
-    const current = await client.query<{ locked_by_reward: boolean }>('SELECT locked_by_reward FROM financial_transactions WHERE id = $1 AND user_id = $2 FOR UPDATE', [transactionId, userId])
+    const current = await client.query<{ locked_by_reward: boolean; adjusts_transaction_id: string | null }>(
+      'SELECT locked_by_reward, adjusts_transaction_id FROM financial_transactions WHERE id = $1 AND user_id = $2 FOR UPDATE',
+      [transactionId, userId],
+    )
     if (!current.rows[0]) throw new ApiError(404, 'TRANSACTION_NOT_FOUND', 'No se ha encontrado la operación.')
     if (current.rows[0].locked_by_reward) throw new ApiError(409, 'REWARDED_TRANSACTION_LOCKED', 'Esta operación pertenece a un cierre recompensado.')
+    if (current.rows[0].adjusts_transaction_id) throw new ApiError(409, 'ADJUSTMENT_TRANSACTION_LOCKED', 'Un ajuste compensatorio no se puede editar.')
     await assertCategory(client, userId, input.categoryId)
     await client.query(`
       UPDATE financial_transactions SET category_id = $3, type = $4, status = $5, concept = $6,
@@ -308,9 +411,13 @@ transactionRouter.delete('/transactions/:id', asyncHandler(async (request, respo
   const result = await withTransaction(async (client) => {
     const previous = await previousResponse(client, userId, scope, key)
     if (previous) return { status: previous.response_status, body: previous.response_body }
-    const current = await client.query<{ locked_by_reward: boolean }>('SELECT locked_by_reward FROM financial_transactions WHERE id = $1 AND user_id = $2 FOR UPDATE', [transactionId, userId])
+    const current = await client.query<{ locked_by_reward: boolean; adjusts_transaction_id: string | null }>(
+      'SELECT locked_by_reward, adjusts_transaction_id FROM financial_transactions WHERE id = $1 AND user_id = $2 FOR UPDATE',
+      [transactionId, userId],
+    )
     if (!current.rows[0]) throw new ApiError(404, 'TRANSACTION_NOT_FOUND', 'No se ha encontrado la operación.')
     if (current.rows[0].locked_by_reward) throw new ApiError(409, 'REWARDED_TRANSACTION_LOCKED', 'Esta operación pertenece a un cierre recompensado.')
+    if (current.rows[0].adjusts_transaction_id) throw new ApiError(409, 'ADJUSTMENT_TRANSACTION_LOCKED', 'Un ajuste compensatorio no se puede eliminar.')
     await client.query('DELETE FROM financial_transactions WHERE id = $1 AND user_id = $2', [transactionId, userId])
     const body = { data: { dashboard: await getDashboard(client, userId) }, meta: {} }
     await storeResponse(client, userId, scope, key, 200, body)

@@ -7,7 +7,9 @@ import { config } from './config.js'
 import { pool } from './db.js'
 import { errorHandler, notFoundHandler } from './errors.js'
 import { authRouter, meRouter } from './routes/authRoutes.js'
+import { createBudgetInternalRouter, budgetRouter } from './routes/budgetRoutes.js'
 import { gameRouter } from './routes/gameRoutes.js'
+import { createStoreInternalRouter } from './routes/storeInternalRoutes.js'
 import { transactionRouter } from './routes/transactionRoutes.js'
 import { rejectQueryShapedInput } from './security/textInputGuard.js'
 
@@ -43,7 +45,10 @@ export function createApp() {
 
   app.use('/api/v1/auth', authRouter)
   app.use('/api/v1/me', meRouter)
+  app.use('/api/v1/internal', createBudgetInternalRouter(config.cronSecret))
+  app.use('/api/v1/internal', createStoreInternalRouter(config.cronSecret))
   app.use('/api/v1/game', gameRouter)
+  app.use('/api/v1', budgetRouter)
   app.use('/api/v1', transactionRouter)
   app.use(notFoundHandler)
   app.use(errorHandler)

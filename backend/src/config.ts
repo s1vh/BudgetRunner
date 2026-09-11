@@ -16,6 +16,15 @@ const schema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().trim().default(''),
   GOOGLE_REDIRECT_URI: z.string().trim().default(''),
   GOOGLE_OAUTH_STATE_SECRET: z.string().trim().default(''),
+  CRON_SECRET: z.string().trim().default(''),
+}).superRefine((env, context) => {
+  if (env.NODE_ENV === 'production' && env.CRON_SECRET.length < 20) {
+    context.addIssue({
+      code: 'custom',
+      path: ['CRON_SECRET'],
+      message: 'CRON_SECRET must contain at least 20 characters in production.',
+    })
+  }
 })
 
 const env = schema.parse(process.env)
@@ -36,4 +45,5 @@ export const config = {
   googleRedirectUri: env.GOOGLE_REDIRECT_URI,
   googleOAuthStateSecret: env.GOOGLE_OAUTH_STATE_SECRET || env.REFRESH_TOKEN_SECRET,
   googleOAuthEnabled: Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_REDIRECT_URI),
+  cronSecret: env.CRON_SECRET,
 } as const
