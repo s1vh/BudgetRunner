@@ -204,3 +204,21 @@ npm run prod:demo:reset
 ```
 
 El proyecto Firebase `budget-runner-cyberdeck` y los identificadores canónicos están fijados y validados por el script. La publicación no se considera terminada si la aplicación o la verificación final fallan. Las variables `PROD_DEMO_DATABASE_URL` y `GOOGLE_APPLICATION_CREDENTIALS` quedan disponibles únicamente como overrides opcionales de las rutas relativas.
+
+## 8. Registro de despliegue — 11 de septiembre de 2026
+
+**Alcance:** bundle autorizado de `dev` → `main` → `prod` para presupuestos persistentes, gráficas reales del Dashboard, rotación semanal de la tienda, orden final de pestañas del Cyberdeck, preferencias visuales ya validadas y cierre de `BR-BL-005`/`BR-BL-009`. No se ejecutó un seed global ni se modificaron cuentas distintas de la demo autorizada.
+
+**Git e historial:** `main` recibió la implementación hasta `6b93ea2`; `prod` la integró mediante `d1e7de1`. La actualización de `prod` sustituyó con `--force-with-lease` la punta remota anterior `203d372` por la historia reescrita y el merge autorizado. El bundle verificado anterior a la reescritura se conserva en `.git/codex-backups/pre-copilot-cleanup-733a90c.bundle`. Las correcciones operativas posteriores son `88a7699`, `5355427`, `fbeb6fc`, `f45956e`, `60638f9`, `0419b19` y `e6f0405`; todas conservan la autoría humana y el trailer simbólico de Codex.
+
+**Base de datos:** el preflight confirmó la base directa `budget_runner`, siete migraciones previas y cero ventanas semanales duplicadas. Se aplicaron, en orden y antes del backend, `005_custom_cursor_preference.sql`, `007_weekly_store_rotation.sql`, `008_budget_persistence.sql` y `009_budget_owner_integrity.sql`. El estado final registra 11 migraciones y mantiene cero duplicados por usuario/ventana semanal. Todas son aditivas y se conserva la compatibilidad temporal con el escritor anterior.
+
+**Frontend:** Firebase Hosting compiló 1.889 módulos con `VITE_DATA_SOURCE=api` y publicó 24 archivos en `https://budget-runner-cyberdeck.web.app`. No se incluyeron secretos en variables `VITE_*`.
+
+**Backend y diagnóstico de Vercel:** los primeros intentos desde `d1e7de1` hasta `f45956e` fallaron con `TS2688` porque el compilador de Vercel no resolvía la librería `node` durante su instalación production-only. `60638f9` fijó TypeScript 6.0.3 y dejó visible la incompatibilidad de tipos de Helmet; `0419b19` restauró su adaptador y produjo una build `Ready`, pero el runtime devolvía `ERR_REQUIRE_ESM` en la cadena Firebase Admin 14 → `jwks-rsa` → `jose`. `e6f0405` dejó el árbol compatible y auditable con Firebase Admin 13.10.0, sin Firebase Functions, y `uuid` 11.1.1. Su deployment de Vercel `7QA5gKmqdewTdwHERZTc9kjaJEKN` quedó `Ready` y sustituyó el alias de producción.
+
+**Verificación de release:** la instalación production-only con npm 10, la compilación, la carga directa de `dist/app.js`, el chequeo de tipos y **80/80 tests** finalizaron correctamente. `npm audit` completo y `npm audit --omit=dev` devolvieron **0 vulnerabilidades**. En vivo, health y readiness respondieron 200, readiness confirmó PostgreSQL y el job semanal sin Bearer token respondió 401. Una lectura autenticada y no mutante de la tienda devolvió seis definiciones distintas con expiración única `2026-09-13T02:00:00Z`.
+
+**Usuario demo:** el procedimiento preview/apply/preview se limita a `nomada@budgetrunner.local` y conserva su UUID interno y UID Firebase canónicos. El fixture confirmado contiene 8 categorías, 12 transacciones, 5 presupuestos, 5 periodos, 9 módulos, 2 rotaciones, 7 ofertas (6 activas), un evento de compra, reparación y daño, 3 registros de nivel y saldos finales de nivel 24 y 2.380 SynthCoins. Este cierre se repite después del último deployment de `prod` para retirar cualquier estado generado durante las pruebas.
+
+**Rollback:** Firebase puede restaurar su release anterior y Vercel puede efectuar Instant Rollback al deployment `0419b19`, aunque este último solo sirve como artefacto de compilación y reproduce el fallo de runtime de Firebase Admin 14. Para recuperar servicio funcional debe usarse el deployment anterior `203d372`; las cuatro migraciones aditivas permanecen aplicadas en ambos casos y no deben revertirse durante el incidente.

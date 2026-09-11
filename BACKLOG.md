@@ -4,28 +4,6 @@ This file records future work that has already been identified, but **does not a
 
 ## Pending
 
-### BR-BL-005 — Implement real Budget persistence
-
-**Status:** awaiting maintainer validation
-
-**Priority:** high
-
-**Working branch:** `codex/feature/budget-persistence-weekly-store`
-
-**Relevant commits:** `423420a` (PostgreSQL schema, Budget engine, weekly store rotation, internal jobs and backend tests) and `cfe722c` (persistent Budget UI, real Dashboard projections, compensating adjustments and localized frontend integration).
-
-**Prepared outcome:** the demonstration Budget list has been replaced with user-isolated PostgreSQL templates and immutable period snapshots. The API supports creation, reading, editing for the next period, pause, resume, archive and historical detail. Calendar boundaries use the account's IANA time zone, preserve monthly anchors and remain correct across DST. Due closures are serializable, idempotent and canonical across overlaps; they persist counted-transaction snapshots, auditable reward allocations, Flux, SynthCoins, penalties and Cyberdeck damage. Rewarded originals remain immutable and can be corrected once through a linked compensating transaction.
-
-The Dashboard now derives balance, active committed capacity, the nearest close, a top-four-plus-Other category distribution and seven real monthly cashflow cycles from posted transactions in the primary currency. Monetary chart geometry uses exact amounts and integer display percentages sum to 100.
-
-The Cyberdeck store now has one per-user rotation for each global half-open window from Sunday 02:00 UTC to the following Sunday 02:00 UTC. A persisted cryptographic seed selects six distinct eligible definitions without considering the user's equipment or needs; rarity and price are weighted by a level snapshot. The protected weekly job can pre-create rotations and `GET /game/store` is the idempotent lazy fallback. Active rotations from the former period-based model are expired during migration.
-
-**Safety decisions:** tenant ownership is enforced with composite foreign keys throughout Budget, reward, store, penalty and damage relationships. Upgrade migrations retain compatibility triggers so the previous backend can keep writing during migrate-before-deploy and a binary rollback remains possible. Legacy invalid time zones are normalized to UTC across accounts, templates and period snapshots. Closure arithmetic is exact above `Number.MAX_SAFE_INTEGER` while PostgreSQL `BIGINT` remains the persisted monetary bound; a poison period is reported without blocking other accounts. Internal secrets reject byte-length mismatches safely.
-
-**Verification:** backend and frontend lint, production builds and the frontend code-splitting contract pass. All **69 tests** pass against the local database, a database built from an empty schema and a temporary database reconstructed from the exact `prod` migrations. The production-path rehearsal covered legacy data backfills, old-writer compatibility after migration, idempotent reruns, ownership constraints, category-history protection and account cascade; both temporary databases were removed afterward. Browser QA against the real API covered Budget create/pause/resume/archive/history, live Dashboard updates, linked adjustments, six distinct store offers, the weekly expiry, desktop behavior and a 390 × 844 layout with no errors after a clean reload. Temporary QA financial records were removed.
-
-**Maintainer validation:** review the app left open locally on the working branch. After approval, move this entry to resolved history and promote the three local commits to `main`. Production remains deferred to the end-of-day bundle; its runbook must execute the documented duplicate-rotation preflight, migrate before deploying the backend, configure both protected jobs, verify the Sunday 02:00 UTC schedule and then complete `BR-BL-009`.
-
 ### BR-BL-007 — Audit session theft and reuse through cookies
 
 **Status:** pending
@@ -37,24 +15,6 @@ The Cyberdeck store now has one per-user rotation for each global half-open wind
 Attempt to compromise a Budget Runner session owned by the tester through cookies and related mechanisms to identify debt in refresh tokens, rotation, revocation, `HttpOnly`, `Secure`, and `SameSite` attributes, session fixation or reuse, and indirect exposure through XSS or CSRF. Testing must be limited to the local environment or expressly authorized test accounts; it must never target real users or third-party infrastructure.
 
 When addressing this entry, document the threat model, reproducible steps without secrets, observed evidence, and proposed mitigations. Any fix must be developed in an independent auxiliary branch created from `dev`.
-
-### BR-BL-009 — Complete the AI co-author history cleanup on `prod`
-
-**Status:** awaiting the authorized production history update
-
-**Priority:** low
-
-**Working branch:** `prod`
-
-**Recorded:** September 10, 2026
-
-**Root cause:** commit `733a90c` included a Copilot co-author trailer even though M. Fieldins remained the human author and committer and Codex was the intended symbolic collaborator. A complete audit found no other Copilot attribution in the repository history.
-
-**Prepared outcome:** the published histories of `main`, `dev`, `codex/feature/cyberdeck-hud`, and `firebase-mock-deployment` were atomically rewritten with force-with-lease. Rewritten commit `8af4174` replaces the Copilot trailer with the canonical `Co-authored-by: Codex <noreply@openai.com>` trailer. Rewritten commit `cd79b2a`, which prepared the Firebase-hosted mock release for the Devpost hackathon, records the same symbolic Codex co-authorship. Human authorship, commit trees, branch topology, commit counts, and merge counts were preserved.
-
-**Verification:** a complete pre-rewrite bundle was created and verified at `.git/codex-backups/pre-copilot-cleanup-733a90c.bundle`; the rewritten published refs contain no Copilot attribution and the two intended Codex trailers; old and new branch tips have identical trees; and `git fsck` reported no structural errors. Remote `prod` intentionally remains at `203d372` to avoid an unauthorized deployment, while the tree-identical rewritten history is prepared locally at `b07382d`.
-
-**Remaining action:** update `prod` only as part of the authorized end-of-day production bundle, verify the resulting remote history and deployment, and then move this entry to resolved history.
 
 ### BR-BL-012 — Prevent Flux and streak farming through overlapping Budgets
 
@@ -85,6 +45,48 @@ Completed entries are never deleted. They are moved to this section, marked as r
 - pertinent branches, pull requests, or commits;
 - verification performed;
 - associated documentation or residual debt.
+
+### BR-BL-005 — Implement real Budget persistence
+
+**Status:** resolved
+
+**Resolution date:** September 11, 2026
+
+**Priority:** high
+
+**Working branch:** `codex/feature/budget-persistence-weekly-store`, validated by the maintainer and promoted through `dev`, `main`, and `prod`.
+
+**Relevant commits:** `423420a` (PostgreSQL schema, Budget engine, weekly store rotation, internal jobs, and backend tests), `cfe722c` (persistent Budget UI, real Dashboard projections, compensating adjustments, and localized integration), `17d2f57` (contracts and operational documentation), `6b93ea2` (final Cyberdeck tab order), and production merge `d1e7de1`.
+
+**Outcome:** demonstration Budgets were replaced by user-isolated PostgreSQL templates and immutable period snapshots. The API supports creation, reading, next-period edits, pause, resume, archive, and historical detail. Calendar boundaries use the account IANA time zone, preserve monthly anchors, and remain correct across DST. Serializable, idempotent closures persist the counted transaction snapshot, reward allocation, Flux, SynthCoins, penalties, and Cyberdeck damage. Rewarded originals remain immutable and accept one linked compensating correction.
+
+The Dashboard now derives its balance, committed capacity, next close, category distribution, and seven monthly cashflow cycles from posted transactions in the primary currency. The Cyberdeck store has one per-user rotation for each global Sunday 02:00 UTC window: a persisted cryptographic seed selects six distinct eligible definitions independently of installed modules or needs, while rarity and price remain level-weighted. The protected weekly job pre-creates rotations and `GET /game/store` provides an idempotent lazy fallback.
+
+**Production rollout:** four additive migrations (`005_custom_cursor_preference.sql`, `007_weekly_store_rotation.sql`, `008_budget_persistence.sql`, and `009_budget_owner_integrity.sql`) were applied before the backend deployment, bringing production to 11 recorded migrations with no duplicate weekly windows. Firebase Hosting received the API-backed frontend; Vercel production received the merged API and both protected jobs. The final runtime compatibility fix is `e6f0405`.
+
+**Verification:** backend and frontend lint, production builds, and the frontend code-splitting contract pass. The final backend suite reports **80/80 tests**, the complete and runtime-only npm audits report **0 vulnerabilities**, Vercel health and PostgreSQL readiness return 200, and the unauthenticated store job returns 401. An authenticated live read returned six distinct offers expiring at `2026-09-13T02:00:00Z`. The maintainer validated Budget persistence and the Cyberdeck store before authorizing promotion.
+
+**Documentation and residual debt:** `GAME_SYSTEM.md`, the API contract, migration notes, test plan, production deployment guide, and demo-reset runbook describe the delivered behavior. Overlapping-Budget progression policy and a lossless monetary wire format remain explicitly separated as `BR-BL-012` and `BR-BL-013`.
+
+### BR-BL-009 — Complete the AI co-author history cleanup on `prod`
+
+**Status:** resolved
+
+**Resolution date:** September 11, 2026
+
+**Priority:** low
+
+**Working branch:** `prod`.
+
+**Root cause:** commit `733a90c` included a Copilot co-author trailer even though M. Fieldins remained the human author and committer and Codex was the intended symbolic collaborator. A complete audit found no other Copilot attribution in the repository history.
+
+**Outcome:** the published histories of `main`, `dev`, `codex/feature/cyberdeck-hud`, and `firebase-mock-deployment` were atomically rewritten with force-with-lease. Rewritten commit `8af4174` replaces the Copilot trailer with the canonical `Co-authored-by: Codex <noreply@openai.com>` trailer. Rewritten commit `cd79b2a`, which prepared the Firebase-hosted mock release for the Devpost hackathon, records the same symbolic Codex co-authorship. Human authorship, commit trees, branch topology, commit counts, and merge counts were preserved.
+
+The authorized production update subsequently advanced remote `prod` from the old `203d372` history to the rewritten line and merged the validated release as `d1e7de1`. Current release commits continue to use the same symbolic Codex trailer without transferring repository ownership or control.
+
+**Verification:** the verified pre-rewrite bundle remains at `.git/codex-backups/pre-copilot-cleanup-733a90c.bundle`; rewritten published refs contain no Copilot trailer and retain the intended Codex trailers; old and new branch tips have identical trees; `git fsck` reported no structural errors; and the rewritten `prod` line deployed successfully.
+
+**Residual debt:** none identified. History rewrites remain exceptional operations and future collaboration attribution should be added only to new commits.
 
 ### BR-BL-011 — Add an optional desktop neon cursor
 
@@ -160,9 +162,11 @@ Completed entries are never deleted. They are moved to this section, marked as r
 
 **Outcome:** backend direct floors are now `firebase-functions@^7.3.2`, explicit `firebase-admin@^14.3.0`, and `vitest@^4.1.11`; frontend floors are `react-router@^7.18.3` and `vite@^8.3.0`. Compatible transitive versions were refreshed in both lockfiles. Narrow overrides move only `gaxios@6` and `teeny-request@9` to `uuid@11.1.1`; both consumers use the compatible `uuid.v4()` API. No forced audit fix, global override, or Firebase downgrade was used.
 
-**Verification:** clean backend and frontend `npm ci`; full and `--omit=dev` audits for both projects with **0 vulnerabilities**; **39/39 PostgreSQL-backed tests**; root lint and production build; frontend code-splitting contract; and a local smoke test confirming that the compiled Firebase `api` export remains a callable GCF v2 function in `europe-west1` with successful PostgreSQL readiness.
+**Production compatibility addendum (September 11, 2026):** Vercel packages the Express API as CommonJS and cannot start the Firebase Admin 14 `jwks-rsa`/`jose` path used by the shared development tree. The `prod` overlay therefore pins `firebase-admin@13.10.0`, excludes the unused `firebase-functions` package, and declares `uuid@11.1.1` directly with `"uuid": "$uuid"` so the compatible runtime tree remains free of the later transitive advisory. TypeScript 6.0.3 and source type packages are production dependencies because Vercel compiles after omitting dev dependencies.
 
-**Residual debt:** backend installation still prints an upstream deprecation notice for `glob@10.5.0`, reached through `firebase-admin > @google-cloud/firestore > google-gax > rimraf`. npm reports no advisory for the resolved tree, so an unsupported forced major override was rejected. The fix is present on `main`; inclusion in the end-of-day `prod` bundle remains a separate approval.
+**Verification:** clean backend and frontend `npm ci`; full and `--omit=dev` audits for both projects with **0 vulnerabilities**; **39/39 PostgreSQL-backed tests** in the original remediation; root lint and production build; frontend code-splitting contract; and a local smoke test confirming that the compiled Firebase `api` export remains a callable GCF v2 function in `europe-west1` with successful PostgreSQL readiness. The production overlay subsequently passed **80/80 tests**, production-only compilation, direct module loading, and both complete and runtime npm audits with **0 vulnerabilities** before Vercel health and PostgreSQL readiness returned 200.
+
+**Residual debt:** dependency pins in the `prod` overlay are deployment-compatibility constraints and must not be upgraded independently of a Vercel production-only build, module-load check, and runtime audit. npm still prints an upstream `node-domexception` deprecation notice, but reports no advisory for the resolved production tree.
 
 ### BR-BL-003 — Revamp the Gamification visuals
 
