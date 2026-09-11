@@ -90,11 +90,15 @@
 
 Índices: `(user_id, occurred_at DESC)`, `(user_id, category_id, occurred_at)`, `(user_id, status)`.
 
+Los ajustes compensatorios usan `adjusts_transaction_id` y `adjustment_reason`. La referencia es compuesta con `user_id`, de modo que original y ajuste siempre pertenecen al mismo usuario; el original recompensado permanece inmutable.
+
 ## 5. Presupuestos y periodos
 
 ### `budgets`
 
 `id`, `user_id`, `name`, `frequency`, `scope`, `category_id NULL`, `limit_minor`, `currency`, `status`, `starts_on`, `timezone_snapshot`, `created_at`, `updated_at`, `archived_at`.
+
+La fila actúa como plantilla para periodos futuros. Editar frecuencia, alcance, categoría, límite o moneda no modifica el periodo abierto; cada periodo conserva sus propios snapshots.
 
 Checks:
 
@@ -111,12 +115,16 @@ Checks:
 | user_id | UUID FK | redundante para aislamiento e índices |
 | starts_at | TIMESTAMPTZ | |
 | ends_at | TIMESTAMPTZ | extremo exclusivo |
+| timezone_snapshot | VARCHAR(64) | zona IANA usada para calcular los límites |
 | status | period_status | |
+| frequency_snapshot | budget_frequency | |
+| scope_snapshot | budget_scope | |
+| category_id_snapshot | UUID NULL | |
 | limit_minor_snapshot | BIGINT | |
 | currency_snapshot | CHAR(3) | |
 | spend_minor | BIGINT DEFAULT 0 | snapshot de evaluación |
 | surplus_minor | BIGINT DEFAULT 0 | |
-| eligible_surplus_minor | BIGINT DEFAULT 0 | tras deduplicación |
+| eligible_surplus_minor | BIGINT DEFAULT 0 | mínimo trazable redondeado hacia abajo a múltiplos de 100 |
 | synthcoins_awarded | BIGINT DEFAULT 0 | |
 | flux_awarded | INTEGER DEFAULT 0 | |
 | excess_percent_bp | INTEGER DEFAULT 0 | puntos básicos |
@@ -125,14 +133,15 @@ Checks:
 | idempotency_key | UUID UNIQUE | |
 | created_at / updated_at | TIMESTAMPTZ | |
 
-Único: `(budget_id, starts_at, ends_at)`.
+Únicos: `(id, user_id)` y `(budget_id, starts_at, ends_at)`.
 
 ### `budget_period_transactions`
 
-Snapshot de contribución:
+Snapshot inmutable de contribución:
 
-`id`, `period_id`, `transaction_id`, `counted_minor`, `created_at`.  
-Único: `(period_id, transaction_id)`.
+`id`, `user_id`, `period_id`, `transaction_id NULL`, `source_transaction_id`, `type_snapshot`, `concept_snapshot`, `amount_minor_snapshot`, `currency_snapshot`, `occurred_at_snapshot`, `category_id_snapshot`, `category_name_snapshot`, `adjusts_transaction_id_snapshot`, `counted_minor`, `created_at`.
+
+`transaction_id` es el enlace vivo y se pone a `NULL` si una operación de un cierre excedido se elimina; `source_transaction_id` y los campos de presentación preservan la identidad y el detalle cerrado. Únicos: `(period_id, transaction_id)` para el vínculo vivo y `(period_id, source_transaction_id)` para el histórico.
 
 ### `reward_allocations`
 
@@ -140,7 +149,7 @@ Evita doble recompensa:
 
 `id`, `user_id`, `period_id`, `transaction_id`, `allocated_minor`, `allocation_order`, `created_at`.
 
-La suma de `allocated_minor` por transacción nunca debe superar el importe elegible de esa transacción. Aplicar bloqueo de filas durante el cierre.
+La suma de `allocated_minor` por transacción nunca debe superar el importe de esa transacción. La suma de atribuciones creadas para un cierre coincide con `eligible_surplus_minor`: así, cada unidad menor que genera SynthCoins queda respaldada por gasto real no atribuido y el resto inferior a 100 se excluye. Con gasto cero el excedente elegible es cero; el resto se registra en `excluded_reward_minor`. Las FKs compuestas `(period_id, user_id)` y `(transaction_id, user_id)` impiden atribuciones entre propietarios, y la transacción recompensada no puede eliminarse. Aplicar bloqueo de filas durante el cierre.
 
 ### `budget_penalties`
 
@@ -236,13 +245,15 @@ Catálogo global:
 
 ### `store_rotations`
 
-`id`, `user_id`, `source_period_id`, `starts_at`, `ends_at`, `seed`, `user_level_snapshot`, `status`, `created_at`.
+`id`, `user_id`, `source_period_id NULL`, `starts_at`, `ends_at`, `seed`, `user_level_snapshot`, `status`, `created_at`.
+
+`source_period_id` se conserva anulable únicamente para compatibilidad con datos históricos. Al instalar la política semanal se expiran las rotaciones activas del modelo anterior; la primera lectura de tienda o el job crea su reemplazo canónico. Las rotaciones nuevas usan ventanas globales `[domingo 02:00 UTC, domingo siguiente 02:00 UTC)` y la unicidad `(user_id, starts_at)` impide rerolls o duplicados concurrentes. `seed` contiene entropía criptográfica persistida y `user_level_snapshot` no cambia durante la ventana.
 
 ### `store_offers`
 
 `id`, `rotation_id`, `module_definition_id`, `price_snapshot`, `min_level_snapshot`, `expires_at`, `purchased_at`, `created_at`.
 
-No se exige una oferta por slot. Único `(rotation_id, module_definition_id)`.
+Cada rotación vigente contiene seis definiciones distintas. No se exige una oferta por slot ni se tienen en cuenta el equipamiento o las necesidades del usuario. Único `(rotation_id, module_definition_id)`.
 
 ### `module_purchase_events`
 
@@ -258,9 +269,9 @@ No se exige una oferta por slot. Único `(rotation_id, module_definition_id)`.
 
 ### `module_damage_events`
 
-`id`, `damage_event_id`, `module_instance_id`, `shield_snapshot`, `energy_before`, `damage_applied`, `energy_after`, `destroyed`, `created_at`.
+`id`, `user_id`, `damage_event_id`, `module_instance_id`, `shield_snapshot`, `energy_before`, `damage_applied`, `energy_after`, `destroyed`, `created_at`.
 
-Único: `(damage_event_id, module_instance_id)`.
+Único: `(damage_event_id, module_instance_id)`. Las FKs compuestas con `user_id` impiden combinar un evento y un módulo de cuentas distintas.
 
 ### `family_bonus_rules`
 
@@ -298,10 +309,11 @@ No deben condicionar las rutas del MVP.
 5. Cada cierre posee una única clave idempotente.
 6. Cada combinación cierre-módulo recibe daño una sola vez.
 7. Cada compra o reparación tiene exactamente una entrada de ledger.
-8. La suma de asignaciones recompensadas no excede el importe elegible.
+8. La suma de asignaciones de un cierre coincide con su excedente elegible, que siempre es múltiplo de 100; no se crean movimientos SynthCoin de importe cero.
 9. `total_flux = base_flux + active_power + family_bonus_power`.
 10. El nivel corresponde al umbral máximo menor o igual a `total_flux`.
 11. Ninguna FK de usuario puede cruzar propietarios.
+12. Existe como máximo una rotación por usuario y comienzo semanal; contiene seis definiciones distintas.
 
 ## 11. Transacciones SQL obligatorias
 
@@ -329,3 +341,27 @@ Bloquear en orden estable: usuario/progreso → periodo/oferta → módulo → l
 La migración `004_help_and_guided_tour.sql` incorpora `helpHints: true` a las preferencias que no lo tuvieran y actualiza el valor por defecto para las cuentas nuevas. No rellena `guided_tour_completed_at`: de este modo, tras aplicar la migración, todas las cuentas existentes de test y todas las cuentas nuevas reciben el tour en su primer login. La fecha se establece de forma idempotente al finalizarlo o salir de él.
 
 La migración `005_custom_cursor_preference.sql` incorpora `customCursor: true` únicamente cuando la clave todavía no existe y actualiza el valor por defecto para las cuentas nuevas. El resto del objeto JSONB se conserva sin cambios.
+
+## 13. Despliegue compatible de persistencia presupuestaria
+
+El rollout de `008_budget_persistence.sql` y `009_budget_owner_integrity.sql` sigue el orden **migrate → deploy**. `009` normaliza a `UTC` cualquier zona horaria legacy ausente de `pg_timezone_names`, tanto en la cuenta como en las plantillas y snapshots de periodos; las altas nuevas se rechazan antes de persistir si la zona no es IANA válida.
+
+Antes de aplicar `007_weekly_store_rotation.sql` sobre datos existentes, el despliegue debe comprobar que no haya duplicados con `source_period_id IS NULL` para `(user_id, starts_at)`. Si la consulta siguiente devuelve filas, la promoción se detiene y se resuelven de forma explícita antes de crear el índice único:
+
+```sql
+SELECT user_id, starts_at, count(*)
+FROM store_rotations
+WHERE source_period_id IS NULL
+GROUP BY user_id, starts_at
+HAVING count(*) > 1;
+```
+
+Durante esta fase expand, tres triggers de compatibilidad permiten que el backend anterior siga escribiendo mientras se despliega la versión nueva y que un rollback binario sea seguro:
+
+- `budget_periods_compat_snapshots` completa frecuencia, alcance y categoría desde la plantilla;
+- `budget_period_transactions_compat_snapshot` completa propietario y snapshots desde periodo/transacción;
+- `module_damage_events_compat_owner` completa el propietario desde el evento de daño.
+
+Los triggers se mantienen deliberadamente después del despliegue. Solo una migración contract futura, tras confirmar que no puede ejecutarse ningún binario anterior, podrá retirarlos. `009` añade además FKs compuestas por `user_id`, conserva los snapshots de categoría con `NO ACTION` diferido y mantiene operativo el cascade de borrado completo de cuenta.
+
+La aritmética de cierre suma unidades menores con `BigInt` y solo persiste un total exacto representable por PostgreSQL `BIGINT`. Los porcentajes y el daño, almacenados como `INTEGER`, se saturan en `2 147 483 647`; el daño efectivo sigue limitado por la energía del módulo. Si un agregado monetario supera `BIGINT`, ese periodo falla de forma explícita y el worker continúa con los demás. La migración futura a un formato monetario sin pérdida en toda la interfaz se registra por separado en el backlog.

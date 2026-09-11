@@ -6,21 +6,25 @@ This file records future work that has already been identified, but **does not a
 
 ### BR-BL-005 — Implement real Budget persistence
 
-**Status:** pending
+**Status:** awaiting maintainer validation
 
-**Priority:** to be determined
+**Priority:** high
 
-Replace the frontend's demonstration budgets with the complete persistent vertical defined in `PRD.md`, `DATABASE.md`, `API.md`, and `GAME_SYSTEM.md`. The work will cover the API, PostgreSQL, the period scheduler, closures, rewards and penalties, as well as the frontend creation and tracking experience.
+**Working branch:** `codex/feature/budget-persistence-weekly-store`
 
-The implementation must include at least:
+**Relevant commits:** `423420a` (PostgreSQL schema, Budget engine, weekly store rotation, internal jobs and backend tests) and `cfe722c` (persistent Budget UI, real Dashboard projections, compensating adjustments and localized frontend integration).
 
-- per-user isolation and complete CRUD contracts;
-- frequencies, time zones, pauses, resumptions, archiving, and derived periods;
-- idempotent closures, concurrency, serializable transactions, and failure recovery;
-- auditable calculation of compliance, Flux, SynthCoins, damage, and any compensating adjustment;
-- migration from mock data without presenting fictitious budgets as persisted;
-- selective invalidation of Dashboard, Budgets, and Gamification;
-- unit, integration, scheduler, isolation, and calendar edge-case tests.
+**Prepared outcome:** the demonstration Budget list has been replaced with user-isolated PostgreSQL templates and immutable period snapshots. The API supports creation, reading, editing for the next period, pause, resume, archive and historical detail. Calendar boundaries use the account's IANA time zone, preserve monthly anchors and remain correct across DST. Due closures are serializable, idempotent and canonical across overlaps; they persist counted-transaction snapshots, auditable reward allocations, Flux, SynthCoins, penalties and Cyberdeck damage. Rewarded originals remain immutable and can be corrected once through a linked compensating transaction.
+
+The Dashboard now derives balance, active committed capacity, the nearest close, a top-four-plus-Other category distribution and seven real monthly cashflow cycles from posted transactions in the primary currency. Monetary chart geometry uses exact amounts and integer display percentages sum to 100.
+
+The Cyberdeck store now has one per-user rotation for each global half-open window from Sunday 02:00 UTC to the following Sunday 02:00 UTC. A persisted cryptographic seed selects six distinct eligible definitions without considering the user's equipment or needs; rarity and price are weighted by a level snapshot. The protected weekly job can pre-create rotations and `GET /game/store` is the idempotent lazy fallback. Active rotations from the former period-based model are expired during migration.
+
+**Safety decisions:** tenant ownership is enforced with composite foreign keys throughout Budget, reward, store, penalty and damage relationships. Upgrade migrations retain compatibility triggers so the previous backend can keep writing during migrate-before-deploy and a binary rollback remains possible. Legacy invalid time zones are normalized to UTC across accounts, templates and period snapshots. Closure arithmetic is exact above `Number.MAX_SAFE_INTEGER` while PostgreSQL `BIGINT` remains the persisted monetary bound; a poison period is reported without blocking other accounts. Internal secrets reject byte-length mismatches safely.
+
+**Verification:** backend and frontend lint, production builds and the frontend code-splitting contract pass. All **69 tests** pass against the local database, a database built from an empty schema and a temporary database reconstructed from the exact `prod` migrations. The production-path rehearsal covered legacy data backfills, old-writer compatibility after migration, idempotent reruns, ownership constraints, category-history protection and account cascade; both temporary databases were removed afterward. Browser QA against the real API covered Budget create/pause/resume/archive/history, live Dashboard updates, linked adjustments, six distinct store offers, the weekly expiry, desktop behavior and a 390 × 844 layout with no errors after a clean reload. Temporary QA financial records were removed.
+
+**Maintainer validation:** review the app left open locally on the working branch. After approval, move this entry to resolved history and promote the three local commits to `main`. Production remains deferred to the end-of-day bundle; its runbook must execute the documented duplicate-rotation preflight, migrate before deploying the backend, configure both protected jobs, verify the Sunday 02:00 UTC schedule and then complete `BR-BL-009`.
 
 ### BR-BL-007 — Audit session theft and reuse through cookies
 
@@ -52,23 +56,25 @@ When addressing this entry, document the threat model, reproducible steps withou
 
 **Remaining action:** update `prod` only as part of the authorized end-of-day production bundle, verify the resulting remote history and deployment, and then move this entry to resolved history.
 
-### BR-BL-011 — Add an optional desktop neon cursor
+### BR-BL-012 — Prevent Flux and streak farming through overlapping Budgets
 
-**Status:** awaiting maintainer validation
+**Status:** pending product decision
 
-**Priority:** low
+**Priority:** high
 
-**Working branch:** `dev`
+The current documented model intentionally permits overlapping global and category Budgets and grants the fixed completion Flux plus one weekly or monthly streak increment for every successful close, including a zero-spend close. A user can therefore create multiple empty or very generous Budgets for the same interval and farm progression even though SynthCoin allocations remain protected against duplication.
 
-**Recorded:** September 10, 2026
+Before implementation, define whether completion Flux and streaks belong to each Budget, each canonical calendar cycle, or only to a qualifying close. The chosen rule must preserve legitimate overlapping constraints, remain deterministic under concurrent closure and include a migration policy for existing history. Candidate controls include one streak transition per user/frequency/window, a capped Flux pool per canonical window, and an explicit minimum participation rule. This entry does not authorize changing the current behavior.
 
-**Prepared outcome:** desktop devices with a fine pointer now use a lightweight, tail-free triangular SVG cursor. Its hollow silhouette combines a thicker magenta-to-violet-to-cyan neon outline, a soft outer fade, subtly rounded vertices, an asymmetric color blend, a lightly translucent glass core, and an exact hotspot at the leading tip. The feature is enabled by default for new and existing profiles and can be disabled through a new Settings switch translated into all eight supported languages. Its value participates in the existing unsaved-changes workflow and persists through both the HTTP repository and the local mock experience.
+### BR-BL-013 — Adopt a lossless monetary wire format
 
-**Implementation decision:** the protected application shell reflects the preference on the document root so the cursor also covers portaled dialogs and help layers. Its CSS is guarded by `(hover: hover) and (pointer: fine)`, leaving touch devices unchanged. Text fields retain the text cursor and disabled controls retain their unavailable cursor. Migration `005_custom_cursor_preference.sql` backfills `customCursor: true` without overwriting other preference keys and updates the database default.
+**Status:** pending
 
-**Verification:** complete backend and frontend lint and builds, the frontend code-splitting contract, and all 39 PostgreSQL-backed tests pass after applying the migration locally. UI smoke testing confirmed the enabled default, disabled and enabled persistence across reloads, correct cursor application, preserved text and disabled-control cursors, and all eight localized toggle variants.
+**Priority:** medium
 
-**Maintainer validation:** sample the cursor across navigation, cards, buttons, and empty space on a desktop pointer device; turn the switch off and on with Save changes; and confirm that touch behavior and all other visual effects remain unchanged. After approval, move this entry to resolved history before promoting it to `main`; production remains deferred to the end-of-day bundle.
+The closure engine now uses exact integer arithmetic and isolates aggregates that exceed PostgreSQL `BIGINT`, but the public API DTOs and frontend domain still represent minor units as JavaScript `number`. Individual writes are restricted to safe integers; sufficiently large historical aggregates, balances or direct database imports could nevertheless lose display precision when converted for Dashboard and Budget reads.
+
+Define and migrate to a lossless end-to-end contract, preferably decimal strings for minor units with a shared parser/formatter and explicit range errors. The change must cover transactions, Budget snapshots, Dashboard aggregates, SynthCoin balances, purchases and repairs without silently clamping money. Add compatibility/versioning tests before enabling values outside the current safe display range.
 
 ## Resolved history
 
@@ -79,6 +85,26 @@ Completed entries are never deleted. They are moved to this section, marked as r
 - pertinent branches, pull requests, or commits;
 - verification performed;
 - associated documentation or residual debt.
+
+### BR-BL-011 — Add an optional desktop neon cursor
+
+**Status:** resolved
+
+**Resolution date:** September 10, 2026
+
+**Priority:** low
+
+**Working branch:** `dev`, validated by the maintainer and promoted to `main` in merge commit `86ac79e`.
+
+**Relevant commits:** `e8af793` (initial optional cursor), `36b49a5` (tail-free triangular silhouette), and `1395b76` (thicker softened neon geometry).
+
+**Outcome:** desktop devices with a fine pointer now use a lightweight, tail-free triangular SVG cursor. Its hollow silhouette combines a thicker magenta-to-violet-to-cyan neon outline, a soft outer fade, subtly rounded vertices, an asymmetric color blend, a lightly translucent glass core, and an exact hotspot at the leading tip. The feature is enabled by default for new and existing profiles and can be disabled through a Settings switch translated into all eight supported languages. Its value participates in the existing unsaved-changes workflow and persists through both the HTTP repository and the local mock experience.
+
+**Implementation decision:** the protected application shell reflects the preference on the document root so the cursor also covers portaled dialogs and help layers. Its CSS is guarded by `(hover: hover) and (pointer: fine)`, leaving touch devices unchanged. Text fields retain the text cursor and disabled controls retain their unavailable cursor. Migration `005_custom_cursor_preference.sql` backfills `customCursor: true` without overwriting other preference keys and updates the database default.
+
+**Verification:** complete backend and frontend lint and builds, the frontend code-splitting contract, and all 39 PostgreSQL-backed tests passed after applying the migration locally. UI smoke testing covered the enabled default, disabled and enabled persistence across reloads, correct cursor application, preserved text and disabled-control cursors, and all eight localized toggle variants. The maintainer confirmed that the final softened triangular design matched the requested result before merging it to `main`.
+
+**Residual debt:** inclusion in the authorized end-of-day `prod` bundle remains part of the consolidated production promotion; no cursor-specific implementation debt was identified.
 
 ### BR-BL-010 — Warn before leaving Settings with unsaved preferences
 

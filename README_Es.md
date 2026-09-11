@@ -125,7 +125,7 @@ Con el mismo modo mock, el primer inicio de sesión abre automáticamente el tou
 
 Para simular otra cuenta que todavía no ha visto el tour, elimina `budget-runner.mock.guided-tour-completed` de `localStorage` y vuelve a iniciar sesión. El estado de los iconos se conserva en `budget-runner.mock.help-hints`. Con la API y PostgreSQL, `npm run db:setup` aplica la migración que deja el tour pendiente tanto para las cuentas existentes como para las nuevas.
 
-La vertical persistente actual cubre identidad email/contraseña y Google OAuth, perfil, categorías, transacciones, dashboard, cyberdeck, tienda, compras y reparaciones. Los presupuestos permanecen como datos de demostración hasta implementar scheduler, cierres y recompensas.
+La vertical persistente cubre identidad email/contraseña y Google OAuth, perfil, categorías, transacciones, proyecciones reales del dashboard, presupuestos y sus periodos, cierres idempotentes, recompensas y penalizaciones, cyberdeck, rotaciones semanales de tienda por usuario, compras y reparaciones. La tienda cambia siempre el domingo a las 02:00 UTC y es independiente del calendario presupuestario de cada usuario.
 
 ## Cómo ha ayudado Sol a construir Budget Runner
 
