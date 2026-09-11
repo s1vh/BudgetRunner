@@ -26,8 +26,8 @@ function canInspect(module: CyberModule) { return module.state === 'equipped' &&
 type GameTab = 'summary' | 'store' | 'repairs' | 'history'
 const tabs: Array<{ id: GameTab; labelKey: TranslationKey; icon: typeof Gamepad2 }> = [
   { id: 'summary', labelKey: 'game.tab.summary', icon: Gamepad2 },
-  { id: 'store', labelKey: 'game.tab.store', icon: ShoppingBag },
   { id: 'repairs', labelKey: 'game.tab.repairs', icon: Wrench },
+  { id: 'store', labelKey: 'game.tab.store', icon: ShoppingBag },
   { id: 'history', labelKey: 'game.tab.history', icon: History },
 ]
 const tourTabByTarget: Record<string, GameTab> = {
