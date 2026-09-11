@@ -128,6 +128,8 @@ Vercel detecta `backend/src/index.ts`. `backend/vercel.json` registra dos tareas
 
 Como `NODE_ENV=production` está disponible ya durante la instalación y Vercel poda `devDependencies` antes de compilar, TypeScript y los tipos que necesita `src/` se declaran intencionadamente como dependencias directas de build. `backend/vercel.json` fija `npm ci --omit=dev`: descarta cualquier árbol cacheado inconsistente y demuestra que el artefacto puede compilar con el conjunto production-only. Las herramientas exclusivas de pruebas permanecen en `devDependencies` y la Function se ejecuta con `NODE_ENV=production`.
 
+La rama `prod` fija TypeScript `6.0.3`: es la versión verificada por el compilador Linux de Vercel para este backend. TypeScript `7.0.2` compila localmente en Windows, pero Vercel CLI 59.11.7 no resuelve allí la librería explícita `types: ["node"]`; no actualices ese pin sin repetir una build production-only en Linux/Vercel.
+
 Desde la raíz del repositorio, comprueba que la variable esté asignada a Production:
 
 ```powershell
