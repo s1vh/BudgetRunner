@@ -130,6 +130,10 @@ Como `NODE_ENV=production` está disponible ya durante la instalación y Vercel 
 
 La rama `prod` fija TypeScript `6.0.3`: es la versión verificada por el compilador Linux de Vercel para este backend. TypeScript `7.0.2` compila localmente en Windows, pero Vercel CLI 59.11.7 no resuelve allí la librería explícita `types: ["node"]`; no actualices ese pin sin repetir una build production-only en Linux/Vercel.
 
+También se conserva `firebase-admin` en `13.10.0` y se excluye `firebase-functions`: la API usa Vercel, no Firebase Functions. La rama 14.x incorpora una ruta `jwks-rsa` → `jose` que el empaquetador CommonJS de Vercel intenta cargar con `require()` y provoca `ERR_REQUIRE_ESM` antes de atender incluso `/internal/health`.
+
+Para mantener esa versión compatible sin reabrir avisos de seguridad, `uuid@11.1.1` se declara como dependencia directa y el override `"uuid": "$uuid"` alinea con ella las dependencias transitivas de Firebase Admin. El lockfile actual se resolvió con npm 11.6.0 y se verificó después mediante `npm ci --omit=dev` con npm 10, la versión usada por Vercel. La carga del módulo, las pruebas y `npm audit --omit=dev` deben repetirse después de cualquier cambio en este override o de regenerar el lockfile.
+
 Desde la raíz del repositorio, comprueba que la variable esté asignada a Production:
 
 ```powershell
