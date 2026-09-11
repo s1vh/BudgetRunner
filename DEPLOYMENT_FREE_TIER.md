@@ -126,6 +126,8 @@ CRON_SECRET=secreto-aleatorio-de-32-o-mas-caracteres
 
 Vercel detecta `backend/src/index.ts`. `backend/vercel.json` registra dos tareas: cierre de periodos cada día (`0 2 * * *`) y rotación de tienda los domingos (`0 2 * * 0`), ambas en UTC. En Hobby pueden ejecutarse en cualquier momento entre las 02:00 y las 02:59. La ventana de tienda sigue comenzando exactamente el domingo a las 02:00 UTC y su fallback perezoso usa ese mismo límite. Vercel enviará `CRON_SECRET` como Bearer token y no reintentará automáticamente una invocación fallida.
 
+Como `NODE_ENV=production` está disponible ya durante la instalación, npm omitiría por defecto `devDependencies` y la compilación TypeScript fallaría. Por eso `backend/vercel.json` fija `npm install --production=false` como `installCommand`: las herramientas y tipos se instalan durante el build, mientras que la Function sigue ejecutándose con `NODE_ENV=production`.
+
 Desde la raíz del repositorio, comprueba que la variable esté asignada a Production:
 
 ```powershell

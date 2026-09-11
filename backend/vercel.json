@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "npm install --production=false",
   "crons": [
     {
       "path": "/api/v1/internal/jobs/close-due-periods",
