@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs'
 import { closeDatabase, withTransaction } from '../db.js'
 import { recalculateProgress } from '../progress.js'
+import { ensureStoreRotationWithClient } from '../storeRotation.js'
 
 const demoEmail = 'nomada@budgetrunner.local'
 const demoPassword = 'NeonRunner!2026'
@@ -134,25 +135,8 @@ async function seed() {
       ON CONFLICT (idempotency_key) DO NOTHING
     `, [userId])
 
-    let rotationId = (await client.query<{ id: string }>(`
-      SELECT id FROM store_rotations WHERE user_id = $1 AND status = 'active' AND ends_at > now() LIMIT 1
-    `, [userId])).rows[0]?.id
-    if (!rotationId) {
-      await client.query("UPDATE store_rotations SET status = 'expired' WHERE user_id = $1 AND status = 'active'", [userId])
-      rotationId = (await client.query<{ id: string }>(`
-        INSERT INTO store_rotations (user_id, starts_at, ends_at, seed, user_level_snapshot, status)
-        VALUES ($1, now(), now() + interval '30 days', 'budget-runner-demo-rotation', 6, 'active') RETURNING id
-      `, [userId])).rows[0]?.id
-    }
-    if (!rotationId) throw new Error('Store rotation seed failed')
-    for (const definition of modules.slice(10)) {
-      const definitionId = definitionIds.get(definition.sku)
-      await client.query(`
-        INSERT INTO store_offers (rotation_id, module_definition_id, price_snapshot, min_level_snapshot, expires_at)
-        VALUES ($1,$2,$3,$4,now() + interval '30 days') ON CONFLICT (rotation_id, module_definition_id) DO NOTHING
-      `, [rotationId, definitionId, definition.price, definition.minLevel])
-    }
     await recalculateProgress(client, userId, 'development.seed')
+    await ensureStoreRotationWithClient(client, userId)
   })
   console.log(`Development seed ready: ${demoEmail} / ${demoPassword}`)
 }

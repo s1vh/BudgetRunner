@@ -135,5 +135,6 @@ export const profile: UserProfile = {
     scanlines: true,
     compactMode: false,
     helpHints: true,
+    customCursor: true,
   },
 }

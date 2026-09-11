@@ -1,169 +1,252 @@
 # Budget Runner — Backlog
 
-Este fichero registra trabajo futuro ya identificado, pero **no autoriza su implementación**. La prioridad y el alcance de cada entrada deben confirmarse antes de comenzar. La operativa completa se define en `CONTRIBUTING_Es.md` y `CONTRIBUTING.md`.
+This file records future work that has already been identified, but **does not authorize its implementation**. The priority and scope of each entry must be confirmed before work begins. The complete workflow is defined in `CONTRIBUTING.md` and `CONTRIBUTING_Es.md`.
 
-## Pendiente
+## Pending
 
-### BR-BL-004 — Remediar avisos de seguridad en dependencias npm
+### BR-BL-005 — Implement real Budget persistence
 
-**Estado:** pendiente
+**Status:** awaiting maintainer validation
 
-**Prioridad:** alta
+**Priority:** high
 
-**Detectado:** 27 de agosto de 2026 con `npm --prefix backend audit` sobre el lockfile vigente.
+**Working branch:** `codex/feature/budget-persistence-weekly-store`
 
-El informe completo del backend registra **0 avisos críticos, 2 altos y 10 moderados**: 12 nodos de paquetes afectados, no 12 vulnerabilidades independientes. Al excluir dependencias de desarrollo mediante `--omit=dev` permanecen **1 alto y 8 moderados** en 9 nodos de la cadena de producción.
+**Relevant commits:** `423420a` (PostgreSQL schema, Budget engine, weekly store rotation, internal jobs and backend tests) and `cfe722c` (persistent Budget UI, real Dashboard projections, compensating adjustments and localized frontend integration).
 
-La revisión del frontend tras incorporar TanStack Query registra **0 críticos, 3 altos y 1 moderado** en cuatro nodos. Con `npm --prefix frontend audit --omit=dev` permanece únicamente **1 alto** de producción: `react-router@7.18.1`. TanStack Query 5.102.8 no figura afectado.
+**Prepared outcome:** the demonstration Budget list has been replaced with user-isolated PostgreSQL templates and immutable period snapshots. The API supports creation, reading, editing for the next period, pause, resume, archive and historical detail. Calendar boundaries use the account's IANA time zone, preserve monthly anchors and remain correct across DST. Due closures are serializable, idempotent and canonical across overlaps; they persist counted-transaction snapshots, auditable reward allocations, Flux, SynthCoins, penalties and Cyberdeck damage. Rewarded originals remain immutable and can be corrected once through a linked compensating transaction.
 
-#### Criticidad alta
+The Dashboard now derives balance, active committed capacity, the nearest close, a top-four-plus-Other category distribution and seven real monthly cashflow cycles from posted transactions in the primary currency. Monetary chart geometry uses exact amounts and integer display percentages sum to 100.
 
-- **Producción — `fast-xml-parser@5.10.0`:** las declaraciones `DOCTYPE` repetidas pueden reiniciar los límites de expansión de entidades y provocar consumo de recursos. Entra por `firebase-functions@7.2.5 > firebase-admin@13.10.0 > @google-cloud/storage@7.21.0`. Afecta a versiones `>=5.9.3 <5.10.1`; npm identifica una corrección disponible. Referencia: [GHSA-8r6m-32jq-jx6q](https://github.com/advisories/GHSA-8r6m-32jq-jx6q).
-- **Desarrollo — `nanoid@3.3.16`:** un generador personalizado con tamaño cero puede entrar en un bucle infinito. Entra por `vitest@4.1.10 > vite@8.1.4 > postcss@8.5.19`. Afecta a versiones `<3.3.18`; npm identifica una corrección disponible. Referencia: [GHSA-2v37-7h3g-55p8](https://github.com/advisories/GHSA-2v37-7h3g-55p8).
-- **Producción frontend — `react-router@7.18.1`:** en modo RSC, determinadas acciones pueden ejecutarse antes de que una protección CSRF responda con 400. Afecta a `>=7.12.0 <7.18.2`; npm identifica una corrección compatible disponible. Budget Runner no utiliza actualmente RSC, pero la dependencia directa debe actualizarse y verificarse. Referencia: [GHSA-qwww-vcr4-c8h2](https://github.com/advisories/GHSA-qwww-vcr4-c8h2).
-- **Desarrollo frontend — `brace-expansion@5.0.0`:** dos avisos de denegación de servicio por expansión sin límites afectan al mismo nodo (`<5.0.9`). npm identifica una corrección disponible. Referencias: [GHSA-mh99-v99m-4gvg](https://github.com/advisories/GHSA-mh99-v99m-4gvg) y [GHSA-rgw5-rvv9-x895](https://github.com/advisories/GHSA-rgw5-rvv9-x895).
+The Cyberdeck store now has one per-user rotation for each global half-open window from Sunday 02:00 UTC to the following Sunday 02:00 UTC. A persisted cryptographic seed selects six distinct eligible definitions without considering the user's equipment or needs; rarity and price are weighted by a level snapshot. The protected weekly job can pre-create rotations and `GET /game/store` is the idempotent lazy fallback. Active rotations from the former period-based model are expired during migration.
 
-#### Criticidad moderada
+**Safety decisions:** tenant ownership is enforced with composite foreign keys throughout Budget, reward, store, penalty and damage relationships. Upgrade migrations retain compatibility triggers so the previous backend can keep writing during migrate-before-deploy and a binary rollback remains possible. Legacy invalid time zones are normalized to UTC across accounts, templates and period snapshots. Closure arithmetic is exact above `Number.MAX_SAFE_INTEGER` while PostgreSQL `BIGINT` remains the persisted monetary bound; a poison period is reported without blocking other accounts. Internal secrets reject byte-length mismatches safely.
 
-- **Producción — `uuid@9.0.1`:** falta una comprobación de límites del buffer en UUID v3/v5/v6 cuando se proporciona `buf`. Entra por las dependencias de Google Cloud; afecta a versiones `<11.1.1`. Referencia: [GHSA-w5hq-g745-h8pq](https://github.com/advisories/GHSA-w5hq-g745-h8pq).
-- **Desarrollo — `postcss@8.5.19`:** un `sourceMappingURL` controlado por un atacante puede leer ficheros `.map` cuando no se define `from`. Afecta a versiones `<=8.5.22`. Referencia: [GHSA-fxqj-rqcc-2cmp](https://github.com/advisories/GHSA-fxqj-rqcc-2cmp).
-- **Frontend — `postcss@8.5.19`:** el mismo aviso moderado aparece en la cadena de desarrollo del frontend y dispone de corrección.
-- **Propagación de la cadena Firebase/Google Cloud:** npm eleva también como nodos moderados a `firebase-functions`, `firebase-admin`, `@google-cloud/firestore`, `@google-cloud/storage`, `google-gax`, `gaxios`, `retry-request` y `teeny-request`, porque dependen de los paquetes vulnerables anteriores.
+**Verification:** backend and frontend lint, production builds and the frontend code-splitting contract pass. All **69 tests** pass against the local database, a database built from an empty schema and a temporary database reconstructed from the exact `prod` migrations. The production-path rehearsal covered legacy data backfills, old-writer compatibility after migration, idempotent reruns, ownership constraints, category-history protection and account cascade; both temporary databases were removed afterward. Browser QA against the real API covered Budget create/pause/resume/archive/history, live Dashboard updates, linked adjustments, six distinct store offers, the weekly expiry, desktop behavior and a 390 × 844 layout with no errors after a clean reload. Temporary QA financial records were removed.
 
-La remediación no debe aplicar automáticamente `npm audit fix --force`: el informe completo propone `firebase-functions@4.9.0`, lo que supondría un downgrade mayor desde `7.2.5` y podría romper el despliegue híbrido. El trabajo deberá evaluar primero versiones corregidas compatibles, actualizaciones transitivas u `overrides` acotados.
+**Maintainer validation:** review the app left open locally on the working branch. After approval, move this entry to resolved history and promote the three local commits to `main`. Production remains deferred to the end-of-day bundle; its runbook must execute the documented duplicate-rotation preflight, migrate before deploying the backend, configure both protected jobs, verify the Sunday 02:00 UTC schedule and then complete `BR-BL-009`.
 
-Para resolver esta entrada se deberá:
+### BR-BL-007 — Audit session theft and reuse through cookies
 
-- actualizar dependencias y lockfile sin introducir downgrades incompatibles;
-- dejar `npm audit` sin avisos altos o críticos y justificar expresamente cualquier moderado residual;
-- repetir `npm audit --omit=dev` para distinguir el riesgo de producción;
-- superar lint, build y la batería completa de tests con PostgreSQL local;
-- validar la compilación y el comportamiento de Firebase Functions antes de promover el cambio a `main` y `prod`;
-- registrar al cerrar la entrada las versiones finales, avisos resueltos, verificaciones y posible riesgo aceptado.
+**Status:** pending
 
-### BR-BL-005 — Implementar la persistencia real de Presupuestos
+**Priority:** high
 
-**Estado:** pendiente
+**Exploratory test owner:** maintainer
 
-**Prioridad:** por determinar
+Attempt to compromise a Budget Runner session owned by the tester through cookies and related mechanisms to identify debt in refresh tokens, rotation, revocation, `HttpOnly`, `Secure`, and `SameSite` attributes, session fixation or reuse, and indirect exposure through XSS or CSRF. Testing must be limited to the local environment or expressly authorized test accounts; it must never target real users or third-party infrastructure.
 
-Sustituir los presupuestos de demostración del frontend por la vertical persistente completa definida en `PRD.md`, `DATABASE.md`, `API.md` y `GAME_SYSTEM.md`. El trabajo abarcará la API, PostgreSQL, el scheduler de periodos, cierres, recompensas y penalizaciones, además de la experiencia de creación y seguimiento en el frontend.
+When addressing this entry, document the threat model, reproducible steps without secrets, observed evidence, and proposed mitigations. Any fix must be developed in an independent auxiliary branch created from `dev`.
 
-La implementación deberá contemplar como mínimo:
+### BR-BL-009 — Complete the AI co-author history cleanup on `prod`
 
-- aislamiento por usuario y contratos CRUD completos;
-- frecuencias, zonas horarias, pausas, reanudaciones, archivado y periodos derivados;
-- cierres idempotentes, concurrencia, transacciones serializables y recuperación ante fallos;
-- cálculo auditable de cumplimiento, Flux, SynthCoins, daño y cualquier ajuste compensatorio;
-- migración desde los datos mock sin presentar presupuestos ficticios como persistidos;
-- invalidación selectiva de Dashboard, Presupuestos y Gamificación;
-- pruebas unitarias, de integración, scheduler, aislamiento y casos límite de calendario.
+**Status:** awaiting the authorized production history update
 
-### BR-BL-007 — Auditar el robo y la reutilización de sesión mediante cookies
+**Priority:** low
 
-**Estado:** pendiente
+**Working branch:** `prod`
 
-**Prioridad:** alta
+**Recorded:** September 10, 2026
 
-**Responsable de la prueba exploratoria:** mantenedor
+**Root cause:** commit `733a90c` included a Copilot co-author trailer even though M. Fieldins remained the human author and committer and Codex was the intended symbolic collaborator. A complete audit found no other Copilot attribution in the repository history.
 
-Intentar comprometer una sesión propia de Budget Runner mediante cookies y mecanismos relacionados para identificar deuda en refresh tokens, rotación, revocación, atributos `HttpOnly`, `Secure` y `SameSite`, fijación o reutilización de sesión y exposición indirecta mediante XSS o CSRF. La prueba debe limitarse al entorno local o a cuentas de test expresamente autorizadas; nunca debe dirigirse contra usuarios reales ni infraestructura ajena.
+**Prepared outcome:** the published histories of `main`, `dev`, `codex/feature/cyberdeck-hud`, and `firebase-mock-deployment` were atomically rewritten with force-with-lease. Rewritten commit `8af4174` replaces the Copilot trailer with the canonical `Co-authored-by: Codex <noreply@openai.com>` trailer. Rewritten commit `cd79b2a`, which prepared the Firebase-hosted mock release for the Devpost hackathon, records the same symbolic Codex co-authorship. Human authorship, commit trees, branch topology, commit counts, and merge counts were preserved.
 
-Al abordar la entrada se documentarán el modelo de amenaza, los pasos reproducibles sin incluir secretos, la evidencia observada y las mitigaciones propuestas. Cualquier corrección se desarrollará en una rama auxiliar independiente creada desde `dev`.
+**Verification:** a complete pre-rewrite bundle was created and verified at `.git/codex-backups/pre-copilot-cleanup-733a90c.bundle`; the rewritten published refs contain no Copilot attribution and the two intended Codex trailers; old and new branch tips have identical trees; and `git fsck` reported no structural errors. Remote `prod` intentionally remains at `203d372` to avoid an unauthorized deployment, while the tree-identical rewritten history is prepared locally at `b07382d`.
 
-## Historial resuelto
+**Remaining action:** update `prod` only as part of the authorized end-of-day production bundle, verify the resulting remote history and deployment, and then move this entry to resolved history.
 
-Las entradas completadas no se eliminan. Se mueven a esta sección, se marcan como resueltas y se amplían con:
+### BR-BL-012 — Prevent Flux and streak farming through overlapping Budgets
 
-- fecha de resolución;
-- resumen del resultado y de cualquier decisión relevante;
-- ramas, pull requests o commits pertinentes;
-- verificaciones realizadas;
-- documentación o deuda residual asociada.
+**Status:** pending product decision
 
-### BR-BL-003 — Revamp visual de Gamificación
+**Priority:** high
 
-**Estado:** resuelta
+The current documented model intentionally permits overlapping global and category Budgets and grants the fixed completion Flux plus one weekly or monthly streak increment for every successful close, including a zero-spend close. A user can therefore create multiple empty or very generous Budgets for the same interval and farm progression even though SynthCoin allocations remain protected against duplication.
 
-**Fecha de resolución:** 29 de agosto de 2026
+Before implementation, define whether completion Flux and streaks belong to each Budget, each canonical calendar cycle, or only to a qualifying close. The chosen rule must preserve legitimate overlapping constraints, remain deterministic under concurrent closure and include a migration policy for existing history. Candidate controls include one streak transition per user/frequency/window, a capped Flux pool per canonical window, and an explicit minimum participation rule. This entry does not authorize changing the current behavior.
 
-**Prioridad:** por determinar
+### BR-BL-013 — Adopt a lossless monetary wire format
 
-**Rama de trabajo:** `codex/feature/cyberdeck-hud`, validada por el mantenedor antes de promoverse.
+**Status:** pending
 
-**Resultado:** la sección se presenta ahora como **Cyberdeck** en la navegación y en el encabezado de los ocho idiomas. Resumen integra en una única pestaña las métricas de progresión y el esquema técnico. `WRIST CORE` permanece sin traducir y cada módulo enlaza visualmente su tarjeta, su traza discontinua y una pieza específica del modelo wireframe.
+**Priority:** medium
 
-La telemetría permite reparar módulos dañados desde el propio detalle, muestra el coste en SynthCoins y actualiza Energy y saldo inmediatamente. Los módulos íntegros y destruidos muestran la acción deshabilitada; los slots vacíos dejan de abrir el detalle. La pestaña Reparaciones continúa ofreciendo el listado especializado.
+The closure engine now uses exact integer arithmetic and isolates aggregates that exceed PostgreSQL `BIGINT`, but the public API DTOs and frontend domain still represent minor units as JavaScript `number`. Individual writes are restricted to safe integers; sufficiently large historical aggregates, balances or direct database imports could nevertheless lose display precision when converted for Dashboard and Budget reads.
 
-En orientación vertical, el esquema sustituye el lienzo ancho por tarjetas compactas en una o dos columnas y sitúa una miniatura WebGL debajo, sin core ni conexiones. En horizontal se conserva el layout widescreen original. Solo se anima el canvas visible para no duplicar trabajo gráfico.
+Define and migrate to a lossless end-to-end contract, preferably decimal strings for minor units with a shared parser/formatter and explicit range errors. The change must cover transactions, Budget snapshots, Dashboard aggregates, SynthCoin balances, purchases and repairs without silently clamping money. Add compatibility/versioning tests before enabling values outside the current safe display range.
 
-**Commits principales:** `bd1a92f` (integración e interacciones del HUD) y `aca241c` (layout vertical responsive).
+## Resolved history
 
-**Verificación:** build y lint del frontend, contrato automatizado de code splitting y recorridos Chromium en 320, 390, 600 y 1280 píxeles. Se comprobaron hover coordinado, ausencia de desbordamiento interno en vertical, paridad del modal, coste y aplicación de reparaciones, estados deshabilitados, slots vacíos no interactivos y ausencia de errores de WebGL.
+Completed entries are never deleted. They are moved to this section, marked as resolved, and expanded with:
 
-**Deuda residual:** ninguna identificada. La visualización vertical conserva el resaltado por hover o foco, aunque la interacción primaria en dispositivos táctiles es la selección de la tarjeta.
+- resolution date;
+- a summary of the outcome and any relevant decision;
+- pertinent branches, pull requests, or commits;
+- verification performed;
+- associated documentation or residual debt.
 
-### BR-BL-002 — Corregir el título transparente en Chrome/Chromium
+### BR-BL-011 — Add an optional desktop neon cursor
 
-**Estado:** resuelta
+**Status:** resolved
 
-**Fecha de resolución:** 29 de agosto de 2026
+**Resolution date:** September 10, 2026
 
-**Prioridad:** por determinar
+**Priority:** low
 
-**Resultado:** se simplificó `frontend/public/media/BudgetRunner_logo.svg`, eliminando la estructura heredada de Illustrator basada en máscaras y capas redundantes. El recurso usa ahora un viewport normalizado y un único recorte explícito para producir las franjas transparentes que atraviesan las palabras Budget y Runner, sin fondo ni capas raster ocultas adicionales.
+**Working branch:** `dev`, validated by the maintainer and promoted to `main` in merge commit `86ac79e`.
 
-**Commit:** `c753255`.
+**Relevant commits:** `e8af793` (initial optional cursor), `36b49a5` (tail-free triangular silhouette), and `1395b76` (thicker softened neon geometry).
 
-**Verificación:** inspección del SVG y validación visual del mantenedor en navegadores Chrome/Chromium, sin reproducción posterior de los artefactos originales.
+**Outcome:** desktop devices with a fine pointer now use a lightweight, tail-free triangular SVG cursor. Its hollow silhouette combines a thicker magenta-to-violet-to-cyan neon outline, a soft outer fade, subtly rounded vertices, an asymmetric color blend, a lightly translucent glass core, and an exact hotspot at the leading tip. The feature is enabled by default for new and existing profiles and can be disabled through a Settings switch translated into all eight supported languages. Its value participates in the existing unsaved-changes workflow and persists through both the HTTP repository and the local mock experience.
 
-**Deuda residual:** no se ejecutó una comprobación automatizada en Safari desde Windows; el SVG conserva únicamente primitivas y atributos ampliamente compatibles.
+**Implementation decision:** the protected application shell reflects the preference on the document root so the cursor also covers portaled dialogs and help layers. Its CSS is guarded by `(hover: hover) and (pointer: fine)`, leaving touch devices unchanged. Text fields retain the text cursor and disabled controls retain their unavailable cursor. Migration `005_custom_cursor_preference.sql` backfills `customCursor: true` without overwriting other preference keys and updates the database default.
 
-### BR-BL-006 — Añadir una capa de hardening contra SQL injection
+**Verification:** complete backend and frontend lint and builds, the frontend code-splitting contract, and all 39 PostgreSQL-backed tests passed after applying the migration locally. UI smoke testing covered the enabled default, disabled and enabled persistence across reloads, correct cursor application, preserved text and disabled-control cursors, and all eight localized toggle variants. The maintainer confirmed that the final softened triangular design matched the requested result before merging it to `main`.
 
-**Estado:** resuelta
+**Residual debt:** inclusion in the authorized end-of-day `prod` bundle remains part of the consolidated production promotion; no cursor-specific implementation debt was identified.
 
-**Fecha de resolución:** 27 de agosto de 2026
+### BR-BL-010 — Warn before leaving Settings with unsaved preferences
 
-**Prioridad:** alta
+**Status:** resolved
 
-**Rama de trabajo:** `codex/feature/sql-injection-hardening`, validada por el mantenedor antes de promoverse.
+**Resolution date:** September 10, 2026
 
-**Resultado:** todas las consultas ejecutadas por rutas y servicios usan texto SQL estático y parámetros de PostgreSQL. El único constructor dinámico de filtros fue sustituido por una consulta fija con parámetros anulables. La API inspecciona de forma centralizada los textos no confiables y el frontend aplica la misma detección a formularios, repositorios HTTP y mock; una transmisión rechazada cancela peticiones, purga las cachés accesibles, recarga la aplicación y muestra un aviso Ultrawave neutro sin describir la contramedida.
+**Priority:** low
 
-**Decisiones relevantes:** la detección heurística normaliza codificación porcentual, Unicode, caracteres invisibles, comentarios y varias formas de concatenación, pero se considera exclusivamente defensa en profundidad. La garantía primaria continúa siendo no interpretar los valores del usuario como SQL. Las consultas tienen además límites de tiempo de sentencia, bloqueo, cliente y transacción inactiva.
+**Working branch:** `dev`, validated by the maintainer.
 
-**Commit y revisión:** `97b664f`; pull request `#5` hacia `dev`.
+**Relevant commits:** `e049efe` (localized navigation guard) and `9d9d990` (viewport-centered responsive dialog).
 
-**Verificación:** 39/39 pruebas, incluyendo autenticación, búsquedas, categorías, conceptos, notas, ofuscación y falsos positivos; comprobación de que los rechazos no alteran filas; invariante estática contra SQL construido en runtime; lint completo; build de producción y contrato de code splitting.
+**Outcome:** Settings detects real differences between the persisted preference switches and profile values. Internal navigation, including browser back and forward actions, opens an accessible confirmation dialog with localized “Save and leave” and “Discard and leave” actions. The warning remains centered in the visible viewport at desktop and mobile sizes, respects device safe areas, and scrolls internally when vertical space is constrained. Saving continues only after persistence succeeds; failures retain the draft and display a localized error. Discarding restores the saved profile values. Reloading or closing the tab is protected by the browser-native unsaved-changes prompt. The immediately persisted language selector does not create a false dirty state, and its current locale controls the confirmation copy in all eight supported languages.
 
-**Deuda residual:** ninguna detección textual puede reconocer todas las ofuscaciones posibles y no debe ampliarse como sustituto de la parametrización. La revisión ofensiva de sesiones y cookies continúa separadamente en `BR-BL-007`.
+**Implementation decision:** the application uses React Router's data router so navigation blocking relies on the supported router state machine instead of intercepting links or patching browser history. The centered warning is portaled to the document root so the page entrance transform and scroll position cannot alter its viewport positioning. Existing route paths, lazy feature boundaries, authentication, and layout nesting are preserved.
 
-### BR-BL-001 — Dividir la carga de datos por áreas funcionales
+**Verification:** frontend lint, production build, and the code-splitting contract passed. Local UI smoke tests confirmed save-and-leave persistence, discard-and-leave restoration, browser Back protection, navigation without a prompt after returning to the saved value, all eight localized dialog variants, centered placement at 1280×800, 390×844, and 320×480, and no console errors. The maintainer validated the final presentation.
 
-**Estado:** resuelta
+**Residual debt:** none identified. Promotion to `main` and production remains deferred to the maintainer's release flow.
 
-**Fecha de resolución:** 27 de agosto de 2026
+### BR-BL-008 — Polish inactive Cyberdeck slots and navigation logo glare
 
-**Prioridad:** alta
+**Status:** resolved
 
-**Rama de trabajo:** `codex/feature/data-loading-splitting`, integrada en `dev` tras la validación del mantenedor.
+**Resolution date:** September 10, 2026
 
-**Resultado:** se eliminó el snapshot privado global de nueve lecturas y se sustituyó por TanStack Query 5.102.8 con consultas independientes para perfil, dashboard, transacciones, categorías, presupuestos y cada recurso de Gamificación. La restauración de sesión reutiliza el perfil ya obtenido, y los repositorios HTTP y mock comparten el mismo contrato granular.
+**Priority:** low
 
-**Decisiones relevantes:**
+**Working branch:** `dev`, validated by the maintainer before promotion to `main`.
 
-- caché y estados de carga/error independientes por ruta y pestaña;
-- invalidaciones selectivas que aprovechan el dashboard recalculado de las mutaciones financieras;
-- código e inventario de Tienda precargables mediante hover, foco, selección o tour;
-- skeleton inmediato, texto accesible a partir de 700 ms y aviso de proveedor lento a los 3 s;
-- errores reintentables dentro de la sección afectada sin recargar toda la app;
-- telemetría limitada a las últimas 200 peticiones, con rutas normalizadas y sin UUID ni query strings.
+**Main commits:** `de97a95` (inactive Cyberdeck states), `03ee8fb` (lagged navigation-logo glare), and `aff10f3` (application-wide ambient pointer glow); promoted to `main` by merge commit `3011634`.
 
-**Commits principales:** `567e956` (implementación) y `24e81ef` (arquitectura y plan de pruebas).
+**Outcome:** empty and destroyed Cyberdeck modules no longer accept pointer or keyboard selection and cannot activate card, connector, or wireframe highlighting. Destroyed modules render a genuinely empty integrity track without the residual zero-length SVG stroke. Empty slots show only their localized “No module” message plus the slot identity and number, omitting Energy, Power, Shield, and the integrity track in both landscape and portrait layouts. The ambient layer adds a restrained, lagged glow that follows the pointer across the application. Over the desktop navigation logo, the same interaction becomes brighter through a lens flare and brief red/cyan glitch echoes while the original artwork remains continuously visible. Both pointer effects follow the existing Ambient effects preference and suppress their motion when reduced motion is active.
 
-**Verificación:** `npm test` con 13/13 tests, lint completo sin avisos, build de backend y frontend, contrato automatizado de chunks y recorrido local de Dashboard, Gastos, Presupuestos, Perfil, Ajustes y todas las pestañas de Gamificación. El mantenedor validó la experiencia local antes de autorizar la promoción.
+**Verification:** frontend lint, production build, and the code-splitting contract passed. Local UI smoke testing confirmed the linked inactive states, empty integrity rendering, logo legibility without layout shift, pointer tracking across views, and coordinated enable/disable behavior through Ambient effects. The maintainer validated the finished experience before merging it into `main`.
 
-**Documentación:** `FRONTEND_ARCHITECTURE.md` define recursos, caché, invalidaciones, umbrales y métricas; `TEST_PLAN.md` recoge los casos T-107 a T-111.
+**Residual debt:** none identified. Production promotion remains intentionally deferred to the end-of-day bundle.
 
-**Seguimiento operativo:** revisar `window.__BUDGET_RUNNER_API_METRICS__` después del próximo despliegue autorizado para observar Vercel y Neon y recalibrar los umbrales únicamente si las mediciones reales lo justifican. Esta observación no bloquea la resolución de la entrada.
+### BR-BL-004 — Remediate npm dependency security advisories
+
+**Status:** resolved
+
+**Resolution date:** September 10, 2026
+
+**Priority:** high
+
+**Working branch:** `codex/fix/npm-security-advisories`, validated by the maintainer before integration into `dev`.
+
+**Commit:** `29fb694`.
+
+**Root cause:** both lockfiles retained vulnerable transitive releases despite compatible patched ranges. In addition, `firebase-functions@7.2.5` resolved an implicit Firebase Admin 13 peer whose older Google Cloud Storage and Firestore trees contained vulnerable `fast-xml-parser` and `uuid` nodes. New Vitest, `qs`, Browserslist, and baseline-browser-mapping advisories had also appeared since the original August audit.
+
+**Outcome:** backend direct floors are now `firebase-functions@^7.3.2`, explicit `firebase-admin@^14.3.0`, and `vitest@^4.1.11`; frontend floors are `react-router@^7.18.3` and `vite@^8.3.0`. Compatible transitive versions were refreshed in both lockfiles. Narrow overrides move only `gaxios@6` and `teeny-request@9` to `uuid@11.1.1`; both consumers use the compatible `uuid.v4()` API. No forced audit fix, global override, or Firebase downgrade was used.
+
+**Verification:** clean backend and frontend `npm ci`; full and `--omit=dev` audits for both projects with **0 vulnerabilities**; **39/39 PostgreSQL-backed tests**; root lint and production build; frontend code-splitting contract; and a local smoke test confirming that the compiled Firebase `api` export remains a callable GCF v2 function in `europe-west1` with successful PostgreSQL readiness.
+
+**Residual debt:** backend installation still prints an upstream deprecation notice for `glob@10.5.0`, reached through `firebase-admin > @google-cloud/firestore > google-gax > rimraf`. npm reports no advisory for the resolved tree, so an unsupported forced major override was rejected. The fix is present on `main`; inclusion in the end-of-day `prod` bundle remains a separate approval.
+
+### BR-BL-003 — Revamp the Gamification visuals
+
+**Status:** resolved
+
+**Resolution date:** August 29, 2026
+
+**Priority:** to be determined
+
+**Working branch:** `codex/feature/cyberdeck-hud`, validated by the maintainer before promotion.
+
+**Outcome:** the section now appears as **Cyberdeck** in the navigation and heading in all eight languages. Overview combines progression metrics and the technical diagram in a single tab. `WRIST CORE` remains untranslated, and each module visually links its card, dashed trace, and a specific part of the wireframe model.
+
+Telemetry allows damaged modules to be repaired from their detail view, displays the SynthCoin cost, and immediately updates Energy and the balance. Intact and destroyed modules show the action as disabled; empty slots no longer open the detail view. The Repairs tab continues to provide the specialized listing.
+
+In portrait orientation, the diagram replaces the wide canvas with compact cards in one or two columns and places a WebGL thumbnail below, without the core or connections. The original widescreen layout is retained in landscape orientation. Only the visible canvas is animated to avoid duplicate graphics work.
+
+**Main commits:** `d2137c0` (HUD integration and interactions) and `90e4b99` (responsive portrait layout).
+
+**Verification:** frontend build and lint, the automated code-splitting contract, and Chromium walkthroughs at 320, 390, 600, and 1280 pixels. Coordinated hover, absence of internal overflow in portrait orientation, modal parity, repair cost and application, disabled states, non-interactive empty slots, and absence of WebGL errors were verified.
+
+**Residual debt:** none identified. The portrait visualization retains hover or focus highlighting, although selecting a card is the primary interaction on touch devices.
+
+### BR-BL-002 — Fix the transparent title in Chrome/Chromium
+
+**Status:** resolved
+
+**Resolution date:** August 29, 2026
+
+**Priority:** to be determined
+
+**Outcome:** `frontend/public/media/BudgetRunner_logo.svg` was simplified, removing the inherited Illustrator structure based on masks and redundant layers. The asset now uses a normalized viewport and a single explicit clip to produce the transparent stripes crossing the words Budget and Runner, without a background or additional hidden raster layers.
+
+**Commit:** `234322c`.
+
+**Verification:** SVG inspection and maintainer visual validation in Chrome/Chromium browsers, with no subsequent reproduction of the original artifacts.
+
+**Residual debt:** an automated Safari check was not run from Windows; the SVG now retains only broadly compatible primitives and attributes.
+
+### BR-BL-006 — Add a SQL injection hardening layer
+
+**Status:** resolved
+
+**Resolution date:** August 27, 2026
+
+**Priority:** high
+
+**Working branch:** `codex/feature/sql-injection-hardening`, validated by the maintainer before promotion.
+
+**Outcome:** all queries executed by routes and services use static SQL text and PostgreSQL parameters. The only dynamic filter builder was replaced with a fixed query containing nullable parameters. The API centrally inspects untrusted text, and the frontend applies the same detection to forms and the HTTP and mock repositories; a rejected transmission cancels requests, purges accessible caches, reloads the application, and displays a neutral Ultrawave notice without describing the countermeasure.
+
+**Relevant decisions:** heuristic detection normalizes percent encoding, Unicode, invisible characters, comments, and several concatenation forms, but is considered defense in depth only. The primary guarantee remains that user values are not interpreted as SQL. Queries also have statement, lock, client, and idle-in-transaction timeouts.
+
+**Commit and review:** `65584c0`; pull request `#5` into `dev`.
+
+**Verification:** 39/39 tests, including authentication, searches, categories, concepts, notes, obfuscation, and false positives; verification that rejections do not alter rows; static invariant against SQL built at runtime; complete lint; production build; and code-splitting contract.
+
+**Residual debt:** no textual detection can recognize every possible obfuscation and it must not be expanded as a substitute for parameterization. The offensive review of sessions and cookies remains separate under `BR-BL-007`.
+
+### BR-BL-001 — Split data loading by functional area
+
+**Status:** resolved
+
+**Resolution date:** August 27, 2026
+
+**Priority:** high
+
+**Working branch:** `codex/feature/data-loading-splitting`, integrated into `dev` after maintainer validation.
+
+**Outcome:** the private global snapshot of nine reads was removed and replaced with TanStack Query 5.102.8 using independent queries for profile, dashboard, transactions, categories, budgets, and each Gamification resource. Session restoration reuses the profile already fetched, and the HTTP and mock repositories share the same granular contract.
+
+**Relevant decisions:**
+
+- independent cache and loading/error states for each route and tab;
+- selective invalidations that use the dashboard recalculated by financial mutations;
+- Store code and inventory that can be prefetched through hover, focus, selection, or tour;
+- immediate skeleton, accessible text after 700 ms, and a slow-provider warning after 3 s;
+- retryable errors within the affected section without reloading the application;
+- telemetry limited to the latest 200 requests, with normalized routes and no UUIDs or query strings.
+
+**Main commits:** `2ddda70` (implementation) and `45dc275` (architecture and test plan).
+
+**Verification:** `npm test` with 13/13 tests, complete lint with no warnings, backend and frontend builds, automated chunk contract, and local walkthrough of Dashboard, Expenses, Budgets, Profile, Settings, and every Gamification tab. The maintainer validated the local experience before authorizing promotion.
+
+**Documentation:** `FRONTEND_ARCHITECTURE.md` defines resources, cache, invalidations, thresholds, and metrics; `TEST_PLAN.md` records cases T-107 through T-111.
+
+**Operational follow-up:** review `window.__BUDGET_RUNNER_API_METRICS__` after the next authorized deployment to observe Vercel and Neon and recalibrate thresholds only if real measurements justify it. This observation does not block resolution of the entry.

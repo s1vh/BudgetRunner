@@ -47,6 +47,7 @@ const preferencesSchema = z.object({
     scanlines: z.boolean(),
     compactMode: z.boolean(),
     helpHints: z.boolean(),
+    customCursor: z.boolean(),
   }).optional(),
   locale: z.enum(['es-ES', 'en-US', 'fr-FR', 'de-DE', 'ru-RU', 'zh-CN', 'ja-JP', 'ko-KR']).optional(),
 }).refine((input) => input.preferences !== undefined || input.locale !== undefined, { message: 'At least one profile field is required.' })
@@ -113,6 +114,10 @@ authRouter.use((_request, _response, next) => {
 authRouter.post('/register', asyncHandler(async (request, response) => {
   const input = registerSchema.parse(request.body)
   const result = await withTransaction(async (client) => {
+    const timezone = await client.query('SELECT 1 FROM pg_timezone_names WHERE name = $1', [input.timezone])
+    if (!timezone.rowCount) {
+      throw new ApiError(422, 'INVALID_TIMEZONE', 'La zona horaria debe ser un identificador IANA válido.')
+    }
     const passwordHash = await bcrypt.hash(input.password, 12)
     const inserted = await client.query<{ id: string }>(`
       INSERT INTO users (email, password_hash, display_name, primary_currency, timezone, locale)

@@ -10,6 +10,7 @@ import {
   Zap,
   type LucideIcon,
 } from 'lucide-react'
+import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router'
 import { useAppData } from '@/app/AppDataContext'
 import { useAuth } from '@/app/AuthContext'
@@ -29,7 +30,87 @@ const navItems: NavItem[] = [
   { to: '/settings', labelKey: 'nav.settings', icon: Settings },
 ]
 
-function DesktopNav() {
+function BrandLogo({ ambientEffects }: { ambientEffects: boolean }) {
+  const areaRef = useRef<HTMLSpanElement>(null)
+  const animationFrame = useRef<number | null>(null)
+  const currentPosition = useRef({ x: 75, y: 28 })
+  const targetPosition = useRef({ x: 75, y: 28 })
+
+  useEffect(() => {
+    if (!ambientEffects && areaRef.current) areaRef.current.dataset.glareActive = 'false'
+    return () => {
+      if (animationFrame.current !== null) cancelAnimationFrame(animationFrame.current)
+    }
+  }, [ambientEffects])
+
+  const animateGlare = () => {
+    const current = currentPosition.current
+    const target = targetPosition.current
+    const next = {
+      x: current.x + (target.x - current.x) * 0.14,
+      y: current.y + (target.y - current.y) * 0.14,
+    }
+    currentPosition.current = next
+
+    const area = areaRef.current
+    area?.style.setProperty('--brand-glare-x', `${next.x}px`)
+    area?.style.setProperty('--brand-glare-y', `${next.y}px`)
+
+    if (Math.abs(target.x - next.x) > 0.1 || Math.abs(target.y - next.y) > 0.1) {
+      animationFrame.current = requestAnimationFrame(animateGlare)
+    } else {
+      animationFrame.current = null
+    }
+  }
+
+  const updateGlareTarget = (event: ReactPointerEvent<HTMLSpanElement>) => {
+    const area = event.currentTarget
+    if (!ambientEffects || area.closest('.reduce-motion') || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    const bounds = area.getBoundingClientRect()
+    targetPosition.current = {
+      x: event.clientX - bounds.left,
+      y: event.clientY - bounds.top,
+    }
+
+    if (animationFrame.current === null) animationFrame.current = requestAnimationFrame(animateGlare)
+  }
+
+  const showGlare = (event: ReactPointerEvent<HTMLSpanElement>) => {
+    if (!ambientEffects) return
+    event.currentTarget.dataset.glareActive = 'true'
+    updateGlareTarget(event)
+  }
+
+  const hideGlare = (event: ReactPointerEvent<HTMLSpanElement>) => {
+    event.currentTarget.dataset.glareActive = 'false'
+  }
+
+  return (
+    <span
+      ref={areaRef}
+      data-brand-glare
+      data-glare-enabled={ambientEffects}
+      data-glare-active="false"
+      className="brand-logo-glare-area relative isolate block w-[150px]"
+      onPointerEnter={showGlare}
+      onPointerMove={updateGlareTarget}
+      onPointerLeave={hideGlare}
+      onPointerCancel={hideGlare}
+    >
+      <span aria-hidden="true" className="brand-logo-glare pointer-events-none absolute z-0" />
+      <img src="/media/BudgetRunner_logo.svg" alt="" aria-hidden="true" className="brand-logo-glitch brand-logo-glitch--red" />
+      <img src="/media/BudgetRunner_logo.svg" alt="" aria-hidden="true" className="brand-logo-glitch brand-logo-glitch--cyan" />
+      <img
+        src="/media/BudgetRunner_logo.svg"
+        alt="Budget Runner"
+        className="relative z-10 h-auto max-h-14 w-full object-contain object-left"
+      />
+    </span>
+  )
+}
+
+function DesktopNav({ ambientEffects }: { ambientEffects: boolean }) {
   const { t } = useI18n()
   const { profile } = useAppData()
   const { logout } = useAuth()
@@ -42,11 +123,7 @@ function DesktopNav() {
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-outline-soft/70 bg-space-black/88 px-3 py-4 shadow-[5px_0_30px_rgba(139,0,255,0.12)] backdrop-blur-xl md:flex">
       <NavLink to="/" className="flex items-center gap-3 border-b border-outline-soft/60 px-2 pb-5">
         <span className="grid size-11 place-items-center rounded-full border-2 border-neon-cyan text-neon-cyan shadow-[0_0_14px_rgba(0,255,255,.35)]"><CircleDollarSign className="size-6" /></span>
-        <img
-          src="/media/BudgetRunner_logo.svg"
-          alt="Budget Runner"
-          className="h-auto max-h-14 w-[150px] object-contain object-left"
-        />
+        <BrandLogo ambientEffects={ambientEffects} />
       </NavLink>
       <nav className="mt-5 flex flex-1 flex-col gap-1.5" aria-label={t('nav.main')}>
         {navItems.map(({ to, labelKey, icon: Icon, end }) => (
@@ -80,10 +157,18 @@ export function AppShell() {
   const { t } = useI18n()
   const { profile } = useAppData()
   const preferences = profile?.preferences
+  const ambientEffects = preferences?.ambientEffects ?? true
+  const reducedMotion = preferences?.reducedMotion ?? false
+  const customCursor = preferences?.customCursor ?? true
+  useEffect(() => {
+    document.documentElement.classList.toggle('custom-cursor', customCursor)
+    return () => document.documentElement.classList.remove('custom-cursor')
+  }, [customCursor])
+
   return (
-    <div className={cn('min-h-screen', preferences?.reducedMotion && 'reduce-motion', preferences?.compactMode && 'compact-mode')}>
-      <AmbientBackground ambientEffects={preferences?.ambientEffects} scanlines={preferences?.scanlines} />
-      <DesktopNav />
+    <div className={cn('min-h-screen', reducedMotion && 'reduce-motion', preferences?.compactMode && 'compact-mode')}>
+      <AmbientBackground ambientEffects={ambientEffects} scanlines={preferences?.scanlines} reducedMotion={reducedMotion} />
+      <DesktopNav ambientEffects={ambientEffects} />
       <MobileNav />
       <main className="min-h-screen pb-24 md:ml-64 md:pb-0">
         <div className="page-content mx-auto w-full max-w-[1480px] p-4 sm:p-6 lg:p-8">

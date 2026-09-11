@@ -4,6 +4,10 @@
     {
       "path": "/api/v1/internal/jobs/close-due-periods",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/v1/internal/jobs/rotate-store",
+      "schedule": "0 2 * * 0"
     }
   ]
 }

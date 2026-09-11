@@ -25,7 +25,11 @@ const schema = z.object({
     context.addIssue({ code: 'custom', path: ['FIREBASE_PROJECT_ID'], message: 'FIREBASE_PROJECT_ID is required when Firebase Auth is enabled.' })
   }
   if (env.NODE_ENV === 'production' && env.CRON_SECRET.length < 20) {
-    context.addIssue({ code: 'custom', path: ['CRON_SECRET'], message: 'CRON_SECRET must contain at least 20 characters in production.' })
+    context.addIssue({
+      code: 'custom',
+      path: ['CRON_SECRET'],
+      message: 'CRON_SECRET must contain at least 20 characters in production.',
+    })
   }
 })
 

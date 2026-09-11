@@ -39,7 +39,7 @@ Ruta protegida utilizada tras el registro Firebase. Persiste `displayName`, `cur
 
 ### `POST /auth/register`
 
-Body: `email`, `password`, `displayName`, `currency`, `timezone`, `locale`.
+Body: `email`, `password`, `displayName`, `currency`, `timezone`, `locale`. `timezone` debe ser un identificador IANA presente en PostgreSQL; los valores no válidos reciben `422 INVALID_TIMEZONE`.
 
 `locale` admite `es-ES`, `en-US`, `fr-FR`, `de-DE`, `ru-RU`, `zh-CN`, `ja-JP` y `ko-KR`; si falta, se usa `en-US`.
 
@@ -77,7 +77,7 @@ Valida `state`, vincula/crea cuenta y redirige.
 ### `GET /me`
 ### `PATCH /me`
 
-La implementación actual permite actualizar `locale` y/o las preferencias visuales. `locale` usa la misma lista cerrada del registro. El objeto completo `preferences` incluye `reducedMotion`, `ambientEffects`, `audioReactive`, `scanlines`, `compactMode` y `helpHints`; esta última propiedad controla la visibilidad de los iconos de ayuda y vale `true` por defecto.
+La implementación actual permite actualizar `locale` y/o las preferencias visuales. `locale` usa la misma lista cerrada del registro. El objeto completo `preferences` incluye `reducedMotion`, `ambientEffects`, `audioReactive`, `scanlines`, `compactMode`, `helpHints` y `customCursor`. `helpHints` controla la visibilidad de los iconos de ayuda; `customCursor` activa el puntero triangular de neón en dispositivos de escritorio con puntero preciso. Ambas propiedades valen `true` por defecto.
 
 ### `POST /me/guided-tour/complete`
 
@@ -136,16 +136,20 @@ Filtros: `from`, `to`, `type`, `categoryId`, `status`, `minAmount`, `maxAmount`,
 
 Si está bloqueada por recompensa, devolver `409 REWARDED_TRANSACTION_LOCKED`.
 
+### `POST /transactions/:id/adjustments`
+
+Requiere `Idempotency-Key`, una razón y la fecha efectiva. Conserva la transacción recompensada original y crea otra enlazada, del tipo opuesto y por el mismo importe, para corregir el balance sin reabrir cierres históricos. Los ingresos compensatorios no reducen el gasto presupuestario en el MVP.
+
 ## 6. Dashboard y estadísticas
 
 ### `GET /dashboard?period=month`
 
 Devuelve:
 
-- balance;
-- presupuesto restante;
-- distribución por categoría;
-- flujo mensual;
+- balance de operaciones `posted` en la moneda principal;
+- suma del restante de cada presupuesto activo y fecha del próximo cierre (`budgetNextCloseAt`);
+- distribución por categoría del periodo solicitado y en la moneda principal;
+- flujo mensual real de los siete ciclos más recientes;
 - transacciones recientes;
 - resumen de nivel;
 - alertas.
@@ -171,22 +175,32 @@ Devuelve:
 }
 ```
 
+La creación calcula el primer intervalo en la zona horaria del usuario y persiste snapshots de límite, moneda, alcance, categoría y frecuencia en cada periodo.
+
 ### `GET /budgets/:id`
 ### `PATCH /budgets/:id`
+
+`PATCH` admite `name`, `frequency`, `scope`, `categoryId`, `limitMinor` y `currency`. El nombre cambia inmediatamente; los parámetros económicos y de calendario se aplican al siguiente periodo y nunca reescriben el snapshot de un periodo ya comprometido.
+
 ### `POST /budgets/:id/pause`
 ### `POST /budgets/:id/resume`
 ### `DELETE /budgets/:id`
 
-Archiva; no elimina históricos.
+Pausar o archivar evita generar renovaciones nuevas, pero no cancela un periodo abierto ya comprometido, que se evaluará normalmente. Reanudar antes de su cierre continúa el mismo periodo; después del cierre programa el siguiente inicio válido. `DELETE` archiva y no elimina históricos.
+Un presupuesto por categoría no puede reanudarse si esa categoría fue archivada; la API devuelve `409 BUDGET_CATEGORY_ARCHIVED`.
 
 ### `GET /budgets/:id/periods`
 ### `GET /budget-periods/:periodId`
 
-Incluye transacciones computadas, excedente, importe elegible, recompensas, penalización y trazabilidad.
+Incluye snapshots de límite, moneda y zona horaria, transacciones computadas, excedente, importe elegible, recompensas, penalización y trazabilidad. El detalle de una transacción computada queda congelado al cierre y sobrevive a la edición o borrado posterior de una operación perteneciente a un periodo excedido.
 
+### `GET|POST /internal/jobs/close-due-periods`
 ### `POST /internal/budget-periods/:periodId/evaluate`
 
-Ruta protegida para scheduler/agent. Requiere idempotencia. No se expone al cliente normal.
+Rutas protegidas mediante `Authorization: Bearer <CRON_SECRET>`. Los cierres son idempotentes y no se exponen al cliente normal.
+La evaluación individual solo admite periodos vencidos y procesa primero cualquier cierre pendiente del mismo usuario que tenga prioridad canónica; el body no permite forzar un periodo futuro. Un cierre atrasado que exceda el límite crea una penalización con al menos un ciclo completo de duración desde el momento de evaluación.
+
+El job por lotes aísla los fallos por periodo: sigue procesando otras cuentas, devuelve `207` si hubo errores parciales y registra el `job_run` como fallido con `PARTIAL_FAILURE`. Un total agregado que exceda `BIGINT` conserva el periodo abierto y se informa como `BUDGET_PERIOD_TOTAL_OUT_OF_RANGE`; nunca se satura ni se persiste un importe monetario incorrecto.
 
 ## 8. Gamificación
 
@@ -218,7 +232,11 @@ Devuelve los 10 slots y módulo equipado:
 
 ### `GET /game/store`
 
-Ofertas de la rotación activa, expiración, precio, nivel mínimo y coste neto estimado para el slot actual.
+Recupera o crea de forma idempotente la rotación del usuario para la ventana semanal vigente —domingo 02:00 UTC a domingo 02:00 UTC— y devuelve sus seis ofertas, expiración, precio, nivel mínimo y coste neto estimado para el slot actual.
+
+### `GET|POST /internal/jobs/rotate-store`
+
+Ruta protegida mediante `CRON_SECRET` para precalentar las rotaciones de la nueva ventana semanal. `GET /game/store` actúa como fallback perezoso; el job no cambia la ventana ni permite rerolls.
 
 ### `POST /game/store/offers/:offerId/purchase`
 
@@ -286,8 +304,8 @@ Desglose de Flux base, Power, bonus, total y eventos.
 
 Protegidas por credencial de servicio:
 
-- `POST /internal/jobs/close-due-periods`
-- `POST /internal/jobs/rotate-store`
+- `GET|POST /internal/jobs/close-due-periods`
+- `GET|POST /internal/jobs/rotate-store`
 - `POST /internal/progress/:userId/recalculate`
 - `GET /internal/health`
 - `GET /internal/readiness`

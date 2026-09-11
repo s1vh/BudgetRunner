@@ -93,7 +93,7 @@ Límite 1.000, gasto 1.100: sin recompensa, bloqueo activo y daño base 110.
 
 ### T-024 Límite exacto
 
-Gasto = límite: presupuesto cumplido, cero SynthCoins y Flux de cumplimiento.
+Gasto = límite: presupuesto cumplido, cero SynthCoins y Flux de cumplimiento. No crea un movimiento SynthCoin de importe cero; el gasto queda bloqueado y admite un ajuste compensatorio.
 
 ### T-025 Categoría
 
@@ -124,6 +124,30 @@ Solo una parte de una transacción/importe ha sido atribuida; el saldo elegible 
 ### T-033 Concurrencia
 
 Dos cierres solapados simultáneos no sobreasignan el mismo importe.
+
+### T-034 Gasto inferior al excedente
+
+Límite 1.000, gasto trazable 100: excedente 900, excedente elegible 100 y recompensa 100 SynthCoins. Las 800 unidades restantes figuran como excluidas y la lectura previa al cierre coincide con el resultado persistido.
+
+### T-035 Cumplimiento sin gasto
+
+Límite 1.000, gasto cero: excedente 1.000, excedente elegible y SynthCoins cero; se concede únicamente el Flux de cumplimiento. Un cierre solapado posterior no puede premiar el excedente sin respaldo.
+
+### T-036 Redondeo y consistencia de lectura
+
+Con 150 unidades menores de capacidad trazable solo 100 son elegibles; con 99, ninguna. El resto figura como excluido y la lectura en vivo coincide con el snapshot tras cerrar.
+
+### T-037 Snapshot de cierre excedido
+
+Tras cerrar un periodo excedido, editar y después borrar la transacción viva no altera ni elimina el detalle computado del periodo.
+
+### T-038 Categoría archivada
+
+Eliminar una categoría referenciada la archiva y pausa su plantilla. Reanudar el presupuesto devuelve `BUDGET_CATEGORY_ARCHIVED`; un hard delete no borra el periodo histórico.
+
+### T-039 Upgrade y aislamiento
+
+Actualizar desde el esquema histórico de `prod` normaliza zonas horarias inválidas a UTC, admite temporalmente inserts con la forma del backend anterior y rechaza FKs económicas cruzadas entre usuarios. El borrado completo de una cuenta sigue eliminando sus datos por cascade.
 
 ## 8. Tienda y compra
 
@@ -283,7 +307,7 @@ Energy 100 no reparable.
 
 ### T-080 Reproducibilidad
 
-Misma seed y snapshot generan mismas ofertas.
+Una semilla ya persistida y el mismo snapshot de nivel reconstruyen las mismas seis ofertas; dos usuarios o dos ventanas reciben semillas independientes.
 
 ### T-081 Nivel
 
@@ -299,7 +323,19 @@ Puede existir slot vacío sin oferta.
 
 ### T-084 Expiración
 
-Nueva rotación invalida ofertas antiguas.
+El domingo a las 02:00 UTC termina la ventana anterior y comienza la siguiente. Una lectura o el job invalidan ofertas antiguas y conservan exactamente una rotación por usuario y ventana.
+
+### T-085 Independencia presupuestaria
+
+Crear, cerrar, pausar, reanudar o archivar presupuestos no altera la rotación semanal vigente. Cambiar equipamiento, familias o estado de módulos tampoco la regenera.
+
+### T-086 Fallback y concurrencia
+
+Sin haber ejecutado el job, la primera lectura crea seis ofertas. Lecturas y job concurrentes en el límite semanal devuelven la misma rotación sin errores, duplicados ni rerolls.
+
+### T-087 Snapshot de nivel y catálogo mínimo
+
+Una subida de nivel dentro de la ventana no cambia las ofertas; la ventana siguiente usa el nuevo nivel. Una cuenta de nivel 1 recibe seis definiciones activas elegibles y las distribuciones agregadas respetan la ponderación configurada por banda.
 
 ## 13. UX visual
 
@@ -393,11 +429,45 @@ En modo API, recorrer las áreas y revisar `window.__BUDGET_RUNNER_API_METRICS__
 
 ### T-112 Hardening de entradas y construcción SQL
 
+Las rutas y servicios mantienen SQL literal parametrizado, los filtros dinámicos se limitan a allowlists o consultas fijas, y las entradas con forma de consulta se rechazan sin revelar la barrera ni modificar datos.
+
 1. Enviar secuencias con forma de consulta mediante login, alta, nombres de categoría, concepto, notas y búsqueda; incluir comentarios intercalados, codificación porcentual, Unicode de ancho completo, caracteres invisibles, concatenación, tautologías y funciones temporizadas.
 2. Confirmar `422`, mensaje externo neutro, ausencia de detalles del detector y cabeceras de no-cache; comprobar antes y después que no se hayan creado ni modificado filas.
 3. Repetir con textos legítimos que contengan apóstrofes, guiones o palabras similares a verbos SQL y confirmar que se conservan exactamente.
 4. En navegador, provocar el rechazo desde un campo de texto y verificar cancelación de peticiones, purga de cachés de aplicación, recarga y aviso localizado «Integridad de señal restaurada».
 5. Ejecutar `sqlConstruction.unit.test.ts` y confirmar que ninguna ruta o servicio construye SQL en runtime; las consultas con filtros deben seguir funcionando con todos los parámetros opcionales.
+
+### T-113 Puntero de neón opcional
+
+En dispositivos con `hover` y puntero fino, `customCursor: true` aplica el SVG triangular hueco de neón, sin cola, con vértices suavemente redondeados, transición cromática asimétrica y el hotspot en la punta; los campos editables conservan el cursor de texto y los controles no disponibles mantienen `not-allowed`. La preferencia parte activa para cuentas nuevas y migradas, se puede desactivar y reactivar desde Ajustes, persiste en API y mock tras recargar, y muestra su etiqueta y descripción en los ocho idiomas. Los dispositivos táctiles no cambian de cursor.
+
+### T-114 Persistencia y aislamiento de presupuestos
+
+Crear presupuestos semanal y mensual, global y de categoría, persiste sus plantillas y primeros periodos. Listar, leer, editar, pausar, reanudar, archivar y consultar históricos nunca devuelve ni modifica recursos de otro usuario.
+
+### T-115 Calendario y snapshots
+
+Verificar límites `[inicio, fin)` semanales y mensuales en varias zonas IANA, meses de distinta duración y transiciones DST. Cambiar frecuencia, alcance, categoría, límite o moneda solo afecta al periodo siguiente; el abierto y todos los cerrados conservan sus snapshots.
+
+### T-116 Pausa, archivo y evasión
+
+Pausar o archivar evita renovar, pero no cancela el periodo abierto comprometido ni su posible penalización. Reanudar antes del cierre continúa ese periodo; hacerlo después programa el siguiente inicio válido sin rellenar intervalos omitidos ni duplicar recompensas.
+
+### T-117 Cierre, solapamiento e idempotencia
+
+Cerrar periodos concurrentes respeta el orden por fecha, frecuencia, alcance y antigüedad; calcula gasto real, deduplica la porción recompensable, crea ledgers y bloquea transacciones atribuidas. Reintentos y workers simultáneos producen un único resultado, daño y recompensa.
+
+### T-118 Ajuste compensatorio
+
+Una transacción atribuida a un cierre no se puede editar ni borrar. Crear un ajuste compensatorio autenticado e idempotente conserva el original, enlaza ambos movimientos, queda auditado y actualiza la lista y el Dashboard sin reabrir el cierre histórico. Al representarse como el tipo opuesto, no reduce el gasto de presupuestos abiertos mientras no exista una regla explícita de reembolso.
+
+### T-119 Dashboard real
+
+Balance, donut y barras incluyen únicamente operaciones `posted` y la moneda principal dentro de sus ventanas. El restante suma por separado las restricciones activas, incluso si se solapan, y `budgetNextCloseAt` identifica el cierre abierto más próximo.
+
+### T-120 Rangos extremos y aislamiento del worker
+
+La suma de varias operaciones puede superar `Number.MAX_SAFE_INTEGER` sin perder unidades mientras permanezca dentro de `BIGINT`. Los porcentajes y el daño se saturan en el máximo de `INTEGER`. Si un periodo supera el rango monetario de PostgreSQL, el lote lo informa como `BUDGET_PERIOD_TOTAL_OUT_OF_RANGE`, conserva su estado abierto y continúa cerrando periodos sanos de otras cuentas; el job responde `207` y queda auditado como fallo parcial.
 
 ## 14. Seguridad básica
 
@@ -433,7 +503,7 @@ En modo API, recorrer las áreas y revisar `window.__BUDGET_RUNNER_API_METRICS__
 
 ## 17. Criterio de salida
 
-- 100 % de escenarios críticos T-001, T-006, T-020–T-024, T-030–T-033, T-040–T-049, T-060–T-076 aprobados.
+- 100 % de escenarios críticos T-001, T-006, T-020–T-024, T-030–T-039, T-040–T-049, T-060–T-076 y T-114–T-120 aprobados.
 - Sin defectos severidad crítica/alta.
 - Sin saldos negativos, dobles recompensas ni Power fantasma.
 - Sin acceso cruzado entre usuarios.

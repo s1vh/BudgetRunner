@@ -12,6 +12,7 @@ import {
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from 'react'
+import { createPortal } from 'react-dom'
 import { useI18n } from '@/i18n/I18nContext'
 import type { TranslationKey } from '@/i18n/messages'
 import { containsQueryShapedText } from '@/security/textInputGuard'
@@ -141,9 +142,10 @@ interface ModalProps {
   description?: string
   onClose: () => void
   children: ReactNode
+  centered?: boolean
 }
 
-export function Modal({ open, title, description, onClose, children }: ModalProps) {
+export function Modal({ open, title, description, onClose, children, centered = false }: ModalProps) {
   const { t } = useI18n()
   useEffect(() => {
     if (!open) return
@@ -153,9 +155,9 @@ export function Modal({ open, title, description, onClose, children }: ModalProp
   }, [onClose, open])
 
   if (!open) return null
-  return (
-    <div className="dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
-      <SynthCard className="dialog-panel p-5 sm:p-7" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
+  const modal = (
+    <div className={cn('dialog-backdrop', centered && 'dialog-backdrop--centered')} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
+      <SynthCard className={cn('dialog-panel p-5 sm:p-7', centered && 'dialog-panel--centered')} role="dialog" aria-modal="true" aria-labelledby="dialog-title">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <p className="mb-1 font-mono text-[10px] tracking-[0.16em] text-neon-cyan uppercase">{t('common.secureTerminal')}</p>
@@ -168,6 +170,7 @@ export function Modal({ open, title, description, onClose, children }: ModalProp
       </SynthCard>
     </div>
   )
+  return centered ? createPortal(modal, document.body) : modal
 }
 
 export function Skeleton({ className }: { className?: string }) {

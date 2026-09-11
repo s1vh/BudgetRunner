@@ -102,7 +102,8 @@ Salida: progresión auditable.
 - Diez slots.
 - Instancias de usuario.
 - Generación reproducible de rotaciones.
-- Tienda con ofertas limitadas.
+- Tienda con seis ofertas por usuario y ventana global semanal de domingo 02:00 UTC.
+- Job semanal con creación perezosa idempotente como fallback.
 - Compra y sustitución atómicas.
 - Bonus de familia.
 - Vista SVG/wireframe del cyberdeck.

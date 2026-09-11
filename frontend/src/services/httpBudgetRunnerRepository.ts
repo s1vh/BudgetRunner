@@ -1,8 +1,9 @@
 import { apiClient, idempotencyHeaders } from './apiClient'
 import type { BudgetRunnerRepository } from './budgetRunnerRepository'
 import type {
-  Budget, BudgetPeriod, Category, CategoryDraft, CyberModule, DashboardData, FinancialTransaction,
-  GameData, GameEvent, ProgressSummary, StoreOffer, TransactionDraft, UserPreferences, UserProfile,
+  Budget, BudgetDraft, BudgetPeriod, BudgetUpdate, Category, CategoryDraft, CyberModule, DashboardData,
+  FinancialTransaction, GameData, GameEvent, ProgressSummary, StoreOffer, TransactionAdjustmentDraft, TransactionDraft,
+  UserPreferences, UserProfile,
 } from '@/types/domain'
 import type { SupportedLocale } from '@/i18n/locales'
 
@@ -86,7 +87,6 @@ export class HttpBudgetRunnerRepository implements BudgetRunnerRepository {
   }
 
   getBudgets(): Promise<Budget[]> {
-    // Reading budgets performs the server-side lazy closure fallback before dependent game projections refresh.
     return apiClient.request<Budget[]>('/budgets')
   }
 
@@ -138,8 +138,18 @@ export class HttpBudgetRunnerRepository implements BudgetRunnerRepository {
     return apiClient.request<{ dashboard: DashboardData }>(`/transactions/${id}`, { method: 'DELETE', headers: idempotencyHeaders() })
   }
 
-  createBudget(input: import('@/types/domain').BudgetDraft): Promise<Budget> {
-    return apiClient.request<Budget>('/budgets', { method: 'POST', body: JSON.stringify(input) })
+  createTransactionAdjustment(id: string, input: TransactionAdjustmentDraft) {
+    return apiClient.request<{ transaction: FinancialTransaction; dashboard: DashboardData }>(`/transactions/${id}/adjustments`, {
+      method: 'POST', headers: idempotencyHeaders(), body: JSON.stringify(input),
+    })
+  }
+
+  createBudget(input: BudgetDraft): Promise<Budget> {
+    return apiClient.request<Budget>('/budgets', { method: 'POST', headers: idempotencyHeaders(), body: JSON.stringify(input) })
+  }
+
+  updateBudget(id: string, input: BudgetUpdate): Promise<Budget> {
+    return apiClient.request<Budget>(`/budgets/${id}`, { method: 'PATCH', body: JSON.stringify(input) })
   }
 
   pauseBudget(id: string): Promise<Budget> {

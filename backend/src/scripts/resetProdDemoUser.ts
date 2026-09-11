@@ -12,6 +12,7 @@ import {
   PROD_DEMO_FIXTURE_VERSION,
   type ProdDemoFixture,
 } from './prodDemoFixture.js'
+import { ensureStoreRotationWithClient } from '../storeRotation.js'
 
 const { Client } = pg
 const DATABASE_URL_ENV = 'PROD_DEMO_DATABASE_URL'
@@ -30,9 +31,13 @@ const EXPECTED_MIGRATIONS = [
   '002_google_oauth.sql',
   '003_supported_locales.sql',
   '004_help_and_guided_tour.sql',
+  '005_custom_cursor_preference.sql',
   '005_firebase_and_budgets.sql',
   '006_budget_transaction_cascade.sql',
   '007_module_damage_cascade.sql',
+  '007_weekly_store_rotation.sql',
+  '008_budget_persistence.sql',
+  '009_budget_owner_integrity.sql',
 ]
 const REQUIRED_TABLES = [
   'audit_events',
@@ -739,23 +744,6 @@ async function insertStoreAndHistory(
   definitionIds: Map<string, string>,
   progress: NormalizedProgress,
 ) {
-  await client.query(`
-    INSERT INTO store_rotations (id, user_id, starts_at, ends_at, seed, user_level_snapshot, status)
-    VALUES ($1, $2, $3, $4, $5, $6, 'active')
-  `, [
-    fixture.rotation.id, userId, fixture.rotation.startsAt, fixture.rotation.endsAt,
-    fixture.rotation.seed, progress.level,
-  ])
-  for (const offer of fixture.offers) {
-    const definitionId = definitionIds.get(offer.sku)
-    if (!definitionId) throw new Error(`Unknown offer definition ${offer.sku}.`)
-    await client.query(`
-      INSERT INTO store_offers
-        (id, rotation_id, module_definition_id, price_snapshot, min_level_snapshot, expires_at)
-      VALUES ($1, $2, $3, $4, $5, $6)
-    `, [offer.id, fixture.rotation.id, definitionId, offer.priceCoins, offer.minLevel, offer.expiresAt])
-  }
-
   const historicRotationId = 'd5000000-0000-4000-8000-000000000002'
   const historicOfferId = 'd5100000-0000-4000-8000-000000000007'
   const historicEndsAt = new Date(Date.parse(fixture.history.purchaseAt) + 86_400_000).toISOString()
@@ -836,6 +824,8 @@ async function insertStoreAndHistory(
     VALUES ('d6200000-0000-4000-8000-000000000001', $1, 'budget_completion', 25, $2, $3,
             'd7100000-0000-4000-8000-000000000005', '{"source":"prod-demo-reset"}'::jsonb, $4)
   `, [userId, progress.baseFlux, metPeriodId, fixture.history.rewardAt])
+
+  await ensureStoreRotationWithClient(client, userId, new Date(fixture.generatedAt))
 }
 
 function assertExpectedState(state: UserState) {

@@ -1,4 +1,5 @@
-import { queryOptions, useQuery } from '@tanstack/react-query'
+import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import { repository } from '@/services/repository'
 import type { UserProfile } from '@/types/domain'
 
@@ -8,6 +9,7 @@ export const dataQueryKeys = {
   transactions: ['app-data', 'transactions'] as const,
   categories: ['app-data', 'categories'] as const,
   budgets: ['app-data', 'budgets'] as const,
+  budgetPeriods: (budgetId: string) => ['app-data', 'budgets', budgetId, 'periods'] as const,
   gameSummary: ['app-data', 'game', 'summary'] as const,
   cyberdeck: ['app-data', 'game', 'cyberdeck'] as const,
   storeOffers: ['app-data', 'game', 'store'] as const,
@@ -88,6 +90,14 @@ export function useBudgetsQuery() {
   return useQuery(budgetsOptions)
 }
 
+export function useBudgetPeriodsQuery(budgetId: string | null, enabled = true) {
+  return useQuery({
+    queryKey: dataQueryKeys.budgetPeriods(budgetId ?? 'none'),
+    queryFn: () => budgetId ? repository.getBudgetPeriods(budgetId) : Promise.resolve([]),
+    enabled: enabled && Boolean(budgetId),
+  })
+}
+
 export function useGameSummaryQuery(enabled = true) {
   return useQuery({ ...gameSummaryQueryOptions, enabled })
 }
@@ -97,7 +107,50 @@ export function useCyberdeckQuery(enabled = true) {
 }
 
 export function useStoreOffersQuery(enabled = true) {
-  return useQuery({ ...storeOffersQueryOptions, enabled })
+  const queryClient = useQueryClient()
+  const query = useQuery({
+    ...storeOffersQueryOptions,
+    enabled,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: 'always',
+    refetchOnReconnect: 'always',
+  })
+  const offerExpiry = query.data
+    ?.map((offer) => Date.parse(offer.expiresAt))
+    .filter(Number.isFinite)
+    .sort((left, right) => left - right)[0]
+
+  useEffect(() => {
+    if (!enabled) return
+    let disposed = false
+    let timer = 0
+    const schedule = () => {
+      const now = Date.now()
+      const weeklyBoundary = nextStoreRotationAt(new Date(now)).getTime()
+      const serverBoundary = offerExpiry && offerExpiry > now ? offerExpiry : Number.POSITIVE_INFINITY
+      const delay = Math.max(50, Math.min(weeklyBoundary, serverBoundary) - now + 50)
+      timer = window.setTimeout(() => {
+        void queryClient.invalidateQueries({ queryKey: dataQueryKeys.storeOffers, refetchType: 'active' })
+        if (!disposed) schedule()
+      }, delay)
+    }
+    schedule()
+    return () => {
+      disposed = true
+      window.clearTimeout(timer)
+    }
+  }, [enabled, offerExpiry, queryClient])
+
+  return query
+}
+
+export function nextStoreRotationAt(from = new Date()) {
+  const boundary = new Date(from)
+  const daysUntilSunday = (7 - boundary.getUTCDay()) % 7
+  boundary.setUTCDate(boundary.getUTCDate() + daysUntilSunday)
+  boundary.setUTCHours(2, 0, 0, 0)
+  if (boundary.getTime() <= from.getTime()) boundary.setUTCDate(boundary.getUTCDate() + 7)
+  return boundary
 }
 
 export function useGameHistoryQuery(enabled = true) {

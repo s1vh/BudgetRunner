@@ -8,14 +8,14 @@ import { TransactionForm } from '@/components/forms/TransactionForm'
 import { TransactionList } from '@/components/transactions/TransactionList'
 import { Button, Modal, PageSkeleton, Progress, SynthCard } from '@/components/ui/primitives'
 import { StatCard } from '@/components/ui/StatCard'
-import { formatMoney, formatNumber } from '@/utils/format'
+import { formatDate, formatMoney, formatNumber } from '@/utils/format'
 import { useI18n } from '@/i18n/I18nContext'
 import { useCategoriesQuery, useDashboardQuery } from '@/app/dataQueries'
 import { DataQueryState } from '@/components/routing/DataQueryState'
 
 export function DashboardPage() {
   const { t, td } = useI18n()
-  const { createTransaction } = useAppData()
+  const { createTransaction, profile } = useAppData()
   const dashboardQuery = useDashboardQuery()
   const categoriesQuery = useCategoriesQuery()
   const [formOpen, setFormOpen] = useState(false)
@@ -27,6 +27,9 @@ export function DashboardPage() {
   const categories = categoriesQuery.data
   const progressValue = dashboard.progress.totalFlux - dashboard.progress.currentLevelFlux
   const progressMax = dashboard.progress.nextLevelFlux - dashboard.progress.currentLevelFlux
+  const budgetCloseDetail = dashboard.budgetNextCloseAt
+    ? t('dashboard.nextCloseOn', { date: formatDate(dashboard.budgetNextCloseAt, undefined, profile?.timezone) })
+    : t('dashboard.noActiveBudget')
 
   return (
     <div className="page-enter grid gap-6">
@@ -44,7 +47,7 @@ export function DashboardPage() {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" data-tour="dashboard-metrics">
         <StatCard label={t('dashboard.balance')} value={formatMoney(dashboard.balanceMinor, dashboard.currency)} detail={t('dashboard.balanceDetail')} icon={WalletCards} trend="up" tone="cyan" helpKey="help.dashboard.balance" />
-        <StatCard label={t('dashboard.budgetRemaining')} value={formatMoney(dashboard.budgetRemainingMinor, dashboard.currency)} detail={t('dashboard.closureInDays', { days: 15 })} icon={Radar} tone="magenta" helpKey="help.dashboard.budgetRemaining" />
+        <StatCard label={t('dashboard.budgetRemaining')} value={formatMoney(dashboard.budgetRemainingMinor, dashboard.currency)} detail={budgetCloseDetail} icon={Radar} tone="magenta" helpKey="help.dashboard.budgetRemaining" />
         <StatCard label="SynthCoins" value={formatNumber(dashboard.progress.synthcoins)} detail={t('dashboard.synthDetail')} icon={Coins} tone="purple" helpKey="help.dashboard.synthcoins" />
         <SynthCard className="flex min-h-40 flex-col items-center justify-center gap-4 p-5 pr-14" tone="cyan" helpKey="help.dashboard.quickEntry"><Zap className="size-7 text-neon-cyan drop-shadow-[0_0_10px_#00ffff]" /><Button className="w-full" icon={Plus} onClick={() => setFormOpen(true)}>{t('dashboard.addExpense')}</Button><p className="text-center font-mono text-[10px] text-text-muted">{t('dashboard.quickEntry')}</p></SynthCard>
       </div>
@@ -56,12 +59,12 @@ export function DashboardPage() {
         </SynthCard>
         <SynthCard className="p-5 pr-14 sm:p-6 sm:pr-16" helpKey="help.dashboard.recent" data-tour="dashboard-recent">
           <div className="mb-2 flex items-center justify-between"><div className="flex items-center gap-2"><ReceiptText className="size-4 text-neon-magenta" /><h2 className="font-display text-sm font-bold tracking-wider uppercase">{t('dashboard.transmissions')}</h2></div><Link to="/transactions" className="font-mono text-[10px] text-neon-cyan hover:underline">{t('dashboard.viewAll')}</Link></div>
-          <TransactionList transactions={dashboard.recentTransactions} categories={categories} limit={4} />
+          <TransactionList transactions={dashboard.recentTransactions} categories={categories} limit={4} timeZone={profile?.timezone} />
         </SynthCard>
       </div>
 
       <SynthCard className="p-5 pr-14 sm:p-6 sm:pr-16" helpKey="help.dashboard.cashflow" data-tour="dashboard-cashflow">
-        <div className="mb-4 flex items-center justify-between gap-3"><div className="flex items-center gap-2"><Activity className="size-4 text-tertiary" /><h2 className="font-display text-sm font-bold tracking-wider uppercase">{t('dashboard.monthlyFlow')}</h2></div><span className="font-mono text-[10px] text-text-muted">{t('dashboard.lastCycles', { count: 7 })}</span></div>
+        <div className="mb-4 flex items-center justify-between gap-3"><div className="flex items-center gap-2"><Activity className="size-4 text-tertiary" /><h2 className="font-display text-sm font-bold tracking-wider uppercase">{t('dashboard.monthlyFlow')}</h2></div><span className="font-mono text-[10px] text-text-muted">{t('dashboard.lastCycles', { count: dashboard.cashflow.length })}</span></div>
         <CashflowBarChart data={dashboard.cashflow} currency={dashboard.currency} />
       </SynthCard>
 

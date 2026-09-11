@@ -126,7 +126,7 @@ In the same mock mode, the guided tour opens automatically on the first login. I
 
 To simulate another account that has not seen the tour, remove `budget-runner.mock.guided-tour-completed` from `localStorage` and log in again. The icon setting is preserved in `budget-runner.mock.help-hints`. With the API and PostgreSQL, `npm run db:setup` applies the migration that leaves the tour pending for both existing test accounts and new accounts.
 
-The persistent vertical covers identity, profile, categories, transactions, dashboard, budgets, periods, idempotent closures, reward deduplication, SynthCoins, Flux, streaks, penalties, damage, cyberdeck, rotating store, purchases, and repairs. In `prod`, Firebase handles authentication while PostgreSQL retains the internal UUID and all product state.
+The persistent vertical covers identity, profile, categories, transactions, real dashboard projections, budgets and their periods, idempotent closures, auditable rewards and penalties, cyberdeck, weekly per-user store rotations, purchases, and repairs. The store window always changes on Sunday at 02:00 UTC and is independent of each user's budget schedule. In `prod`, Firebase handles authentication while PostgreSQL retains the internal UUID and all product state.
 
 ## How Sol helped build Budget Runner
 

@@ -13,7 +13,7 @@
 
 Budget Runner es una aplicación web responsive de finanzas personales que combina un gestor de gastos y presupuestos con una capa de gamificación persistente. El usuario registra ingresos y gastos, crea presupuestos semanales y mensuales, consulta estadísticas y obtiene recompensas por mantenerse dentro de sus límites.
 
-El excedente positivo de un presupuesto cumplido se transforma en **SynthCoins** a razón de 1:1 respecto a la moneda configurada. Los SynthCoins permiten comprar y reparar módulos de un cyberdeck virtual. Los módulos aportan **Power**, pueden recibir daño por incumplir presupuestos y se organizan en cuatro familias estéticas: Retrowave, Synthwave, Vaporwave y Hi‑Fi Tech. Los puntos de progreso del usuario se denominan **Flux**.
+La parte elegible y trazable del excedente positivo de un presupuesto cumplido se transforma en **SynthCoins** a razón de 1:1 respecto a la moneda configurada. Los SynthCoins permiten comprar y reparar módulos de un cyberdeck virtual. Los módulos aportan **Power**, pueden recibir daño por incumplir presupuestos y se organizan en cuatro familias estéticas: Retrowave, Synthwave, Vaporwave y Hi‑Fi Tech. Los puntos de progreso del usuario se denominan **Flux**.
 
 El producto debe respetar el mockup generado en Stitch UI y el sistema visual Ultrawave: modo nocturno único, composición synthwave con matices vaporwave y retrowave, alto contraste, rejillas de perspectiva, scanlines, brillos de neón moderados y componentes legibles. El backend se construye con Node.js, Express y PostgreSQL; el frontend con React y Tailwind CSS. En `prod`, Firebase Authentication gestiona email/contraseña, Google y recuperación; la API valida Firebase ID tokens y conserva en PostgreSQL el UUID interno y el estado de producto. Las rutas JWT y Google OAuth propias se mantienen únicamente para desarrollo y regresión. Las pruebas end-to-end se realizan con automatización de navegador. El despliegue híbrido utiliza Firebase Hosting, Vercel y Neon.
 
@@ -138,7 +138,7 @@ Subsecciones:
 
 - Resumen: nivel, Flux, SynthCoins, Power base, Power del cyberdeck, bonus de familia y bloqueo vigente.
 - Cyberdeck: diagrama vectorial técnico con 10 slots conectados.
-- Tienda rotatoria: selección limitada de módulos disponible durante el periodo.
+- Tienda rotatoria: seis módulos por usuario, disponibles durante una ventana semanal global independiente de sus presupuestos.
 - Reparaciones: módulos dañados reparables.
 - Registro: compras, reparaciones, daño, destrucciones, recompensas y cambios de nivel.
 - Ayuda: explicación sintética de las reglas.
@@ -210,7 +210,7 @@ Todos los gastos, presupuestos, categorías, estadísticas, SynthCoins, Flux, ni
 - CRUD completo.
 - Importe mayor que cero.
 - Fechas futuras permitidas solo si se marcan como programadas; las transacciones programadas no cuentan hasta su fecha efectiva.
-- Cambiar o eliminar una transacción de un periodo ya cerrado no reabre automáticamente recompensas. Debe registrarse un ajuste administrativo interno o bloquearse la edición según política de consistencia del MVP. Para el MVP, se bloquea la edición/borrado de transacciones incluidas en cierres recompensados y se ofrece crear un ajuste compensatorio.
+- Cambiar o eliminar una transacción de un periodo ya cerrado no reabre automáticamente recompensas. Para el MVP, todo gasto computado en un cierre cumplido se bloquea —también si solo recibió Flux y cero SynthCoins— y se ofrece crear un único ajuste compensatorio enlazado. Los gastos de cierres excedidos continúan siendo editables o eliminables, pero el snapshot del cierre conserva sin cambios su identidad, concepto, importe, moneda, fecha y categoría.
 
 ### RF-05 — Presupuestos concurrentes
 
@@ -233,22 +233,25 @@ Al terminar un periodo:
 1. Bloquear el presupuesto para evaluación.
 2. Calcular gasto efectivo.
 3. Determinar estado cumplido o excedido.
-4. Calcular porción elegible no recompensada.
+4. Calcular porción trazable no recompensada y redondearla a unidades monetarias completas.
 5. Si se cumple, otorgar Flux de cumplimiento y SynthCoins por excedente elegible.
 6. Si se excede, crear penalización temporal y aplicar daño al cyberdeck.
 7. Marcar el cierre como procesado con clave idempotente.
 8. Crear el siguiente periodo si el presupuesto sigue activo.
-9. Rotar las ofertas asociadas al nuevo periodo.
-10. Actualizar nivel y estadísticas.
-11. Emitir registros de auditoría.
+9. Actualizar nivel y estadísticas.
+10. Emitir registros de auditoría.
 
 ### RF-07 — Recompensas
 
 - Conversión: 1 unidad de moneda ahorrada = 1 SynthCoin.
-- Internamente se usan unidades menores; la conversión se redondea hacia abajo a SynthCoins enteros.
+- Internamente se usan unidades menores; el importe elegible se redondea hacia abajo a un múltiplo de 100 antes de atribuirlo y convertirlo a SynthCoins enteros.
 - `excedente = max(0, límite - gasto efectivo)`.
-- `excedente elegible` excluye las porciones ya recompensadas en periodos solapados.
+- `capacidad trazable` es la porción del gasto efectivo cuyas unidades menores todavía no han sido atribuidas a otra recompensa.
+- `excedente trazable = min(excedente, capacidad trazable)` y `excedente elegible = floor(excedente trazable / 100) × 100`; por tanto, un periodo cumplido sin gasto concede Flux, pero no SynthCoins, y un gasto bajo limita la recompensa al importe trazable.
+- Las porciones ya recompensadas en periodos solapados se excluyen de la capacidad trazable.
+- Cada unidad menor del excedente elegible debe quedar respaldada por una atribución auditable; el excedente no elegible se conserva en el cierre como importe excluido.
 - Los SynthCoins se acreditan una sola vez por cierre.
+- Un cierre con cero SynthCoins no crea una entrada de importe cero en el ledger de SynthCoins; el periodo y el ledger de Flux conservan la auditoría.
 - El cumplimiento otorga Flux base configurable por tipo de periodo; valores iniciales recomendados:
   - semanal: 25 Flux;
   - mensual: 100 Flux.
@@ -275,15 +278,17 @@ Al terminar un periodo:
 
 ### RF-10 — Ofertas rotatorias
 
-- Al comenzar cada periodo relevante se genera una selección pseudoaleatoria a partir del catálogo.
-- La selección depende del nivel del usuario y no de su build actual.
+- Todas las rotaciones comparten una ventana fija de domingo a las 02:00 UTC hasta el domingo siguiente a las 02:00 UTC, con independencia de región, zona horaria o ciclo presupuestario.
+- Cada usuario recibe exactamente 6 definiciones distintas por ventana. Las definiciones pueden repetirse en ventanas futuras.
+- La selección depende de un snapshot del nivel del usuario tomado al crear la rotación y no de su build actual.
 - No es obligatorio ofrecer módulos para todos los slots.
 - Puede no existir oferta para un slot vacío.
-- Las ofertas se conservan hasta el fin del periodo y después expiran.
-- La semilla de selección se persiste para reproducibilidad y auditoría.
+- Las necesidades del usuario —familias incompletas, slots vacíos y módulos dañados o destruidos— no influyen en la selección.
+- Las ofertas se conservan hasta el fin de la ventana semanal y después expiran.
+- La semilla aleatoria criptográfica se persiste para reproducibilidad y auditoría posterior. Una restricción única por usuario y ventana evita rerolls y duplicados concurrentes.
 - No existe stock ni reserva global.
-- La cantidad inicial recomendada es 6 ofertas totales por rotación, configurable.
 - El rango de rareza/precio aumenta con el nivel, sin excluir por completo opciones asequibles.
+- Un job semanal puede precalentar rotaciones, pero la lectura de tienda crea o recupera perezosamente la ventana vigente para tolerar retrasos o fallos del scheduler.
 
 ### RF-11 — Compra y sustitución
 

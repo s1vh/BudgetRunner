@@ -21,12 +21,13 @@ function preloadGameStorePanel() {
   void loadGameStorePanel()
 }
 function canRepair(module: CyberModule) { return module.state === 'equipped' && module.energy > 0 && module.energy < 100 }
+function canInspect(module: CyberModule) { return module.state === 'equipped' && module.energy > 0 }
 
 type GameTab = 'summary' | 'store' | 'repairs' | 'history'
 const tabs: Array<{ id: GameTab; labelKey: TranslationKey; icon: typeof Gamepad2 }> = [
   { id: 'summary', labelKey: 'game.tab.summary', icon: Gamepad2 },
-  { id: 'store', labelKey: 'game.tab.store', icon: ShoppingBag },
   { id: 'repairs', labelKey: 'game.tab.repairs', icon: Wrench },
+  { id: 'store', labelKey: 'game.tab.store', icon: ShoppingBag },
   { id: 'history', labelKey: 'game.tab.history', icon: History },
 ]
 const tourTabByTarget: Record<string, GameTab> = {
@@ -52,7 +53,7 @@ export function GamePage() {
   const familyBonuses = familyBonusesQuery.data
   const cyberdeck = cyberdeckQuery.data
   const gameHistory = historyQuery.data
-  const selectedModule = useMemo(() => cyberdeck?.find((module) => module.instanceId === selectedModuleId) ?? null, [cyberdeck, selectedModuleId])
+  const selectedModule = useMemo(() => cyberdeck?.find((module) => module.instanceId === selectedModuleId && canInspect(module)) ?? null, [cyberdeck, selectedModuleId])
   const repairable = useMemo(() => cyberdeck?.filter(canRepair) ?? [], [cyberdeck])
   const progressValue = gameProgress ? gameProgress.totalFlux - gameProgress.currentLevelFlux : 0
   const progressMax = gameProgress ? gameProgress.nextLevelFlux - gameProgress.currentLevelFlux : 1

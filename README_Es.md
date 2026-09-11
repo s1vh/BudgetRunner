@@ -126,7 +126,7 @@ Con el mismo modo mock, el primer inicio de sesión abre automáticamente el tou
 
 Para simular otra cuenta que todavía no ha visto el tour, elimina `budget-runner.mock.guided-tour-completed` de `localStorage` y vuelve a iniciar sesión. El estado de los iconos se conserva en `budget-runner.mock.help-hints`. Con la API y PostgreSQL, `npm run db:setup` aplica la migración que deja el tour pendiente tanto para las cuentas existentes como para las nuevas.
 
-La vertical persistente cubre identidad, perfil, categorías, transacciones, dashboard, presupuestos, periodos, cierres idempotentes, deduplicación de recompensas, SynthCoins, Flux, rachas, penalizaciones, daño, cyberdeck, tienda rotatoria, compras y reparaciones. En `prod`, Firebase autentica y PostgreSQL conserva el UUID interno y todo el estado de producto.
+La vertical persistente cubre identidad, perfil, categorías, transacciones, proyecciones reales del dashboard, presupuestos y sus periodos, cierres idempotentes, recompensas y penalizaciones auditables, cyberdeck, rotaciones semanales de tienda por usuario, compras y reparaciones. La tienda cambia siempre el domingo a las 02:00 UTC y es independiente del calendario presupuestario de cada usuario. En `prod`, Firebase autentica y PostgreSQL conserva el UUID interno y todo el estado de producto.
 
 ## Cómo ha ayudado Sol a construir Budget Runner
 

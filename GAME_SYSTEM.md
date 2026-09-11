@@ -2,13 +2,13 @@
 
 ## 1. Terminología
 
-- **SynthCoins:** créditos virtuales obtenidos por excedente positivo de presupuestos cumplidos.
+- **SynthCoins:** créditos virtuales obtenidos por la parte elegible y trazable del excedente positivo de presupuestos cumplidos.
 - **Flux:** puntuación total usada para calcular el nivel.
 - **Power:** valor estático de un módulo equipado y no destruido.
 - **Shield:** resistencia estática entre 0 y 10.
 - **Energy:** salud dinámica entre 0 y 100.
 - **Periodo:** intervalo semanal o mensual de un presupuesto.
-- **Rotación:** conjunto temporal de ofertas asignado a un usuario.
+- **Rotación:** conjunto semanal de ofertas asignado a un usuario para una ventana global de tienda.
 - **Familia:** Retrowave, Synthwave, Vaporwave o Hi‑Fi Tech.
 
 ## 2. Modelo de progresión
@@ -74,11 +74,13 @@ si gasto > límite: excedido
 
 ```text
 excedente = max(0, límite - gasto)
-SynthCoins brutos = floor(excedente en unidades monetarias)
-SynthCoins netos = porción aún no recompensada
+capacidad trazable = porción del gasto del periodo aún no atribuida a otra recompensa
+excedente trazable = min(excedente, capacidad trazable)
+excedente elegible = floor(excedente trazable / 100) × 100
+SynthCoins = excedente elegible / 100
 ```
 
-Conversión 1:1. Si la moneda usa céntimos, 12.345 unidades menores equivalen a 123 SynthCoins tras truncar.
+Conversión 1:1 sobre unidades monetarias completas del excedente elegible. Si la moneda usa céntimos, 12.345 unidades menores trazables generan 123 SynthCoins, 12.300 unidades menores elegibles y un resto excluido de 45. Esta regla conservadora exige que cada unidad menor premiada quede vinculada a gasto real: un periodo cumplido sin gasto concede el Flux de cumplimiento, pero no SynthCoins; si el gasto es inferior al excedente, la recompensa queda limitada por ese gasto trazable.
 
 ### 4.4 Prevención de doble recompensa
 
@@ -95,10 +97,10 @@ Ejemplo:
 
 - Cuatro semanas ya han otorgado recompensa usando determinados gastos.
 - El presupuesto mensual muestra todo el gasto para informar si se cumplió.
-- Al calcular SynthCoins mensuales, se resta la porción ya atribuida a cierres semanales.
-- Solo el excedente mensual no sustentado por cantidades previamente premiadas genera SynthCoins.
+- Al calcular SynthCoins mensuales, la capacidad trazable excluye la porción ya atribuida a cierres semanales.
+- Solo el mínimo entre el excedente mensual y la capacidad restante genera SynthCoins.
 
-Cada atribución se guarda en ledger. El cierre es idempotente.
+Cada unidad menor elegible se guarda como atribución en el ledger. La parte del excedente no premiada —por solapamiento, falta de gasto trazable o resto inferior a un SynthCoin— queda registrada como excluida y el cierre es idempotente. Todo gasto computado en un cierre cumplido queda bloqueado como historial recompensado, incluso cuando el excedente sea cero o no alcance un SynthCoin; cualquier corrección posterior usa un ajuste compensatorio enlazado. Los cierres con cero SynthCoins no crean movimientos de importe cero en el ledger de SynthCoins.
 
 ### 4.5 Flux de cumplimiento
 
@@ -121,7 +123,7 @@ Cuando un periodo excede el límite:
 - aplica daño una vez;
 - muestra el saldo en rojo con glitch moderado.
 
-Con varias penalizaciones activas, el bloqueo termina al vencer la última.
+Con varias penalizaciones activas, el bloqueo termina al vencer la última. Si un periodo se procesa con retraso, la penalización conserva como mínimo una duración completa del periodo comprometido contada desde la evaluación; nunca nace ya vencida.
 
 ## 6. Fórmula de daño
 
@@ -278,16 +280,19 @@ Ante cualquier error, rollback completo.
 
 ## 10. Rotación de tienda
 
-- Se genera por usuario al comenzar un nuevo periodo.
-- Usa catálogo común y selección pseudoaleatoria reproducible.
-- Considera nivel, rareza permitida y banda de precio.
+- La tienda usa una ventana global fija desde cada domingo a las 02:00 UTC hasta el domingo siguiente a las 02:00 UTC. No depende de región, zona horaria ni ciclos presupuestarios.
+- Se genera una rotación propia para cada usuario al consultar la tienda durante la ventana, o mediante el job semanal. La creación es idempotente y segura ante concurrencia.
+- Cada rotación contiene exactamente 6 definiciones distintas. Una definición puede reaparecer en semanas posteriores porque el catálogo es finito.
+- La semilla se genera con aleatoriedad criptográfica, se persiste y permite reproducir y auditar la selección una vez creada. Una restricción única por usuario y comienzo de ventana impide rerolls.
+- El nivel se captura al crear la rotación y permanece fijado durante toda la semana; subir o bajar de nivel no regenera las ofertas vigentes.
+- Usa el catálogo común y considera el nivel, la rareza permitida y la banda de precio. El catálogo debe conservar al menos 6 definiciones activas elegibles para nivel 1.
 - Ignora el equipamiento actual.
+- Ignora familias por completar, slots vacíos y módulos dañados o destruidos.
 - No garantiza opciones para cada slot.
 - No rellena slots vacíos deliberadamente.
 - La escasez temporal forma parte de la estrategia.
-- Recomendación inicial: 6 ofertas por rotación.
-- Las ofertas expiran al finalizar el periodo.
-- Si coinciden varios inicios, el backend puede crear una única rotación con ventana común definida por la siguiente expiración; la decisión debe quedar registrada.
+- Las ofertas expiran exactamente al terminar la ventana semanal.
+- El job programado es una optimización. `GET /game/store` crea o recupera perezosamente la rotación de la ventana actual, por lo que una ejecución tardía o fallida del scheduler no altera el calendario ni deja la tienda vacía.
 
 Ponderación inicial sugerida según nivel, configurable:
 
@@ -325,6 +330,8 @@ Ponderación inicial sugerida según nivel, configurable:
 - Reintento de compra con misma clave: devolver resultado original.
 - Dos compras simultáneas: solo una puede confirmar.
 - Oferta vence durante confirmación: validar en servidor dentro de transacción.
+- Consulta o job simultáneos al cambiar la ventana semanal: devolver una sola rotación persistida para ese usuario y esa ventana.
+- Cambio de nivel durante una ventana de tienda: mantener el snapshot y aplicar el nuevo nivel en la rotación siguiente.
 - Penalización aparece durante compra: bloqueo serializable evita commit incorrecto.
 - Dos daños simultáneos de periodos distintos: aplicar secuencialmente y recalcular tras cada uno.
 - Reparación y daño concurrentes: bloquear módulo; orden real de commit determina resultado auditable.

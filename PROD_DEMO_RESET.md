@@ -54,10 +54,10 @@ En PostgreSQL:
 - restaura perfil, idioma `en-US`, moneda principal `USD`, zona horaria, preferencias, ayuda contextual y estado del tour;
 - regenera 8 categorías, 12 transacciones en USD y 5 presupuestos en USD con sus periodos;
 - recupera nivel 24, SynthCoins, rachas y progresión compatible con las reglas live;
-- restaura 9 módulos del cyberdeck, una rotación activa con 6 ofertas y el historial de juego;
+- restaura 9 módulos del cyberdeck, genera mediante la lógica live una rotación semanal canónica con 6 ofertas y recupera el historial de juego;
 - reconstruye ledgers, eventos e identificadores idempotentes necesarios para auditar el estado.
 
-Las fechas se desplazan respecto al momento de ejecución conservando su orden relativo. La oferta queda activa durante cinco días, la transacción programada permanece futura y los presupuestos continúan siendo interactivos.
+Las fechas se desplazan respecto al momento de ejecución conservando su orden relativo. La tienda expira el domingo siguiente a las 02:00 UTC, la transacción programada permanece futura y los presupuestos continúan siendo interactivos.
 
 ## Identidad canónica y cuentas borradas
 
@@ -82,7 +82,7 @@ El script se detiene si falta ese valor o no es un UUID válido; nunca genera si
 
 El mock contenía algunas proyecciones que no coincidían por completo con sus entidades: sus transacciones suman 1.321,89 € en gastos aunque una proyección mostraba 1.961,89 €, el Power y los bonus no cuadraban con ciertos totales de Flux, y algunos gastos quedaban fuera de las fechas de sus presupuestos.
 
-El reset conserva las operaciones e importes originales, ajusta las fechas de muestra dentro de sus periodos y calcula la progresión con los umbrales y bonus live. Mantiene el nivel 24 y una posición equivalente dentro del nivel. Las definiciones `mock.*` quedan inactivas: respaldan el usuario demo, pero no participan en las rotaciones de otros usuarios.
+El reset conserva las operaciones e importes originales, ajusta las fechas de muestra dentro de sus periodos y calcula la progresión con los umbrales y bonus live. Mantiene el nivel 24 y una posición equivalente dentro del nivel. Las definiciones `mock.*` quedan inactivas: respaldan el usuario demo, pero no participan en las rotaciones. El escaparate actual se selecciona aleatoriamente mediante el algoritmo live sobre el catálogo activo y queda anclado a la ventana semanal global.
 
 Para que la demo sea internacional, el fixture live interpreta esos importes de muestra en USD y fija `en-US` como idioma inicial. No se aplica una conversión de divisa: se preservan las cantidades enteras del dataset de demostración.
 
@@ -182,7 +182,7 @@ El comando raíz sin argumentos ejecuta siempre esta vista previa. Se evita así
 
 Revisa especialmente que la base mostrada sea live, que el UUID/UID sean los esperados y que el origen de identidad sea `checkpoint` o `database`.
 
-Antes de consultar usuarios o Firebase, el preflight comprueba que PostgreSQL contenga `_migrations`, las siete migraciones esperadas y todas las tablas necesarias. Una conexión válida a una base vacía ya no produce un error SQL ambiguo.
+Antes de consultar usuarios o Firebase, el preflight comprueba que PostgreSQL contenga `_migrations`, las once migraciones esperadas y todas las tablas necesarias. Una conexión válida a una base vacía ya no produce un error SQL ambiguo.
 
 ### Comparar con el destino efectivo de Vercel
 

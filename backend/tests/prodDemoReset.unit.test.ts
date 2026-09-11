@@ -60,9 +60,13 @@ describe('production database preflight', () => {
     '002_google_oauth.sql',
     '003_supported_locales.sql',
     '004_help_and_guided_tour.sql',
+    '005_custom_cursor_preference.sql',
     '005_firebase_and_budgets.sql',
     '006_budget_transaction_cascade.sql',
     '007_module_damage_cascade.sql',
+    '007_weekly_store_rotation.sql',
+    '008_budget_persistence.sql',
+    '009_budget_owner_integrity.sql',
   ]
 
   test('rejects an empty but reachable PostgreSQL database with a useful error', () => {
@@ -86,7 +90,7 @@ describe('production database preflight', () => {
       schema: 'public',
       tables,
       migrations: migrations.slice(0, -1),
-    })).toThrow('007_module_damage_cascade.sql')
+    })).toThrow('009_budget_owner_integrity.sql')
   })
 
   test('accepts the complete schema and upgrades Neon SSL aliases to verify-full', () => {

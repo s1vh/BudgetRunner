@@ -4,10 +4,10 @@ Arquitectura en uso desde la rama `prod`:
 
 - **Firebase Hosting (Spark):** frontend estático.
 - **Firebase Authentication:** email/contraseña, Google y recuperación de contraseña.
-- **Vercel Hobby:** API Express como una única Function y cron diario.
+- **Vercel Hobby:** API Express como una única Function, con cierre diario y rotación semanal programados.
 - **Neon Free:** PostgreSQL persistente mediante conexión pooled.
 
-El cron diario es compatible con Hobby. Cada lectura de `GET /budgets` ejecuta además un cierre perezoso e idempotente, por lo que una visita de los jueces no depende de la precisión horaria del scheduler.
+Ambos cron jobs son compatibles con Hobby porque cada expresión se ejecuta como máximo una vez al día. Cada lectura de `GET /budgets` ejecuta además un cierre perezoso e idempotente. Del mismo modo, `GET /game/store` garantiza de forma perezosa la rotación canónica de la semana. Así, una visita de los jueces no depende de la precisión horaria del scheduler.
 
 ## Estado operativo verificado
 
@@ -17,7 +17,7 @@ El cron diario es compatible con Hobby. Cada lectura de `GET /budgets` ejecuta a
 - API live: `https://budget-runner.vercel.app/api/v1`.
 - Firebase: proyecto `budget-runner-cyberdeck`.
 - Neon: rama `production` (`br-rough-truth-a2pys24x`), base `budget_runner`.
-- Esquema PostgreSQL: `public`, con las 7 migraciones actuales aplicadas.
+- Esquema PostgreSQL: `public`; el registro de cada despliegue debe enumerar las migraciones verificadas.
 - Rama de despliegue: `prod`; solo se actualiza desde `main`.
 
 ### Publicación habilitada
@@ -34,6 +34,18 @@ Antes de crear un deployment:
 2. si hay cualquier duda sobre su origen, sobrescríbela como Sensitive con una URL **pooled** obtenida de la rama `production` y la base `budget_runner`;
 3. conserva `DB_POOL_MAX=4`;
 4. despliega y valida health, readiness y los smoke tests.
+
+Antes de aplicar `007_weekly_store_rotation.sql`, comprueba con la URL **direct** de Neon que no existan duplicados heredados para una misma ventana semanal:
+
+```sql
+SELECT user_id, starts_at, count(*)
+FROM store_rotations
+WHERE source_period_id IS NULL
+GROUP BY user_id, starts_at
+HAVING count(*) > 1;
+```
+
+Si devuelve alguna fila, detén la migración y resuelve los duplicados de forma explícita. No borres ni consolides rotaciones automáticamente durante el despliegue.
 
 ### Límites gratuitos relevantes
 
@@ -112,7 +124,7 @@ FIREBASE_PROJECT_ID=budget-runner-cyberdeck
 CRON_SECRET=secreto-aleatorio-de-32-o-mas-caracteres
 ```
 
-Vercel detecta `backend/src/index.ts`. `backend/vercel.json` registra a las `02:00 UTC` un cron diario contra `/api/v1/internal/jobs/close-due-periods`; en Hobby puede ejecutarse en cualquier momento de esa hora. Vercel enviará `CRON_SECRET` como Bearer token y no reintentará automáticamente una invocación fallida.
+Vercel detecta `backend/src/index.ts`. `backend/vercel.json` registra dos tareas: cierre de periodos cada día (`0 2 * * *`) y rotación de tienda los domingos (`0 2 * * 0`), ambas en UTC. En Hobby pueden ejecutarse en cualquier momento entre las 02:00 y las 02:59. La ventana de tienda sigue comenzando exactamente el domingo a las 02:00 UTC y su fallback perezoso usa ese mismo límite. Vercel enviará `CRON_SECRET` como Bearer token y no reintentará automáticamente una invocación fallida.
 
 Desde la raíz del repositorio, comprueba que la variable esté asignada a Production:
 
@@ -153,11 +165,12 @@ Antes de desplegar, verifica que `frontend/dist` se ha compilado con `VITE_DATA_
 7. Confirmar un único ledger de SynthCoins/Flux al reintentar el cierre.
 8. Exceder un presupuesto y verificar daño, bloqueo de compras y reparación permitida.
 9. Confirmar que tienda, dashboard e historial reflejan el nuevo estado.
+10. Confirmar que la tienda contiene exactamente 6 ofertas distintas, adaptadas al nivel, y que expiran el domingo siguiente a las 02:00 UTC.
 
 ## 6. Rollback
 
 - **Frontend:** restaurar la release anterior desde Firebase Hosting.
-- **API:** hacer Instant Rollback al deployment anterior de Vercel. Después comprueba por separado el estado del cron y recuerda que el deployment restaurado conserva su propia instantánea de configuración.
+- **API:** hacer Instant Rollback al deployment anterior de Vercel. Después comprueba por separado el cierre diario y la rotación semanal; el deployment restaurado conserva su propia instantánea de configuración.
 - **Base de datos:** no revertir las migraciones aditivas durante el incidente; la API anterior ignora las tablas/columnas nuevas. Restaurar datos solo desde backup si hubo corrupción comprobada.
 - **Modo de demostración:** como contingencia, recompilar temporalmente con `VITE_DATA_SOURCE=mock` sin borrar datos de Neon.
 

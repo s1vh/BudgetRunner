@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Accessibility, BellRing, CircleHelp, Eye, Globe2, Palette, Play, Save, Settings, Shield, SlidersHorizontal, Trash2 } from 'lucide-react'
+import { useBeforeUnload, useBlocker, type BlockerFunction } from 'react-router'
 import { useAppData } from '@/app/AppDataContext'
 import { CategoryManager } from '@/components/settings/CategoryManager'
-import { Button, Field, Input, PageSkeleton, Select, SynthCard } from '@/components/ui/primitives'
+import { Button, Field, Input, Modal, PageSkeleton, Select, SynthCard } from '@/components/ui/primitives'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { useI18n } from '@/i18n/I18nContext'
 import { localeOptions, resolveLocale, type SupportedLocale } from '@/i18n/locales'
@@ -10,6 +11,16 @@ import { catalogs } from '@/i18n/messages'
 import type { UserPreferences } from '@/types/domain'
 import { useHelpCenter } from '@/components/help/HelpCenterContext'
 import { DataQueryState } from '@/components/routing/DataQueryState'
+
+const preferenceKeys: readonly (keyof UserPreferences)[] = [
+  'ambientEffects',
+  'scanlines',
+  'audioReactive',
+  'reducedMotion',
+  'compactMode',
+  'helpHints',
+  'customCursor',
+]
 
 function Toggle({ checked, onChange, label, description }: { checked: boolean; onChange: (value: boolean) => void; label: string; description: string }) {
   return <label className="flex cursor-pointer items-start justify-between gap-4 border-b border-outline-soft/45 py-4 last:border-0"><span><strong className="block text-sm">{label}</strong><small className="mt-1 block max-w-lg text-xs leading-5 text-text-muted">{description}</small></span><input className="peer sr-only" type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} /><span className="relative mt-1 h-6 w-11 shrink-0 rounded-full border border-outline-soft bg-panel-high transition peer-checked:border-neon-cyan/60 peer-checked:bg-neon-cyan/20 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-tertiary after:absolute after:left-1 after:top-1 after:size-4 after:rounded-full after:bg-text-muted after:transition peer-checked:after:translate-x-5 peer-checked:after:bg-neon-cyan peer-checked:after:shadow-[0_0_8px_#00ffff]" aria-hidden="true" /></label>
@@ -24,11 +35,67 @@ export function SettingsPage() {
   const [preferences, setPreferences] = useState<UserPreferences | null>(null)
   const [languageBusy, setLanguageBusy] = useState(false)
   const [languageNotice, setLanguageNotice] = useState<{ message: string; failed: boolean } | null>(null)
+  const [saveFailed, setSaveFailed] = useState(false)
+  const isDirty = preferences !== null && profile !== null && preferenceKeys.some((key) => preferences[key] !== profile.preferences[key])
+  const shouldBlock = useCallback<BlockerFunction>(({ currentLocation, nextLocation }) => (
+    isDirty && (
+      currentLocation.pathname !== nextLocation.pathname
+      || currentLocation.search !== nextLocation.search
+      || currentLocation.hash !== nextLocation.hash
+    )
+  ), [isDirty])
+  const blocker = useBlocker(shouldBlock)
+
+  const handleBeforeUnload = useCallback((event: BeforeUnloadEvent) => {
+    if (!isDirty) return
+    event.preventDefault()
+    event.returnValue = ''
+  }, [isDirty])
+  useBeforeUnload(handleBeforeUnload, { capture: true })
+
   if (profileLoading || profileError || !profile) return <DataQueryState pending={profileLoading} error={Boolean(profileError)} retry={() => void refreshProfile()}><PageSkeleton /></DataQueryState>
   const current = preferences ?? profile.preferences
   const profileLocale = profile.locale
-  const change = (key: keyof UserPreferences, value: boolean) => { setPreferences({ ...current, [key]: value }); setSaved(false) }
-  async function save() { setSaving(true); try { await updatePreferences(current); setPreferences(null); setSaved(true) } finally { setSaving(false) } }
+  const change = (key: keyof UserPreferences, value: boolean) => {
+    setPreferences({ ...current, [key]: value })
+    setSaved(false)
+    setSaveFailed(false)
+  }
+
+  async function save() {
+    setSaving(true)
+    setSaveFailed(false)
+    try {
+      await updatePreferences(current)
+      setPreferences(null)
+      setSaved(true)
+      return true
+    } catch {
+      setSaved(false)
+      setSaveFailed(true)
+      return false
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function saveAndLeave() {
+    if (blocker.state !== 'blocked') return
+    const proceed = blocker.proceed
+    if (await save()) proceed()
+  }
+
+  function discardAndLeave() {
+    if (blocker.state !== 'blocked') return
+    setPreferences(null)
+    setSaved(false)
+    setSaveFailed(false)
+    blocker.proceed()
+  }
+
+  function keepEditing() {
+    if (!saving && blocker.state === 'blocked') blocker.reset()
+  }
 
   async function changeLanguage(next: SupportedLocale) {
     const previous = resolveLocale(profileLocale)
@@ -48,8 +115,9 @@ export function SettingsPage() {
 
   return (
     <div className="page-enter grid gap-6">
-      <PageHeader eyebrow={t('settings.eyebrow')} title={t('settings.title')} description={t('settings.description')} icon={Settings} tourId="settings-header" actions={<Button icon={Save} loading={saving} onClick={() => void save()}>{t('settings.saveChanges')}</Button>} />
+      <PageHeader eyebrow={t('settings.eyebrow')} title={t('settings.title')} description={t('settings.description')} icon={Settings} tourId="settings-header" actions={<Button icon={Save} loading={saving} disabled={!isDirty} onClick={() => void save()}>{t('settings.saveChanges')}</Button>} />
       {saved && <div className="rounded-lg border border-success/25 bg-success/5 p-3 text-sm text-success">{t('settings.saved')}</div>}
+      {saveFailed && <div className="rounded-lg border border-neon-magenta/25 bg-neon-magenta/5 p-3 text-sm text-neon-magenta" role="alert">{t('settings.saveFailed')}</div>}
       <div className="grid gap-4 xl:grid-cols-2">
         <SynthCard className="p-5 sm:p-6" data-tour="settings-region">
           <div className="mb-4 flex items-center gap-2"><Globe2 className="size-4 text-neon-cyan" /><h2 className="font-display text-sm font-bold uppercase">{t('settings.region')}</h2></div>
@@ -74,6 +142,7 @@ export function SettingsPage() {
             <Toggle checked={current.audioReactive} onChange={(value) => change('audioReactive', value)} label={t('settings.audioReactive')} description={t('settings.audioReactiveDesc')} />
             <Toggle checked={current.reducedMotion} onChange={(value) => change('reducedMotion', value)} label={t('settings.reducedMotion')} description={t('settings.reducedMotionDesc')} />
             <Toggle checked={current.compactMode} onChange={(value) => change('compactMode', value)} label={t('settings.compact')} description={t('settings.compactDesc')} />
+            <Toggle checked={current.customCursor} onChange={(value) => change('customCursor', value)} label={t('settings.customCursor')} description={t('settings.customCursorDesc')} />
           </div>
         </SynthCard>
         <SynthCard className="p-5 sm:p-6" data-tour="settings-help">
@@ -93,6 +162,12 @@ export function SettingsPage() {
           <SynthCard className="p-5 sm:p-6" tone="danger" data-tour="settings-privacy"><div className="mb-3 flex items-center gap-2"><Shield className="size-4 text-neon-magenta" /><h2 className="font-display text-sm font-bold uppercase">{t('settings.privacy')}</h2></div><p className="text-sm leading-6 text-text-muted">{t('settings.deleteDesc')}</p><div className="mt-4 flex gap-3"><Field label={t('auth.confirmation')} htmlFor="delete-account"><Input id="delete-account" placeholder={t('settings.deletePlaceholder')} /></Field><Button className="self-end" variant="magenta" icon={Trash2} disabled>{t('common.delete')}</Button></div></SynthCard>
         </div>
       </div>
+      <Modal centered open={blocker.state === 'blocked'} title={t('settings.unsavedTitle')} description={t('settings.unsavedDescription')} onClose={keepEditing}>
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <Button variant="ghost" disabled={saving} onClick={discardAndLeave}>{t('settings.discardAndLeave')}</Button>
+          <Button icon={Save} loading={saving} onClick={() => void saveAndLeave()}>{t('settings.saveAndLeave')}</Button>
+        </div>
+      </Modal>
     </div>
   )
 }

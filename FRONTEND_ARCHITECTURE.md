@@ -49,7 +49,7 @@ La implementación incorporada desde `codex/feature/data-loading-splitting` aña
 | Shell privado | Perfil (`/me`); al restaurar una sesión se reutiliza el perfil completo ya obtenido por autenticación y no se duplica la llamada. |
 | Dashboard | Dashboard y categorías. |
 | Gastos | Transacciones y categorías; utiliza el perfil ya compartido para la moneda. |
-| Presupuestos | Presupuestos y categorías. Mientras no exista la vertical persistente, los presupuestos proceden del repositorio mock/local y no de una API ficticia. |
+| Presupuestos | Presupuestos persistidos y categorías; el historial de cada presupuesto se solicita al abrir su detalle. |
 | Perfil | Perfil compartido. |
 | Ajustes | Perfil compartido; categorías solo al montar su gestor. |
 | Gamificación · Resumen | Resumen de progreso y bonus de familias. |
@@ -57,13 +57,13 @@ La implementación incorporada desde `codex/feature/data-loading-splitting` aña
 | Gamificación · Tienda | Resumen de progreso e inventario rotatorio; código e inventario se precargan con hover o foco y se solicitan al seleccionar la pestaña o cuando el tour la necesita. |
 | Gamificación · Registro | Historial del juego. |
 
-Las consultas mantienen datos frescos durante 30 segundos por defecto, dos minutos para categorías y cinco minutos para el perfil. No se refrescan solo por recuperar el foco de la ventana. El caché se destruye al desmontar la zona autenticada.
+Las consultas mantienen datos frescos durante 30 segundos por defecto, dos minutos para categorías y cinco minutos para el perfil. La tienda programa una invalidación en el límite exacto de la siguiente ventana semanal —domingo 02:00 UTC— y también revalida al recuperar foco o conexión. El caché se destruye al desmontar la zona autenticada.
 
 ### Coherencia después de mutar
 
-- Crear, editar o borrar una transacción aprovecha el dashboard recalculado que ya devuelve la API e invalida únicamente la lista de transacciones.
+- Crear, editar, borrar o compensar una transacción aprovecha el dashboard recalculado que ya devuelve la API e invalida transacciones, presupuestos y las proyecciones afectadas.
 - Cambiar categorías invalida categorías, transacciones y dashboard; TanStack Query solo vuelve a solicitar en ese momento las consultas activas y deja el resto marcado como obsoleto.
-- Crear un presupuesto invalida presupuestos y dashboard. La API real seguirá pendiente hasta `BR-BL-005`.
+- Crear, editar, pausar, reanudar o archivar un presupuesto invalida presupuestos y dashboard; los periodos conservan sus snapshots históricos.
 - Cambiar idioma, preferencias o completar el tour actualiza directamente el perfil en caché.
 - Comprar o reparar recibe el estado completo del juego, reparte sus piezas entre las consultas correspondientes e invalida perfil y dashboard para recoger los saldos derivados.
 
