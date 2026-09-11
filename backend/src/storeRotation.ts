@@ -1,6 +1,5 @@
 import { createHmac, randomBytes } from 'node:crypto'
 import type { DbClient } from './db.js'
-import { pool, withTransaction } from './db.js'
 
 export const STORE_OFFERS_PER_ROTATION = 6
 export const STORE_ROTATION_WEEK_MS = 7 * 24 * 60 * 60 * 1_000
@@ -247,7 +246,8 @@ export async function ensureStoreRotationWithClient(
   }
 }
 
-export function ensureCurrentStoreRotation(userId: string, instant: Date = new Date()) {
+export async function ensureCurrentStoreRotation(userId: string, instant: Date = new Date()) {
+  const { withTransaction } = await import('./db.js')
   return withTransaction((client) => ensureStoreRotationWithClient(client, userId, instant))
 }
 
@@ -262,6 +262,7 @@ export interface RotateStoreJobResult {
 export async function rotateStoreForAllUsers(
   options: { instant?: Date; limit?: number } = {},
 ): Promise<RotateStoreJobResult> {
+  const { pool } = await import('./db.js')
   const instant = options.instant ?? new Date()
   const limit = clamp(Math.trunc(options.limit ?? 5_000), 1, 10_000)
   const users = await pool.query<{ id: string }>(`
