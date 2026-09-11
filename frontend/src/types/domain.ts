@@ -1,6 +1,7 @@
 export type TransactionType = 'expense' | 'income'
 export type TransactionStatus = 'posted' | 'scheduled' | 'voided'
 export type BudgetStatus = 'scheduled' | 'active' | 'paused' | 'met' | 'exceeded' | 'archived'
+export type BudgetPeriodStatus = 'open' | 'processing' | 'met' | 'exceeded' | 'closed' | 'cancelled'
 export type BudgetFrequency = 'weekly' | 'monthly'
 export type BudgetScope = 'global' | 'category'
 export type ModuleFamily = 'retrowave' | 'synthwave' | 'vaporwave' | 'hifi_tech'
@@ -35,6 +36,8 @@ export interface FinancialTransaction {
   occurredAt: string
   notes?: string
   lockedByReward?: boolean
+  adjustsTransactionId?: string
+  adjustmentReason?: string
 }
 
 export interface TransactionDraft {
@@ -48,8 +51,14 @@ export interface TransactionDraft {
   status?: TransactionStatus
 }
 
+export interface TransactionAdjustmentDraft {
+  reason: string
+  occurredAt: string
+}
+
 export interface Budget {
   id: string
+  periodId?: string
   name: string
   frequency: BudgetFrequency
   scope: BudgetScope
@@ -59,12 +68,20 @@ export interface Budget {
   spendMinor: number
   eligibleSurplusMinor: number
   currency: string
+  timezone?: string
   status: BudgetStatus
   startsAt: string
   endsAt: string
   synthcoinsAwarded?: number
   fluxAwarded?: number
   excludedRewardMinor?: number
+  configuredFrequency?: BudgetFrequency
+  configuredScope?: BudgetScope
+  configuredCategoryId?: string | null
+  configuredCategoryName?: string | null
+  configuredLimitMinor?: number
+  configuredCurrency?: string
+  configuredTimezone?: string
 }
 
 export interface BudgetDraft {
@@ -75,6 +92,34 @@ export interface BudgetDraft {
   limitMinor: number
   currency: string
   startsOn: string
+}
+
+export type BudgetUpdate = Omit<BudgetDraft, 'startsOn' | 'categoryId'> & {
+  categoryId?: string | null
+}
+
+export interface BudgetPeriod {
+  id: string
+  budgetId?: string
+  status: BudgetPeriodStatus
+  frequency?: BudgetFrequency
+  scope?: BudgetScope
+  categoryId?: string
+  categoryName?: string
+  startsAt: string
+  endsAt: string
+  limitMinor: number
+  currency: string
+  timezone: string
+  spendMinor: number
+  surplusMinor: number
+  eligibleSurplusMinor: number
+  excludedRewardMinor: number
+  synthcoinsAwarded: number
+  fluxAwarded: number
+  excessPercentBp: number
+  baseDamage: number
+  evaluatedAt: string | null
 }
 
 export interface CashflowPoint {
@@ -110,6 +155,7 @@ export interface DashboardData {
   systemStatus: string
   balanceMinor: number
   budgetRemainingMinor: number
+  budgetNextCloseAt: string | null
   currency: string
   distribution: CategoryDistribution[]
   cashflow: CashflowPoint[]

@@ -3,6 +3,8 @@ import type { BudgetRunnerRepository } from './budgetRunnerRepository'
 import type {
   Budget,
   BudgetDraft,
+  BudgetPeriod,
+  BudgetUpdate,
   Category,
   CategoryDraft,
   CategoryDistribution,
@@ -14,6 +16,7 @@ import type {
   ProgressSummary,
   StoreOffer,
   TransactionDraft,
+  TransactionAdjustmentDraft,
   UserPreferences,
   UserProfile,
 } from '@/types/domain'
@@ -69,14 +72,23 @@ export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
     const posted = this.transactions.filter((transaction) => transaction.status === 'posted')
     const income = posted.filter((transaction) => transaction.type === 'income').reduce((sum, item) => sum + item.amountMinor, 0)
     const expenses = posted.filter((transaction) => transaction.type === 'expense').reduce((sum, item) => sum + item.amountMinor, 0)
-    const activeBudgets = this.budgets.filter((budget) => budget.status === 'active')
-    const remaining = activeBudgets.reduce((sum, budget) => sum + Math.max(0, budget.limitMinor - budget.spendMinor), 0)
+    const now = Date.now()
+    const committedBudgets = this.budgets.filter((budget) => (
+      !['met', 'exceeded'].includes(budget.status)
+      && Date.parse(budget.startsAt) <= now
+      && Date.parse(budget.endsAt) > now
+    ))
+    const remaining = committedBudgets.reduce((sum, budget) => sum + Math.max(0, budget.limitMinor - budget.spendMinor), 0)
+    const nextCloseAt = committedBudgets
+      .map((budget) => budget.endsAt)
+      .sort()[0] ?? null
 
     return {
       displayName: this.currentProfile.displayName,
       systemStatus: 'dashboard.systemOnline',
       balanceMinor: income - expenses,
       budgetRemainingMinor: remaining,
+      budgetNextCloseAt: nextCloseAt,
       currency: this.currentProfile.primaryCurrency,
       distribution: this.distribution(),
       cashflow,
@@ -214,6 +226,32 @@ export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
     return structuredClone({ dashboard: this.dashboardData() })
   }
 
+  async createTransactionAdjustment(id: string, input: TransactionAdjustmentDraft) {
+    await wait(260)
+    const original = this.transactions.find((transaction) => transaction.id === id)
+    if (!original) throw new Error('TRANSACTION_NOT_FOUND')
+    if (!original.lockedByReward) throw new Error('TRANSACTION_NOT_REWARD_PROTECTED')
+    if (original.adjustsTransactionId) throw new Error('ADJUSTMENT_TRANSACTION_LOCKED')
+    if (this.transactions.some((transaction) => transaction.adjustsTransactionId === id)) throw new Error('TRANSACTION_ALREADY_ADJUSTED')
+    if (Date.parse(input.occurredAt) > Date.now()) throw new Error('FUTURE_ADJUSTMENT_FORBIDDEN')
+    const adjustment: FinancialTransaction = {
+      id: createId('tx-adjustment'),
+      type: original.type === 'expense' ? 'income' : 'expense',
+      status: 'posted',
+      concept: `↺ ${original.concept}`,
+      amountMinor: original.amountMinor,
+      currency: original.currency,
+      categoryId: original.categoryId,
+      categoryName: original.categoryName,
+      occurredAt: input.occurredAt,
+      notes: input.reason,
+      adjustsTransactionId: original.id,
+      adjustmentReason: input.reason,
+    }
+    this.transactions = [adjustment, ...this.transactions]
+    return structuredClone({ transaction: adjustment, dashboard: this.dashboardData() })
+  }
+
   async createBudget(input: BudgetDraft): Promise<Budget> {
     await wait(260)
     const start = new Date(input.startsOn)
@@ -232,6 +270,73 @@ export class MockBudgetRunnerRepository implements BudgetRunnerRepository {
     }
     this.budgets = [budget, ...this.budgets]
     return structuredClone(budget)
+  }
+
+  async updateBudget(id: string, input: BudgetUpdate): Promise<Budget> {
+    await wait(220)
+    const budget = this.budgets.find((item) => item.id === id)
+    if (!budget) throw new Error('BUDGET_NOT_FOUND')
+    if (budget.status === 'archived') throw new Error('BUDGET_NOT_EDITABLE')
+    budget.name = input.name
+    budget.configuredFrequency = input.frequency
+    budget.configuredScope = input.scope
+    budget.configuredCategoryId = input.scope === 'category' ? input.categoryId ?? null : null
+    budget.configuredCategoryName = input.scope === 'category' && input.categoryId ? this.categoryName(input.categoryId) : null
+    budget.configuredLimitMinor = input.limitMinor
+    budget.configuredCurrency = input.currency
+    return structuredClone(budget)
+  }
+
+  async pauseBudget(id: string): Promise<Budget> {
+    await wait(160)
+    const budget = this.budgets.find((item) => item.id === id)
+    if (!budget) throw new Error('BUDGET_NOT_FOUND')
+    if (budget.status !== 'active' && budget.status !== 'scheduled') throw new Error('BUDGET_NOT_PAUSABLE')
+    budget.status = 'paused'
+    return structuredClone(budget)
+  }
+
+  async resumeBudget(id: string): Promise<Budget> {
+    await wait(160)
+    const budget = this.budgets.find((item) => item.id === id)
+    if (!budget) throw new Error('BUDGET_NOT_FOUND')
+    if (budget.status !== 'paused') throw new Error('BUDGET_NOT_RESUMABLE')
+    budget.status = Date.parse(budget.startsAt) > Date.now() ? 'scheduled' : 'active'
+    return structuredClone(budget)
+  }
+
+  async archiveBudget(id: string): Promise<void> {
+    await wait(160)
+    const budget = this.budgets.find((item) => item.id === id)
+    if (!budget) throw new Error('BUDGET_NOT_FOUND')
+    budget.status = 'archived'
+  }
+
+  async getBudgetPeriods(id: string): Promise<BudgetPeriod[]> {
+    await wait(160)
+    const budget = this.budgets.find((item) => item.id === id)
+    if (!budget) throw new Error('BUDGET_NOT_FOUND')
+    const status = budget.status === 'met' || budget.status === 'exceeded' ? budget.status : 'open'
+    return structuredClone([{
+      id: budget.periodId ?? `period-${budget.id}`,
+      status,
+      startsAt: budget.startsAt,
+      endsAt: budget.endsAt,
+      limitMinor: budget.limitMinor,
+      currency: budget.currency,
+      timezone: this.currentProfile.timezone,
+      spendMinor: budget.spendMinor,
+      surplusMinor: Math.max(0, budget.limitMinor - budget.spendMinor),
+      eligibleSurplusMinor: budget.eligibleSurplusMinor,
+      excludedRewardMinor: budget.excludedRewardMinor ?? 0,
+      synthcoinsAwarded: budget.synthcoinsAwarded ?? 0,
+      fluxAwarded: budget.fluxAwarded ?? 0,
+      excessPercentBp: budget.status === 'exceeded'
+        ? Math.floor((budget.spendMinor - budget.limitMinor) * 10_000 / budget.limitMinor)
+        : 0,
+      baseDamage: 0,
+      evaluatedAt: status === 'open' ? null : budget.endsAt,
+    }])
   }
 
   async updatePreferences(input: UserPreferences): Promise<UserProfile> {

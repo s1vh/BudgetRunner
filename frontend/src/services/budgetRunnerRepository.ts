@@ -1,6 +1,8 @@
 import type {
   Budget,
   BudgetDraft,
+  BudgetPeriod,
+  BudgetUpdate,
   Category,
   CategoryDraft,
   CyberModule,
@@ -11,6 +13,7 @@ import type {
   ProgressSummary,
   StoreOffer,
   TransactionDraft,
+  TransactionAdjustmentDraft,
   UserPreferences,
   UserProfile,
 } from '@/types/domain'
@@ -42,7 +45,13 @@ export interface BudgetRunnerRepository {
   createTransaction(input: TransactionDraft): Promise<TransactionMutationResult>
   updateTransaction(id: string, input: TransactionDraft): Promise<TransactionMutationResult>
   deleteTransaction(id: string): Promise<TransactionDeletionResult>
+  createTransactionAdjustment(id: string, input: TransactionAdjustmentDraft): Promise<TransactionMutationResult>
   createBudget(input: BudgetDraft): Promise<Budget>
+  updateBudget(id: string, input: BudgetUpdate): Promise<Budget>
+  pauseBudget(id: string): Promise<Budget>
+  resumeBudget(id: string): Promise<Budget>
+  archiveBudget(id: string): Promise<void>
+  getBudgetPeriods(id: string): Promise<BudgetPeriod[]>
   updatePreferences(input: UserPreferences): Promise<UserProfile>
   updateLocale(locale: SupportedLocale): Promise<UserProfile>
   completeGuidedTour(): Promise<void>

@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
-import { Edit3, Filter, LockKeyhole, Plus, Search, Trash2, WalletCards } from 'lucide-react'
+import { Edit3, Filter, LockKeyhole, Plus, Search, Trash2, Undo2, WalletCards } from 'lucide-react'
 import { useAppData } from '@/app/AppDataContext'
 import { TransactionForm } from '@/components/forms/TransactionForm'
+import { TransactionAdjustmentForm } from '@/components/forms/TransactionAdjustmentForm'
 import { Badge, Button, Input, Modal, PageSkeleton, Select, SynthCard } from '@/components/ui/primitives'
 import { PageHeader } from '@/components/ui/PageHeader'
-import type { Category, FinancialTransaction, TransactionDraft } from '@/types/domain'
+import type { Category, FinancialTransaction, TransactionAdjustmentDraft, TransactionDraft } from '@/types/domain'
 import { formatDate, formatMoney } from '@/utils/format'
 import { useI18n } from '@/i18n/I18nContext'
 import { categoryLabel } from '@/i18n/categoryLabel'
@@ -16,7 +17,7 @@ const emptyCategories: Category[] = []
 
 export function TransactionsPage() {
   const { t, td } = useI18n()
-  const { profile, profileLoading, profileError, refreshProfile, createTransaction, updateTransaction, deleteTransaction } = useAppData()
+  const { profile, profileLoading, profileError, refreshProfile, createTransaction, updateTransaction, deleteTransaction, createTransactionAdjustment } = useAppData()
   const transactionsQuery = useTransactionsQuery()
   const categoriesQuery = useCategoriesQuery()
   const [query, setQuery] = useState('')
@@ -25,10 +26,15 @@ export function TransactionsPage() {
   const [status, setStatus] = useState('all')
   const [editing, setEditing] = useState<FinancialTransaction | null | 'new'>(null)
   const [deleting, setDeleting] = useState<FinancialTransaction | null>(null)
+  const [adjusting, setAdjusting] = useState<FinancialTransaction | null>(null)
   const [deletingBusy, setDeletingBusy] = useState(false)
   const [feedback, setFeedback] = useState<string | null>(null)
   const transactions = transactionsQuery.data ?? emptyTransactions
   const categories = categoriesQuery.data ?? emptyCategories
+  const adjustedOriginalIds = useMemo(
+    () => new Set(transactions.flatMap((transaction) => transaction.adjustsTransactionId ? [transaction.adjustsTransactionId] : [])),
+    [transactions],
+  )
 
   const filtered = useMemo(() => {
     return transactions.filter((transaction) => {
@@ -68,6 +74,13 @@ export function TransactionsPage() {
     } finally { setDeletingBusy(false) }
   }
 
+  async function saveAdjustment(draft: TransactionAdjustmentDraft) {
+    if (!adjusting) return
+    await createTransactionAdjustment(adjusting, draft)
+    setAdjusting(null)
+    setFeedback(t('transactions.adjustmentCreated'))
+  }
+
   return (
     <div className="page-enter grid gap-6">
       <PageHeader eyebrow={t('transactions.eyebrow')} title={t('transactions.title')} description={t('transactions.description')} icon={WalletCards} tourId="transactions-header" actions={<Button icon={Plus} onClick={() => setEditing('new')}>{t('transactions.new')}</Button>} />
@@ -101,7 +114,27 @@ export function TransactionsPage() {
                   <td data-label={t('transactions.date')}><span className="font-mono text-xs text-text-muted">{formatDate(transaction.occurredAt)}</span></td>
                   <td data-label={t('transactions.status')}><Badge tone={transaction.status === 'posted' ? 'success' : 'purple'}>{transaction.status === 'posted' ? t('transactions.posted') : t('transactions.scheduled')}</Badge></td>
                   <td data-label={t('transactions.amount')}><span className={`font-mono text-sm font-bold tabular ${transaction.type === 'income' ? 'text-neon-cyan' : 'text-neon-magenta'}`}>{transaction.type === 'income' ? '+' : '−'}{formatMoney(transaction.amountMinor, transaction.currency)}</span></td>
-                  <td data-label={t('transactions.actions')}><div className="flex justify-end gap-1"><button type="button" disabled={transaction.lockedByReward} onClick={() => setEditing(transaction)} className="grid size-10 place-items-center rounded-lg text-text-muted transition hover:bg-neon-cyan/8 hover:text-neon-cyan disabled:cursor-not-allowed disabled:opacity-30" aria-label={`${t('common.edit')} ${transaction.concept}`}><Edit3 className="size-4" /></button><button type="button" onClick={() => setDeleting(transaction)} className="grid size-10 place-items-center rounded-lg text-text-muted transition hover:bg-neon-magenta/8 hover:text-neon-magenta" aria-label={`${t('common.delete')} ${transaction.concept}`}><Trash2 className="size-4" /></button></div></td>
+                  <td data-label={t('transactions.actions')}>
+                    <div className="flex justify-end gap-1">
+                      {transaction.lockedByReward || transaction.adjustsTransactionId ? (
+                        <button
+                          type="button"
+                          disabled={Boolean(transaction.adjustsTransactionId) || adjustedOriginalIds.has(transaction.id)}
+                          onClick={() => setAdjusting(transaction)}
+                          className="grid size-10 place-items-center rounded-lg text-text-muted transition hover:bg-tertiary/10 hover:text-tertiary disabled:cursor-not-allowed disabled:opacity-30"
+                          aria-label={`${transaction.adjustsTransactionId ? t('transactions.adjustmentRecord') : adjustedOriginalIds.has(transaction.id) ? t('transactions.adjustmentAlreadyCreated') : t('transactions.adjustmentAction')} ${transaction.concept}`}
+                          title={transaction.adjustsTransactionId ? t('transactions.adjustmentRecord') : adjustedOriginalIds.has(transaction.id) ? t('transactions.adjustmentAlreadyCreated') : t('transactions.adjustmentAction')}
+                        >
+                          <Undo2 className="size-4" />
+                        </button>
+                      ) : (
+                        <>
+                          <button type="button" onClick={() => setEditing(transaction)} className="grid size-10 place-items-center rounded-lg text-text-muted transition hover:bg-neon-cyan/8 hover:text-neon-cyan" aria-label={`${t('common.edit')} ${transaction.concept}`}><Edit3 className="size-4" /></button>
+                          <button type="button" onClick={() => setDeleting(transaction)} className="grid size-10 place-items-center rounded-lg text-text-muted transition hover:bg-neon-magenta/8 hover:text-neon-magenta" aria-label={`${t('common.delete')} ${transaction.concept}`}><Trash2 className="size-4" /></button>
+                        </>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -112,6 +145,9 @@ export function TransactionsPage() {
 
       <Modal open={Boolean(editing)} onClose={() => setEditing(null)} title={editing === 'new' ? t('transactions.new') : t('transactions.editTitle')} description={t('transactions.editDescription')}>
         {editing && <TransactionForm key={editing === 'new' ? 'new' : editing.id} categories={categories} initial={editing === 'new' ? undefined : editing} onSubmit={save} onCancel={() => setEditing(null)} />}
+      </Modal>
+      <Modal open={Boolean(adjusting)} onClose={() => setAdjusting(null)} title={t('transactions.adjustmentTitle')} description={adjusting ? t('transactions.adjustmentDescription', { name: adjusting.concept, amount: formatMoney(adjusting.amountMinor, adjusting.currency) }) : undefined} centered>
+        {adjusting && <TransactionAdjustmentForm key={adjusting.id} onSubmit={saveAdjustment} onCancel={() => setAdjusting(null)} />}
       </Modal>
       <Modal open={Boolean(deleting)} onClose={() => setDeleting(null)} title={t('transactions.deleteTitle')} description={deleting ? t('transactions.deleteQuestion', { name: deleting.concept }) : undefined}>
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><Button variant="ghost" onClick={() => setDeleting(null)}>{t('common.cancel')}</Button><Button variant="magenta" icon={Trash2} loading={deletingBusy} onClick={() => void confirmDelete()}>{t('common.delete')}</Button></div>

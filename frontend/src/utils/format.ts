@@ -8,16 +8,21 @@ export function formatMoney(amountMinor: number, currency = 'EUR', locale = getR
   }).format(amountMinor / 100)
 }
 
-export function formatDate(value: string, locale = getRuntimeLocale()) {
+export function formatDate(value: string, locale = getRuntimeLocale(), timeZone?: string) {
   return new Intl.DateTimeFormat(locale, {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
+    ...(timeZone ? { timeZone } : {}),
   }).format(new Date(value))
 }
 
-export function formatShortDate(value: string, locale = getRuntimeLocale()) {
-  return new Intl.DateTimeFormat(locale, { day: '2-digit', month: 'short' }).format(new Date(value))
+export function formatShortDate(value: string, locale = getRuntimeLocale(), timeZone?: string) {
+  return new Intl.DateTimeFormat(locale, {
+    day: '2-digit',
+    month: 'short',
+    ...(timeZone ? { timeZone } : {}),
+  }).format(new Date(value))
 }
 
 export function formatNumber(value: number, locale = getRuntimeLocale()) {

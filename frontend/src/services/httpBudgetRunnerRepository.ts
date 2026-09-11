@@ -1,9 +1,9 @@
-import { initialBudgets } from '@/data/mockData'
 import { apiClient, idempotencyHeaders } from './apiClient'
 import type { BudgetRunnerRepository } from './budgetRunnerRepository'
 import type {
-  Budget, Category, CategoryDraft, CyberModule, DashboardData, FinancialTransaction,
-  GameData, GameEvent, ProgressSummary, StoreOffer, TransactionDraft, UserPreferences, UserProfile,
+  Budget, BudgetDraft, BudgetPeriod, BudgetUpdate, Category, CategoryDraft, CyberModule, DashboardData,
+  FinancialTransaction, GameData, GameEvent, ProgressSummary, StoreOffer, TransactionAdjustmentDraft, TransactionDraft,
+  UserPreferences, UserProfile,
 } from '@/types/domain'
 import type { SupportedLocale } from '@/i18n/locales'
 
@@ -86,8 +86,8 @@ export class HttpBudgetRunnerRepository implements BudgetRunnerRepository {
     return apiClient.request<Category[]>('/categories')
   }
 
-  async getBudgets(): Promise<Budget[]> {
-    return structuredClone(initialBudgets)
+  getBudgets(): Promise<Budget[]> {
+    return apiClient.request<Budget[]>('/budgets')
   }
 
   getGameSummary(): Promise<ProgressSummary> {
@@ -138,8 +138,34 @@ export class HttpBudgetRunnerRepository implements BudgetRunnerRepository {
     return apiClient.request<{ dashboard: DashboardData }>(`/transactions/${id}`, { method: 'DELETE', headers: idempotencyHeaders() })
   }
 
-  createBudget(): Promise<Budget> {
-    return Promise.reject(new Error('La persistencia de presupuestos se implementará en la siguiente vertical del backend.'))
+  createTransactionAdjustment(id: string, input: TransactionAdjustmentDraft) {
+    return apiClient.request<{ transaction: FinancialTransaction; dashboard: DashboardData }>(`/transactions/${id}/adjustments`, {
+      method: 'POST', headers: idempotencyHeaders(), body: JSON.stringify(input),
+    })
+  }
+
+  createBudget(input: BudgetDraft): Promise<Budget> {
+    return apiClient.request<Budget>('/budgets', { method: 'POST', headers: idempotencyHeaders(), body: JSON.stringify(input) })
+  }
+
+  updateBudget(id: string, input: BudgetUpdate): Promise<Budget> {
+    return apiClient.request<Budget>(`/budgets/${id}`, { method: 'PATCH', body: JSON.stringify(input) })
+  }
+
+  pauseBudget(id: string): Promise<Budget> {
+    return apiClient.request<Budget>(`/budgets/${id}/pause`, { method: 'POST' })
+  }
+
+  resumeBudget(id: string): Promise<Budget> {
+    return apiClient.request<Budget>(`/budgets/${id}/resume`, { method: 'POST' })
+  }
+
+  async archiveBudget(id: string): Promise<void> {
+    await apiClient.request(`/budgets/${id}`, { method: 'DELETE' })
+  }
+
+  getBudgetPeriods(id: string): Promise<BudgetPeriod[]> {
+    return apiClient.request<BudgetPeriod[]>(`/budgets/${id}/periods`)
   }
 
   async updatePreferences(input: UserPreferences): Promise<UserProfile> {

@@ -10,8 +10,10 @@ export function DonutChart({ data, currency = 'EUR', title }: { data: CategoryDi
   const circumference = 2 * Math.PI * radius
   const segments = data.map((item, index) => ({
     item,
-    length: (item.percentage / 100) * circumference,
-    offset: -data.slice(0, index).reduce((sum, previous) => sum + (previous.percentage / 100) * circumference, 0),
+    length: (total > 0 ? item.amountMinor / total : 0) * circumference,
+    offset: -data.slice(0, index).reduce((sum, previous) => (
+      sum + (total > 0 ? previous.amountMinor / total : 0) * circumference
+    ), 0),
   }))
 
   return (

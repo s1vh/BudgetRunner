@@ -10,11 +10,13 @@ import { repository } from '@/services/repository'
 import { enforceSafeUserInput, registerSecurityCachePurge } from '@/security/securityReset'
 import type {
   BudgetDraft,
+  BudgetUpdate,
   Category,
   CategoryDraft,
   FinancialTransaction,
   GameData,
   TransactionDraft,
+  TransactionAdjustmentDraft,
   UserPreferences,
   UserProfile,
 } from '@/types/domain'
@@ -30,7 +32,12 @@ interface AppDataValue {
   createTransaction: (draft: TransactionDraft) => Promise<void>
   updateTransaction: (id: string, draft: TransactionDraft) => Promise<void>
   deleteTransaction: (transaction: FinancialTransaction) => Promise<void>
+  createTransactionAdjustment: (transaction: FinancialTransaction, draft: TransactionAdjustmentDraft) => Promise<void>
   createBudget: (draft: BudgetDraft) => Promise<void>
+  updateBudget: (id: string, draft: BudgetUpdate) => Promise<void>
+  pauseBudget: (id: string) => Promise<void>
+  resumeBudget: (id: string) => Promise<void>
+  archiveBudget: (id: string) => Promise<void>
   updatePreferences: (preferences: UserPreferences) => Promise<void>
   updateLocale: (locale: SupportedLocale) => Promise<void>
   completeGuidedTour: () => Promise<void>
@@ -89,39 +96,62 @@ function AppDataStateProvider({ children }: { children: ReactNode }) {
     createCategory: (draft) => run(async () => {
       enforceSafeUserInput(draft)
       const category = await repository.createCategory(draft)
-      await invalidate(dataQueryKeys.categories, dataQueryKeys.transactions, dataQueryKeys.dashboard)
+      await invalidate(dataQueryKeys.categories, dataQueryKeys.transactions, dataQueryKeys.budgets, dataQueryKeys.dashboard)
       return category
     }),
     updateCategory: (id, draft) => run(async () => {
       enforceSafeUserInput(draft)
       const category = await repository.updateCategory(id, draft)
-      await invalidate(dataQueryKeys.categories, dataQueryKeys.transactions, dataQueryKeys.dashboard)
+      await invalidate(dataQueryKeys.categories, dataQueryKeys.transactions, dataQueryKeys.budgets, dataQueryKeys.dashboard)
       return category
     }),
     deleteCategory: (id) => run(async () => {
       await repository.deleteCategory(id)
-      await invalidate(dataQueryKeys.categories, dataQueryKeys.transactions, dataQueryKeys.dashboard)
+      await invalidate(dataQueryKeys.categories, dataQueryKeys.transactions, dataQueryKeys.budgets, dataQueryKeys.dashboard)
     }),
     createTransaction: (draft) => run(async () => {
       enforceSafeUserInput(draft)
       const result = await repository.createTransaction(draft)
       queryClient.setQueryData(dataQueryKeys.dashboard, result.dashboard)
-      await invalidate(dataQueryKeys.transactions)
+      await invalidate(dataQueryKeys.transactions, dataQueryKeys.budgets)
     }),
     updateTransaction: (id, draft) => run(async () => {
       enforceSafeUserInput(draft)
       const result = await repository.updateTransaction(id, draft)
       queryClient.setQueryData(dataQueryKeys.dashboard, result.dashboard)
-      await invalidate(dataQueryKeys.transactions)
+      await invalidate(dataQueryKeys.transactions, dataQueryKeys.budgets)
     }),
     deleteTransaction: (transaction) => run(async () => {
       const result = await repository.deleteTransaction(transaction.id)
       queryClient.setQueryData(dataQueryKeys.dashboard, result.dashboard)
-      await invalidate(dataQueryKeys.transactions)
+      await invalidate(dataQueryKeys.transactions, dataQueryKeys.budgets)
+    }),
+    createTransactionAdjustment: (transaction, draft) => run(async () => {
+      enforceSafeUserInput(draft)
+      const result = await repository.createTransactionAdjustment(transaction.id, draft)
+      queryClient.setQueryData(dataQueryKeys.dashboard, result.dashboard)
+      await invalidate(dataQueryKeys.transactions, dataQueryKeys.budgets)
     }),
     createBudget: (draft) => run(async () => {
       enforceSafeUserInput(draft)
       await repository.createBudget(draft)
+      await invalidate(dataQueryKeys.budgets, dataQueryKeys.dashboard)
+    }),
+    updateBudget: (id, draft) => run(async () => {
+      enforceSafeUserInput(draft)
+      await repository.updateBudget(id, draft)
+      await invalidate(dataQueryKeys.budgets, dataQueryKeys.dashboard)
+    }),
+    pauseBudget: (id) => run(async () => {
+      await repository.pauseBudget(id)
+      await invalidate(dataQueryKeys.budgets, dataQueryKeys.dashboard)
+    }),
+    resumeBudget: (id) => run(async () => {
+      await repository.resumeBudget(id)
+      await invalidate(dataQueryKeys.budgets, dataQueryKeys.dashboard)
+    }),
+    archiveBudget: (id) => run(async () => {
+      await repository.archiveBudget(id)
       await invalidate(dataQueryKeys.budgets, dataQueryKeys.dashboard)
     }),
     updatePreferences: (preferences) => run(async () => {
